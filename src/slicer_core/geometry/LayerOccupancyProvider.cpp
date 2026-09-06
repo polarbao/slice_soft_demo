@@ -2,6 +2,7 @@
 
 #include <algorithm>
 #include <cmath>
+#include <limits>
 #include <stdexcept>
 #include <utility>
 
@@ -28,6 +29,11 @@ void ValidateColumn(const GeometryOccupancyColumn& column)
 
 void ValidateRequest(const LayerOccupancyRequest& request)
 {
+    if (request.inputKind != GeometryOccupancyInputKind::SingleIntervalHeightfield
+        && request.inputKind != GeometryOccupancyInputKind::GeneralMesh)
+    {
+        throw std::invalid_argument("Geometry occupancy input kind is unsupported");
+    }
     if (request.layerCount <= 0)
     {
         throw std::invalid_argument("LayerOccupancyRequest layerCount must be positive");
@@ -49,8 +55,11 @@ void ValidateRequest(const LayerOccupancyRequest& request)
         throw std::invalid_argument("PixelCenter does not accept coverage subsample columns");
     }
     if (request.policy.xyMode == XyCoverageMode::Supersample2x2
-        && request.coverageSubsampleColumns.size()
-            != request.columns.size() * kSupersample2x2Count)
+        && (request.columns.size()
+                > std::numeric_limits<std::size_t>::max()
+                    / kSupersample2x2Count
+            || request.coverageSubsampleColumns.size()
+                != request.columns.size() * kSupersample2x2Count))
     {
         throw std::invalid_argument("Supersample2x2 requires exactly four samples per output column");
     }
@@ -130,6 +139,174 @@ std::pair<int, int> FindOccupiedLayerRange(
         : std::pair<int, int>{-1, -1};
 }
 
+bool ContainsLayer(
+    const LayerOccupancyRange& range,
+    const int layerIndex) noexcept
+{
+    return range.firstLayer >= 0
+        && layerIndex >= range.firstLayer
+        && layerIndex <= range.lastLayer;
+}
+
+bool IsOutputColumnOccupied(
+    const LayerOccupancyRanges& ranges,
+    const std::size_t columnIndex,
+    const int layerIndex)
+{
+    if (ranges.Policy().xyMode == XyCoverageMode::PixelCenter)
+    {
+        return ContainsLayer(
+            ranges.PrimaryRanges()[columnIndex],
+            layerIndex);
+    }
+
+    unsigned coveredSamples{0U};
+    const std::size_t sampleOffset =
+        columnIndex * kSupersample2x2Count;
+    for (std::size_t sampleIndex{0U};
+         sampleIndex < kSupersample2x2Count;
+         ++sampleIndex)
+    {
+        coveredSamples += ContainsLayer(
+            ranges.CoverageSubsampleRanges()[sampleOffset + sampleIndex],
+            layerIndex)
+            ? 1U
+            : 0U;
+    }
+    return coveredSamples
+        >= ranges.Policy().minimumCoveredSubsamples;
+}
+
+std::pair<int, int> FindThresholdedRange(
+    const std::span<const LayerOccupancyRange> sampleRanges,
+    const unsigned minimumCoveredSubsamples)
+{
+    int firstLayer{-1};
+    int lastLayer{-1};
+    for (const LayerOccupancyRange& candidate : sampleRanges)
+    {
+        if (candidate.firstLayer < 0)
+        {
+            continue;
+        }
+        unsigned firstCoverage{0U};
+        unsigned lastCoverage{0U};
+        for (const LayerOccupancyRange& sample : sampleRanges)
+        {
+            firstCoverage += ContainsLayer(sample, candidate.firstLayer) ? 1U : 0U;
+            lastCoverage += ContainsLayer(sample, candidate.lastLayer) ? 1U : 0U;
+        }
+        if (firstCoverage >= minimumCoveredSubsamples
+            && (firstLayer < 0 || candidate.firstLayer < firstLayer))
+        {
+            firstLayer = candidate.firstLayer;
+        }
+        if (lastCoverage >= minimumCoveredSubsamples
+            && candidate.lastLayer > lastLayer)
+        {
+            lastLayer = candidate.lastLayer;
+        }
+    }
+    return {firstLayer, lastLayer};
+}
+
+void ValidateRange(
+    const LayerOccupancyRange& range,
+    const int layerCount)
+{
+    if (range.firstLayer == -1 && range.lastLayer == -1)
+    {
+        return;
+    }
+    if (range.firstLayer < 0
+        || range.lastLayer < range.firstLayer
+        || range.lastLayer >= layerCount)
+    {
+        throw std::invalid_argument(
+            "LayerOccupancyRanges contains an invalid interval");
+    }
+}
+
+void ValidateRanges(const LayerOccupancyRanges& ranges)
+{
+    if (ranges.LayerCount() <= 0
+        || ranges.PrimaryRanges().size() != ranges.ColumnCount()
+        || ranges.FirstOccupiedLayers().size() != ranges.ColumnCount()
+        || ranges.LastOccupiedLayers().size() != ranges.ColumnCount())
+    {
+        throw std::invalid_argument(
+            "LayerOccupancyRanges dimensions are inconsistent");
+    }
+    if (ranges.InputKind() != GeometryOccupancyInputKind::SingleIntervalHeightfield
+        && ranges.InputKind() != GeometryOccupancyInputKind::GeneralMesh)
+    {
+        throw std::invalid_argument(
+            "LayerOccupancyRanges input kind is unsupported");
+    }
+    ValidateLayerOccupancyPolicy(ranges.Policy());
+    if (ranges.Policy().layerMode == LayerOccupancyMode::LayerSlabCoverage
+        && ranges.InputKind() != GeometryOccupancyInputKind::SingleIntervalHeightfield)
+    {
+        throw std::invalid_argument(
+            "Layer Slab compact occupancy requires SingleIntervalHeightfield input");
+    }
+    if (ranges.ColumnCount()
+        > std::numeric_limits<std::size_t>::max()
+            / kSupersample2x2Count)
+    {
+        throw std::invalid_argument(
+            "LayerOccupancyRanges column count is too large");
+    }
+    const std::size_t expectedSubsampleCount =
+        ranges.Policy().xyMode == XyCoverageMode::Supersample2x2
+        ? ranges.ColumnCount() * kSupersample2x2Count
+        : 0U;
+    if (ranges.CoverageSubsampleRanges().size()
+        != expectedSubsampleCount)
+    {
+        throw std::invalid_argument(
+            "LayerOccupancyRanges subsample count is inconsistent");
+    }
+    for (const LayerOccupancyRange& range : ranges.PrimaryRanges())
+    {
+        ValidateRange(range, ranges.LayerCount());
+    }
+    for (const LayerOccupancyRange& range :
+         ranges.CoverageSubsampleRanges())
+    {
+        ValidateRange(range, ranges.LayerCount());
+    }
+
+    for (std::size_t columnIndex{0U};
+         columnIndex < ranges.ColumnCount();
+         ++columnIndex)
+    {
+        std::pair<int, int> expected;
+        if (ranges.Policy().xyMode == XyCoverageMode::PixelCenter)
+        {
+            const LayerOccupancyRange& range =
+                ranges.PrimaryRanges()[columnIndex];
+            expected = {range.firstLayer, range.lastLayer};
+        }
+        else
+        {
+            const std::size_t sampleOffset =
+                columnIndex * kSupersample2x2Count;
+            expected = FindThresholdedRange(
+                ranges.CoverageSubsampleRanges().subspan(
+                    sampleOffset,
+                    kSupersample2x2Count),
+                ranges.Policy().minimumCoveredSubsamples);
+        }
+        if (ranges.FirstOccupiedLayers()[columnIndex] != expected.first
+            || ranges.LastOccupiedLayers()[columnIndex] != expected.second)
+        {
+            throw std::invalid_argument(
+                "LayerOccupancyRanges summary is inconsistent");
+        }
+    }
+}
+
 }  // namespace
 
 void ValidateLayerOccupancyPolicy(const GeometryOccupancyPolicy& policy)
@@ -159,6 +336,111 @@ void ValidateLayerOccupancyPolicy(const GeometryOccupancyPolicy& policy)
         && policy.minimumCoveredSubsamples != 2U)
     {
         throw std::invalid_argument("Supersample2x2 supports only 1/4 or 2/4 coverage candidates");
+    }
+}
+
+LayerOccupancyRanges BuildLayerOccupancyRanges(
+    const LayerOccupancyRequest& request)
+{
+    ValidateRequest(request);
+
+    const std::size_t columnCount{request.columns.size()};
+    LayerOccupancyRanges ranges;
+    ranges.layerCount_ = request.layerCount;
+    ranges.columnCount_ = columnCount;
+    ranges.inputKind_ = request.inputKind;
+    ranges.policy_ = request.policy;
+    ranges.primaryRanges_.reserve(columnCount);
+    for (const GeometryOccupancyColumn& column : request.columns)
+    {
+        const auto [firstLayer, lastLayer] = FindOccupiedLayerRange(
+            column,
+            request.policy.layerMode,
+            request.layerCount,
+            request.layerThicknessMm);
+        ranges.primaryRanges_.push_back(
+            LayerOccupancyRange{firstLayer, lastLayer});
+    }
+    if (request.policy.xyMode == XyCoverageMode::Supersample2x2)
+    {
+        ranges.coverageSubsampleRanges_.reserve(
+            request.coverageSubsampleColumns.size());
+        for (const GeometryOccupancyColumn& sample :
+             request.coverageSubsampleColumns)
+        {
+            const auto [firstLayer, lastLayer] = FindOccupiedLayerRange(
+                sample,
+                request.policy.layerMode,
+                request.layerCount,
+                request.layerThicknessMm);
+            ranges.coverageSubsampleRanges_.push_back(
+                LayerOccupancyRange{firstLayer, lastLayer});
+        }
+    }
+
+    ranges.firstOccupiedLayers_.assign(columnCount, -1);
+    ranges.lastOccupiedLayers_.assign(columnCount, -1);
+    if (request.policy.xyMode == XyCoverageMode::PixelCenter)
+    {
+        for (std::size_t columnIndex{0U};
+             columnIndex < columnCount;
+             ++columnIndex)
+        {
+            ranges.firstOccupiedLayers_[columnIndex] =
+                ranges.primaryRanges_[columnIndex].firstLayer;
+            ranges.lastOccupiedLayers_[columnIndex] =
+                ranges.primaryRanges_[columnIndex].lastLayer;
+        }
+    }
+    else
+    {
+        for (std::size_t columnIndex{0U};
+             columnIndex < columnCount;
+             ++columnIndex)
+        {
+            const std::size_t sampleOffset =
+                columnIndex * kSupersample2x2Count;
+            const auto [firstLayer, lastLayer] = FindThresholdedRange(
+                std::span<const LayerOccupancyRange>{
+                    ranges.coverageSubsampleRanges_}.subspan(
+                        sampleOffset,
+                        kSupersample2x2Count),
+                request.policy.minimumCoveredSubsamples);
+            ranges.firstOccupiedLayers_[columnIndex] = firstLayer;
+            ranges.lastOccupiedLayers_[columnIndex] = lastLayer;
+        }
+    }
+    ValidateRanges(ranges);
+    return ranges;
+}
+
+void MaterializeLayerOccupancy(
+    const LayerOccupancyRanges& ranges,
+    const int layerIndex,
+    const std::span<std::uint8_t> output)
+{
+    if (layerIndex < 0 || layerIndex >= ranges.layerCount_)
+    {
+        throw std::invalid_argument(
+            "Layer occupancy materialization index is out of range");
+    }
+    if (output.size() != ranges.columnCount_)
+    {
+        throw std::invalid_argument(
+            "Layer occupancy materialization output size is invalid");
+    }
+
+    std::fill(output.begin(), output.end(), 0U);
+    for (std::size_t columnIndex{0U};
+         columnIndex < ranges.columnCount_;
+         ++columnIndex)
+    {
+        output[columnIndex] = IsOutputColumnOccupied(
+            ranges,
+            columnIndex,
+            layerIndex)
+            ? 1U
+            : 0U;
     }
 }
 

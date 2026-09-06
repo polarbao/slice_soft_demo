@@ -409,6 +409,13 @@ bool SceneRasterAdapterResult::IsValid() const
 bool SceneRasterAdapterResult::IsValid(
     const api::ICancelToken* cancelToken) const
 {
+    return IsValid(cancelToken, false);
+}
+
+bool SceneRasterAdapterResult::IsValid(
+    const api::ICancelToken* cancelToken,
+    const bool layersStreamed) const
+{
     return !IsCancellationRequested(cancelToken)
         && available
         && status == "ready_for_composer"
@@ -428,7 +435,9 @@ bool SceneRasterAdapterResult::IsValid(
         && SameProtocol(
             raster.protocol,
             FixedSceneRasterProtocol())
-        && HasValidLayerSequence(raster, cancelToken);
+        // MF-05：层已逐层交出时 raster.layers 恒为空，此处跳过层序列检查。
+        // 「层数齐备」不因此失守 —— 它改由合成侧按已校验层数在层循环结束时断言。
+        && (layersStreamed || HasValidLayerSequence(raster, cancelToken));
 }
 
 std::string_view SceneRasterErrorCodeName(const SceneRasterErrorCode code)

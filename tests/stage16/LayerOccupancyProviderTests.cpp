@@ -1,5 +1,6 @@
 #include "slicer_core/geometry/LayerOccupancyProvider.h"
 
+#include <algorithm>
 #include <cstdint>
 #include <exception>
 #include <filesystem>
@@ -16,11 +17,14 @@ namespace
 {
 
 using slicer_core::BuildLayerOccupancy;
+using slicer_core::BuildLayerOccupancyRanges;
 using slicer_core::GeometryOccupancyColumn;
 using slicer_core::GeometryOccupancyInputKind;
 using slicer_core::LayerOccupancyMode;
 using slicer_core::LayerOccupancyRequest;
+using slicer_core::LayerOccupancyRanges;
 using slicer_core::LayerOccupancyResult;
+using slicer_core::MaterializeLayerOccupancy;
 using slicer_core::MakeLegacyGeometryOccupancyPolicy;
 using slicer_core::MakeLayerSlabGeometryOccupancyPolicy;
 using slicer_core::MakeLayerSlabSupersample2x2GeometryOccupancyPolicy;
@@ -296,6 +300,234 @@ bool InvalidInputsFailClosed()
     return passed;
 }
 
+bool RangeMaterializerMatchesRetainedPolicies()
+{
+    const std::vector<GeometryOccupancyColumn> columns{
+        {true, 0.0, 0.4},
+        {true, 0.1, 0.3},
+        {false, 0.0, 0.0},
+    };
+    const std::vector<GeometryOccupancyColumn> samples{
+        {true, 0.0, 0.1}, {true, 0.0, 0.2},
+        {true, 0.2, 0.4}, {false, 0.0, 0.0},
+        {true, 0.1, 0.3}, {true, 0.2, 0.3},
+        {false, 0.0, 0.0}, {false, 0.0, 0.0},
+        {false, 0.0, 0.0}, {false, 0.0, 0.0},
+        {false, 0.0, 0.0}, {false, 0.0, 0.0},
+    };
+
+    bool passed{true};
+    for (const auto policy : {
+             MakeLegacyGeometryOccupancyPolicy(),
+             MakeLayerSlabGeometryOccupancyPolicy(),
+             MakeLayerSlabSupersample2x2GeometryOccupancyPolicy(1U),
+             MakeLayerSlabSupersample2x2GeometryOccupancyPolicy(2U)})
+    {
+        LayerOccupancyRequest request;
+        request.columns = columns;
+        request.layerCount = 4;
+        request.layerThicknessMm = 0.1;
+        request.policy = policy;
+        if (policy.xyMode == XyCoverageMode::Supersample2x2)
+        {
+            request.coverageSubsampleColumns = samples;
+        }
+
+        const LayerOccupancyResult retained =
+            BuildLayerOccupancy(request);
+        const LayerOccupancyRanges ranges =
+            BuildLayerOccupancyRanges(request);
+        std::vector<std::uint8_t> materialized(columns.size(), 0U);
+        for (int layerIndex{0}; layerIndex < request.layerCount; ++layerIndex)
+        {
+            MaterializeLayerOccupancy(
+                ranges,
+                layerIndex,
+                materialized);
+            passed = ExpectTrue(
+                         materialized
+                             == retained.masks[static_cast<std::size_t>(layerIndex)],
+                         "range materializer matches retained layer")
+                && passed;
+        }
+        passed = ExpectTrue(
+                     std::equal(
+                         ranges.FirstOccupiedLayers().begin(),
+                         ranges.FirstOccupiedLayers().end(),
+                         retained.firstOccupiedLayers.begin(),
+                         retained.firstOccupiedLayers.end())
+                         && std::equal(
+                             ranges.LastOccupiedLayers().begin(),
+                             ranges.LastOccupiedLayers().end(),
+                             retained.lastOccupiedLayers.begin(),
+                             retained.lastOccupiedLayers.end()),
+                     "range bounds match retained result")
+            && passed;
+    }
+    return passed;
+}
+
+bool SupersampleRangesPreserveThresholdGaps()
+{
+    const std::vector<GeometryOccupancyColumn> columns{
+        {true, 0.0, 0.6},
+    };
+    const std::vector<GeometryOccupancyColumn> samples{
+        {true, 0.0, 0.2},
+        {true, 0.4, 0.6},
+        {false, 0.0, 0.0},
+        {false, 0.0, 0.0},
+    };
+    LayerOccupancyRequest request;
+    request.columns = columns;
+    request.coverageSubsampleColumns = samples;
+    request.layerCount = 6;
+    request.layerThicknessMm = 0.1;
+    request.policy =
+        MakeLayerSlabSupersample2x2GeometryOccupancyPolicy(1U);
+
+    const LayerOccupancyRanges ranges =
+        BuildLayerOccupancyRanges(request);
+    std::vector<std::uint8_t> output(1U, 0U);
+    std::vector<std::uint8_t> observed;
+    for (int layerIndex{0}; layerIndex < request.layerCount; ++layerIndex)
+    {
+        MaterializeLayerOccupancy(ranges, layerIndex, output);
+        observed.push_back(output.front());
+    }
+    return ExpectTrue(
+        observed == std::vector<std::uint8_t>({1U, 1U, 0U, 0U, 1U, 1U}),
+        "independent subsample ranges preserve an internal threshold gap");
+}
+
+bool GeneratedRangesMatchRetainedAcrossAllLayers()
+{
+    constexpr std::size_t columnCount{257U};
+    constexpr int layerCount{32};
+    constexpr double layerThicknessMm{0.05};
+    std::vector<GeometryOccupancyColumn> columns;
+    std::vector<GeometryOccupancyColumn> samples;
+    columns.reserve(columnCount);
+    samples.reserve(columnCount * 4U);
+    for (std::size_t columnIndex{0U}; columnIndex < columnCount; ++columnIndex)
+    {
+        const bool occupied = columnIndex % 7U != 0U;
+        const double minimumZMm =
+            (static_cast<int>(columnIndex % 23U) - 4) * 0.037;
+        const double maximumZMm = minimumZMm
+            + static_cast<double>((columnIndex * 11U) % 19U + 1U) * 0.029;
+        columns.push_back(
+            GeometryOccupancyColumn{occupied, minimumZMm, maximumZMm});
+        for (std::size_t sampleIndex{0U}; sampleIndex < 4U; ++sampleIndex)
+        {
+            const bool sampleOccupied = occupied
+                && (columnIndex + sampleIndex * 3U) % 5U != 0U;
+            const double sampleMinimumZMm = minimumZMm
+                + static_cast<double>(sampleIndex) * 0.013;
+            const double sampleMaximumZMm = std::max(
+                sampleMinimumZMm,
+                maximumZMm - static_cast<double>(3U - sampleIndex) * 0.017);
+            samples.push_back(GeometryOccupancyColumn{
+                sampleOccupied,
+                sampleMinimumZMm,
+                sampleMaximumZMm});
+        }
+    }
+
+    bool passed{true};
+    for (const auto policy : {
+             MakeLegacyGeometryOccupancyPolicy(),
+             MakeLayerSlabGeometryOccupancyPolicy(),
+             MakeLayerSlabSupersample2x2GeometryOccupancyPolicy(1U),
+             MakeLayerSlabSupersample2x2GeometryOccupancyPolicy(2U)})
+    {
+        LayerOccupancyRequest request;
+        request.columns = columns;
+        request.layerCount = layerCount;
+        request.layerThicknessMm = layerThicknessMm;
+        request.policy = policy;
+        if (policy.xyMode == XyCoverageMode::Supersample2x2)
+        {
+            request.coverageSubsampleColumns = samples;
+        }
+        const LayerOccupancyResult retained = BuildLayerOccupancy(request);
+        const LayerOccupancyRanges ranges = BuildLayerOccupancyRanges(request);
+        std::vector<std::uint8_t> materialized(columnCount, 0U);
+        for (int layerIndex{0}; layerIndex < layerCount; ++layerIndex)
+        {
+            MaterializeLayerOccupancy(ranges, layerIndex, materialized);
+            passed = ExpectTrue(
+                         materialized
+                             == retained.masks[static_cast<std::size_t>(layerIndex)],
+                         "generated compact range matches retained layer")
+                && passed;
+        }
+    }
+    return passed;
+}
+
+bool CallerOwnedBufferAndRangeErrorsAreExplicit()
+{
+    const std::vector<GeometryOccupancyColumn> columns{
+        {true, 0.0, 0.2},
+        {false, 0.0, 0.0},
+    };
+    LayerOccupancyRequest request;
+    request.columns = columns;
+    request.layerCount = 2;
+    request.layerThicknessMm = 0.1;
+    const LayerOccupancyRanges ranges =
+        BuildLayerOccupancyRanges(request);
+
+    std::vector<std::uint8_t> output(columns.size(), 0U);
+    std::uint8_t* const address = output.data();
+    MaterializeLayerOccupancy(ranges, 0, output);
+    MaterializeLayerOccupancy(ranges, 1, output);
+    bool passed = ExpectTrue(
+        output.data() == address,
+        "materializer reuses caller-owned storage");
+    passed = ExpectThrowsInvalidArgument(
+                 [&]() { MaterializeLayerOccupancy(ranges, -1, output); },
+                 "negative materialization layer")
+        && passed;
+    std::vector<std::uint8_t> shortOutput(1U, 0U);
+    passed = ExpectThrowsInvalidArgument(
+                 [&]() { MaterializeLayerOccupancy(ranges, 0, shortOutput); },
+                 "materialization output size mismatch")
+        && passed;
+
+    LayerOccupancyRequest malformedRequest = request;
+    malformedRequest.inputKind =
+        static_cast<GeometryOccupancyInputKind>(999);
+    passed = ExpectThrowsInvalidArgument(
+                 [&]() { (void)BuildLayerOccupancyRanges(malformedRequest); },
+                 "unsupported compact range input kind")
+        && passed;
+    return passed;
+}
+
+bool LegacyGeneralMeshBoundaryIsPreserved()
+{
+    const std::vector<GeometryOccupancyColumn> columns{{true, 0.0, 0.2}};
+    LayerOccupancyRequest request;
+    request.columns = columns;
+    request.layerCount = 2;
+    request.layerThicknessMm = 0.1;
+    request.inputKind = GeometryOccupancyInputKind::GeneralMesh;
+    request.policy = MakeLegacyGeometryOccupancyPolicy();
+    const LayerOccupancyRanges ranges = BuildLayerOccupancyRanges(request);
+    bool passed = ExpectTrue(
+        ranges.PrimaryRanges().size() == 1U,
+        "Legacy GeneralMesh request preserves its existing admitted boundary");
+
+    request.policy = MakeLayerSlabGeometryOccupancyPolicy();
+    passed = ExpectThrowsInvalidArgument(
+                 [&request]() { (void)BuildLayerOccupancyRanges(request); },
+                 "Layer Slab GeneralMesh remains blocked")
+        && passed;
+    return passed;
+}
+
 std::filesystem::path WriteConfig(
     const std::string& name,
     const std::string& slicingMode,
@@ -390,6 +622,11 @@ int main()
             && SupersampleCandidatesApplyPerLayerThresholds()
             && UnsupportedCandidatesFailClosed()
             && InvalidInputsFailClosed()
+            && RangeMaterializerMatchesRetainedPolicies()
+            && SupersampleRangesPreserveThresholdGaps()
+            && GeneratedRangesMatchRetainedAcrossAllLayers()
+            && CallerOwnedBufferAndRangeErrorsAreExplicit()
+            && LegacyGeneralMeshBoundaryIsPreserved()
             && CandidateConfigurationIsExplicitAndHeightfieldOnly();
         if (!passed)
         {

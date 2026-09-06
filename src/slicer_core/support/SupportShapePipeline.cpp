@@ -5,6 +5,41 @@
 namespace slicer_core
 {
 
+void SynchronizeSupportShapeTypesForLayer(
+    const std::vector<std::uint8_t>& originalSupportMask,
+    const std::vector<std::uint8_t>& optimizedSupportMask,
+    std::vector<SupportType>& supportTypeMap)
+{
+    for (std::size_t index{0}; index < optimizedSupportMask.size(); ++index)
+    {
+        if (optimizedSupportMask.at(index) == 0)
+        {
+            supportTypeMap.at(index) = SupportType::None;
+        }
+        else if (originalSupportMask.at(index) == 0
+                 && supportTypeMap.at(index) == SupportType::None)
+        {
+            supportTypeMap.at(index) = SupportType::BottomProjection;
+        }
+    }
+}
+
+void SynchronizeSupportShapeTypeMaps(
+    const std::vector<std::vector<std::uint8_t>>& originalSupportMasks,
+    const std::vector<std::vector<std::uint8_t>>& optimizedSupportMasks,
+    std::vector<std::vector<SupportType>>& supportTypeMaps)
+{
+    for (std::size_t layerIndex{0};
+         layerIndex < optimizedSupportMasks.size();
+         ++layerIndex)
+    {
+        SynchronizeSupportShapeTypesForLayer(
+            originalSupportMasks.at(layerIndex),
+            optimizedSupportMasks.at(layerIndex),
+            supportTypeMaps.at(layerIndex));
+    }
+}
+
 SupportShapeOptimizationResult ApplySupportShapePolicy(
     const SupportShapePolicy& policy,
     const std::vector<std::vector<std::uint8_t>>& modelMasks,

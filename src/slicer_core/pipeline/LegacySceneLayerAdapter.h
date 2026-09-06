@@ -7,6 +7,7 @@
 #include "slicer_core/scene/ModelInstance.h"
 
 #include <filesystem>
+#include <functional>
 
 namespace slicer_core
 {
@@ -23,6 +24,26 @@ struct LegacySceneLayerAdapterRequest
     ModelInstance instance;
     const ModelReport* modelreportoverride{nullptr};
     SliceRunProgressCallback progresscallback;
+
+    /**
+     * @brief MF-05 步骤 2：逐层出口。非空时 adapter【不再累积】raster.layers。
+     *
+     * 现状是每层 push_back 且不释放，单实例持有全部层（6 通道 + 4 张归属 mask
+     * = 10 B/列/层）。用户 0.2+0.3 @10um 实测斜率 189 MB/层，1,429 层即 270 GB。
+     *
+     * 设置本回调后每层交出即释放。返回 false 表示消费方要求中止（取消或异常），
+     * adapter 应停止产层 —— 这条是防死锁的关键：屏障失效时生产者必须能退出。
+     */
+    std::function<bool(SceneInstanceRasterLayer&&)> layersink;
+
+    /**
+     * @brief MF-05：局部栅格就绪回调，在【第一层产出之前】触发。
+     *
+     * 层屏障要按全局层号对齐，而全局栅格由各实例的局部栅格推出 —— 这构成环形
+     * 依赖。解法是先跑一个「栅格相位」：各生产者报出自己的 localgrid 后等待，
+     * 编排方据此判定对齐关系，再放行层相位。本回调即该相位的报出点。
+     */
+    std::function<void(const SceneRasterGrid&)> gridready;
 
     /** @brief Synchronous, non-owning cancellation source for this adapter run. */
     const api::ICancelToken* canceltoken{nullptr};

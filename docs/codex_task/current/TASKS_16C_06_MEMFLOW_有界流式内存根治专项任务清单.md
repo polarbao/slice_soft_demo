@@ -1,0 +1,1289 @@
+# TASKS_16C-06-MEMFLOW 有界流式内存根治专项任务清单
+
+> 文档状态：**ACTIVE / 两项原始阻塞均已实测解除 / 余 MF-03X2b、MF-07、MF-08（均非阻塞）**
+> 版本：v4.3 ｜ 日期：2026-09-06
+> 定位：Stage 16C-06 的唯一原子任务状态真源；承接 12F-06 和 13B-05 流式化债务
+> 决策：`docs/slice/DOC/DOC_DECISION_16C_06_MEMFLOW_有界逐层流式内存根治.md`
+> 方案：`docs/slice/DEV/DEV_16C_06_MEMFLOW_有界逐层流式切片设计.md`
+> B4B 准备：`docs/slice/DOC/DOC_PREP_16C_06_MEMFLOW_MF_03B4B_材料最终重放实施准备.md`
+
+---
+
+## 1. 固定边界
+
+```text
+不改 p0.rgbwsv.2 / RGBWSV / uint8 / black_is_print
+不改 Legacy/S0/P0 默认语义，不解锁 16B-04 / 16D-05
+不改 SPI v1、11 导出、15 能力、Worker 文件合同
+不默认启用 OpenVDB，不引入第三方依赖
+先 Dense Streaming，再多实例 Barrier，最后 Sparse
+任何输出漂移都停止扩大接入并保留 Retained Dense
+正式设备 SLA/内存上限缺失时最终 production Gate 保持 INPUT_OPEN
+```
+
+## 2. 状态表
+
+| 卡号 | 任务 | 状态 | 依赖 | 完成日期 |
+|---|---|---|---|---|
+| MF-00 | 决策、方案、准备、数据上下文同步 | COMPLETE | 用户授权 | 2026-08-18 |
+| MF-01 | RasterMemoryBudget 估算与路由纯合同 | COMPLETE | MF-00 | 2026-08-18 |
+| MF-02 | Owned Layer Producer/Sink 合同 | COMPLETE | MF-01、MF-02/03 准备补充 | 2026-08-18 |
+| MF-03A | Occupancy Range/单层 Materializer | COMPLETE | MF-02 | 2026-08-18 |
+| MF-03B1 | Range-derived Support Demand 与 caller-owned pre-shape 单层物化 | COMPLETE | MF-03A、B1 合同 Gate | 2026-08-19 |
+| MF-03B2 | Geometry/outer-boundary 与 unsupported discovery 扫描 | COMPLETE | MF-03B1、B2 retained oracle Gate | 2026-08-20 |
+| MF-03B3 | Shape/footprint 扫描、compact report 与 replay digest | COMPLETE | MF-03B2、重放 Gate | 2026-08-21 |
+| MF-03B4A | Verified support/BaseProjection/outer-varnish 最终重放 | COMPLETE | MF-03B3、B4A 准备 Gate | 2026-08-21 |
+| MF-03B4B | Material/Stage 15/closure 最终重放 | PREPARED | MF-03B4A COMPLETE、B4B 组合 Gate | - |
+| MF-03X1 | 主循环有界接线·表面光油容器（逐层独立） | COMPLETE | MF-03B4B 接口接线 | 2026-09-04 |
+| MF-03X2a | 主循环有界接线·**用户阻塞配置**（bottom_projection，无岛/无形状/无光油） | COMPLETE `6787930` | MF-03X1、MF-03B1、MF-03A | 2026-09-04 |
+| MF-03X2b①| 准入放开·full vertical projection | COMPLETE（四判据逐字节全等） | MF-03X2a | 2026-09-06 |
+| MF-03X2b②| 准入放开·shape 档 | **DEFERRED / 已定责**：见 9.6，收益只剩一半且需求面窄 | MF-03X2b① | - |
+| MF-03X2b②-0 | shape 档前置：堵静默空转 + 消除逐字副本 + 补对拍盲区 | COMPLETE（不改行为） | MF-03X2b① | 2026-09-06 |
+| MF-03X2b | 主循环有界接线·支撑耦合簇全模式（岛发现 + 形状 + 光油） | PREPARED / 范围待估算 | MF-03X2a、B2/B3/B4A | - |
+| MF-03X3 | 稀疏列剪枝·compose 与内部空腔（用户 2026-09-05 提出耗时优化） | COMPLETE（第一批） | MF-03X2a | 2026-09-05 |
+| MF-03X4 | 按幅面固定开销清理·relief_columns 归还与 compose 缓冲稀疏重置 | COMPLETE `5c6b8b7` | MF-03X3 | 2026-09-05 |
+| MF-03X5 | 通道统计稀疏化（空列份额解析补齐） | COMPLETE `b8e082e` | MF-03X4 | 2026-09-06 |
+| MF-04 | 单实例流式 Staged Package | **COMPLETE**（补测试时顺带修掉一处 Begin 阶段越界，见 8.2） | MF-03B4A/B COMPLETE | 2026-09-06 |
+| MF-05 | 多实例 Global Layer Barrier | **COMPLETE** `7d7a627`（峰值与层数脱钩） | MF-03X2a | 2026-09-06 |
+| MF-06 | Sparse Tile/Span 显式候选 | **已跳过**（用户 2026-09-04 同意；X3 稀疏列剪枝已取走核心收益） | MF-05 | - |
+| MF-07a | Worker 权威内存 telemetry | COMPLETE（此前硬编码为 0） | MF-05 | 2026-09-06 |
+| MF-07b | Host 停止伪造 telemetry | **COMPLETE**（前半不再伪造 available；后半两类数据分区展示） | MF-07a | 2026-09-06 |
+| MF-07c | 峰值预估器（纯函数） | COMPLETE（四实测点全部高估覆盖） | MF-07a | 2026-09-06 |
+| MF-07d | 预算字段与开始前路由 | TODO —— 接生产前须先有多材质大幅面实测点 | MF-07c | - |
+| MF-07e | 消除场景路径中途回退 | **CLOSED**：验收已实质满足，见 11.4 | MF-05 | 2026-09-06 |
+| MF-08 | 真实模型、RIP、恢复与性能收口 | PENDING / INPUT OPEN | MF-07、设备输入 | - |
+
+## 2.1 当前可继续的任务（2026-09-06 盘点）
+
+> 盘点口径：以 git 提交为准核对，而非沿用表内旧状态 —— 本次盘点前
+> MF-03X2a 与 MF-03X4 已完成却仍标 PREPARED，MF-05 的六个子步骤也未反映。
+
+### A. 直接解除用户阻塞（最高优先）
+
+| 任务 | 内容 | 剩余量 | 收益 |
+|---|---|---|---|
+| **MF-05 步骤4 第二步** | 写入侧流式：能力摘要改用合成统计 + 服务接线 | 两处改动 + 一轮验证 | 双模型峰值 130 GB -> 百 MB 级，**用户双模型可用** |
+
+这是本专项唯一还在「直接失败」的问题。前置全部就位（写入会话、合成逐层出入口、
+补齐与写出分离），且已确认能力摘要不必新造统计（见 9.5.5）。
+
+### B. 收益明确但不解阻塞
+
+| 任务 | 内容 | 剩余量 | 收益 |
+|---|---|---|---|
+| MF-03X5 | 通道统计稀疏化 | 一处改动 + 一轮验证 | 单模型耗时再降约 1/3 的一份整幅面往返 |
+| MF-03X2b | 支撑耦合簇全模式（岛发现/形状/光油档） | 未估算 | 让这些档也享受 X2a 的内存收益 |
+
+MF-03X5 的风险已登记：改错会让通道统计**悄悄偏差**而非报错，需单独一轮验。
+
+### C. 专项收口类
+
+| 任务 | 内容 | 说明 |
+|---|---|---|
+| MF-03B4B | Material/Stage 15/closure 最终重放 | 接口已接线（`77b19cf`），主体未做 |
+| MF-04 | 单实例流式 Staged Package | **范围已重定义**：CLI 路径本就逐层流式，本卡只剩原子发布/staging 语义，而那已由写入器 session 化（`46fedc2`）覆盖大半 |
+| MF-06 | Sparse Tile/Span | 用户 2026-09-04 已同意跳过；X3 的稀疏列剪枝已取走其核心收益 |
+| MF-07 | 自适应生产路由与 Telemetry | 需先有 MF-05 完整落地作为路由目标 |
+| MF-08 | 真实模型/RIP/恢复/性能收口 | INPUT OPEN：正式设备 SLA 与内存上限仍缺 |
+
+### D. 建议顺序
+
+```text
+[x] MF-05 步骤4 第二步     已完成，双模型阻塞解除
+[x] MF-03X5               已完成
+[x] MF-03X2b 第一档        full vertical projection 已放开
+1   MF-07                 自适应生产路由，MF-05 已提供路由目标
+2   MF-03B4B 主体
+3   MF-03X2b shape 档      **需先定剪枝策略，见下**
+4   MF-08                 待设备输入
+```
+
+**MF-03X2b shape 档已定责暂缓，不是遗漏。** 只读静态查证确认 R-8 成立
+且比预判严重（详见报告 §5.12.2）：有邻域写入的是四项运算而非只有膨胀；
+后果是「输出少一圈 + 缓冲永久残留 + 统计逐层放大」，一少一多会互相掩盖。
+放开前必须先选定剪枝策略，推荐 (a) shape 档一律不剪枝 —— 无需等价性论证，
+且保留 X2a 的全部收益。`base_projection` 与 `outer_varnish` 两档属于
+「要先有有界替代品」，与 shape 档不同类，本轮未评估。
+
+**顺序已变：** 原表把 MF-03X2b 排在 MF-07 之后（理由是「非阻塞」）。
+现在阻塞项已清空，改按「风险早暴露」排 —— X2b 要动的是支撑几何的准入判据，
+是本专项剩余项里唯一还可能产生逐字节漂移的一项，宜先做完再谈路由。
+
+### E. 原始阻塞验收（2026-09-06）
+
+本专项由两项真实生产阻塞发起，两项均已实测解除：
+
+| 阻塞 | 改前 | 现在 |
+|---|---|---|
+| `a-2/0.2.obj` @10um 耗时约 20 分钟 | 18.9 分钟 / 22~34 GB | **9.44 分钟 / 0.84 GiB** |
+| `0.2.obj`+`0.3.obj` @10um 内存不足失败 | 外推 270 GB，**必然失败** | **`valid=1` / 1.91 GB / 31.3 分钟** |
+
+验收口径的边界（耗时无改前对照、峰值取工作集为上界、单次运行未做 min-of-N）
+见报告 §5.11.4。
+
+---
+## 3. MF-00 文档与上下文同步
+
+**目标：** 把对话中的根因、范围、顺序、风险、数据同步和验收转为仓库真源。
+
+**出口：**
+
+```text
+Decision、DEV、PREP、TASKS、执行指令、状态报告互链；
+Stage 16 总任务把 16C-06 指向本清单；
+docs/slice、docs/codex_task、AGENTS Active Work Entry、project profile 状态同步；
+不覆盖并行 RIPFLOW 改动。
+```
+
+## 4. MF-01 RasterMemoryBudget 纯合同
+
+**目标：** 用溢出安全纯函数估算主要 Raster 内存下界，并只在能力已实现时选择 Bounded 路由。
+
+**实现：**
+
+```text
+新增 RasterMemoryBudget.h/.cpp；
+route = retained_dense | bounded_dense_stream | blocked；
+预算 0 保持 retained_dense；
+估算只覆盖 RGBWSV + 调用方声明的 Mask 字节；
+不接入 Production Service，不改变当前作业行为。
+```
+
+**验收：**
+
+```text
+无效维度/实例/窗口 fail closed；
+全部 uint64 乘加防溢出；
+小 Grid 在预算内选择 retained；
+123 大 Grid 在 4 GiB 预算且 bounded 能力可用时选择 bounded；
+能力不可用或窗口仍超预算时 blocked；
+Release 定向 CTest PASS。
+```
+
+**实际结果（2026-08-18）：** 新增 `RasterMemoryBudget` 纯 C++20 合同和独立 CTest。预算未设置
+时保持 `retained_dense`；只有显式声明 Bounded 能力并且窗口估算在预算内时才选择
+`bounded_dense_stream`，否则 `blocked`。全部乘加执行 `uint64_t` 溢出检查。对观测 Grid
+5197 x 1418 x 141、4 B/pixel Mask、三层窗口的估算为：Retained RGBWSV
+6,234,466,716 B、主要 Raster 下界 10,390,777,860 B、Bounded 窗口 221,080,380 B；在
+4 GiB 预算下选择 Bounded 候选。独立用例 8/8 PASS，Release CTest 1/1 PASS。该合同尚未接入
+Production Service，不改变当前作业路径。
+
+## 5. MF-02 Owned Layer Producer/Sink
+
+**目标：** 建立同步、拥有语义、可背压的内部 Layer 合同；测试消费，不切生产路由。
+
+**验收：** 层 buffer 地址可移动、层序/取消/消费者失败明确、旧 const callback 保持兼容。
+
+**准备补充：** `DOC_PREP_16C_06_MEMFLOW_MF_02_03_开发准备补充.md` 已冻结 callback 互斥、
+最后读取后移动、owned 模式禁止 producer 写出、稳定错误映射、同步背压和部分结果清理。
+
+**实际结果（2026-08-18）：** Legacy 新增同步 owned callback 和稳定
+`Accepted/Cancelled/Failed` 结果；旧 const callback 保持兼容，两者互斥。owned payload 只在 producer
+最后读取后移动，owned + producer 写出、Global 路由和非法组合均提前拒绝。Legacy Scene Adapter
+改用移动交接，并在取消/失败/异常时清除部分层；非法消费者状态稳定映射为 `Failed`。独立用例
+7/7、Release CTest 1/1 PASS；既存
+scene adapter 平移断言仍为修改前相同的 1 项失败，其余 11 项 PASS。
+
+## 6. MF-03A Occupancy Range/单层 Materializer
+
+**目标：** `LayerOccupancyProvider` 保存 primary/四个 subsample 的独立层区间，并物化到调用方提供的
+单层 buffer；旧完整 Mask 实现保留为独立 Retained 对照，不接生产路径。
+
+**验收：** S0/S3/S4 全层零差异，非连续阈值不被 min/max 填平，buffer/层号错误 fail closed。
+
+**实际结果（2026-08-18）：** 新增 primary/四 subsample 独立 compact ranges 与 caller-owned 单层
+materializer；range DTO 构造后不可变并仅在构建时完整校验，热路径不再逐层重复全量校验。
+S0/S3/S4 对独立 Retained 实现逐层逐字节相等，阈值内部空洞保留，调用方 buffer 地址复用。
+非法层号、buffer 尺寸、input kind 和 Layer Slab GeneralMesh 均 fail closed；新增 257 列 x 32 层
+确定性生成对照。Release 构建及 `stage16_layer_occupancy_provider_tests` PASS；该 API 尚未接入生产路径。
+
+## 7. MF-03B Support/varnish/material 多遍重放
+
+完整 MF-03B 继续保持未准入，并拆为 MF-03B1..B4。MF-03B1 只建立由既有层范围事实驱动的
+Support Demand 纯合同和调用方持有的 pre-shape 单层物化；不检测岛、不执行 shape/baseProjection/
+varnish/material，不接 `run_slicer`。MF-03B2..B4 的遍次和语义边界以开发准备补充文档为准。
+
+**MF-03B1 验收：** 四类 pre-shape 支撑开闭区间和优先级与独立 brute-force 对照全层零差异；
+General Mesh、错误范围、错误层号或 buffer 尺寸 fail closed；重复物化确定且复用调用方 buffer；
+Release 定向测试和 MF-03A 回归通过。
+
+**MF-03B1 实际结果（2026-08-19）：** 新增 move-only `BoundedSupportDemandPlan`、双输入 Mask 的
+caller-owned 单层物化和公共 `SupportTypePriority`；计划构建期完整校验事实，逐层热路径无分配，
+输入/输出任意字节区间重叠、非二值 Mask、错误边界及 General Mesh 均 fail closed。257 x 32
+确定性 heightfield 对 retained 四阶段循环逐层比较，Mask/Type 零差异；输出复用、强异常边界和
+计划持有事实均有独立用例。Release `/W4 /WX` 构建通过，MF-03B1、MF-03A、MF-02 CTest 3/3
+PASS，既有 support shape 11/11 PASS，`slicer_cli` 链接通过。新合同未接 `run_slicer`，生产仍为
+Retained Dense。
+
+**MF-03B2 准备裁决（2026-08-19）：** B2 仅新增两个顺序、bounded、非生产合同：P1 逐层把
+model 物化为 outer-varnish/upper-boundary 并累计 `upperBoundaryLastLayer`；P2 使用 B1 的
+lower/full/upper preliminary support、previous model 与当前 model 检测 unsupported island，输出
+逐列 `unsupportedTopExclusiveLayer` 和逐源层事件摘要。P2 的 previous base 禁止包含此前发现的
+unsupported、InternalVoid、Shape、BaseProjection 或 varnish。调用方中止时不得 Finish 半结果；
+General Mesh、乱序层、错误 Mask/Policy 均 fail closed。B2 不接 `run_slicer`，不改变 retained 生产。
+
+**MF-03B2 实际结果（2026-08-20）：** 新增 move-only P1/P2 顺序 scanner。P1 使用调用方复用的
+outer/upper buffer，按 retained 的 8 邻域外部空域与物理椭圆膨胀生成同层 outer varnish，并只保留
+逐列 upper-boundary last；P2 仅从 B1 preliminary plan 重放 Bottom/Full/Upper previous support，输出
+compact unsupported top 与逐源层事件。独立 dense retained oracle、4/8 连通、严格 overlap/area
+阈值、previous-base 排除域、乱序/提前 Finish/非二值/别名/GeneralMesh/upper 包含 model 均通过。
+两个 `ConsumeLayer` 热路径由分配计数验证为零堆分配。Release Ninja 核心源和测试 `/W4 /WX`
+构建通过；B2/B1/03A/02 与 outer-varnish CTest 5/5 PASS，support shape 11/11 PASS，`slicer_cli`
+链接并报告 `0.2.0-dev`。新 scanner 仅由测试引用，未接 `run_slicer` 或 Production Service。
+
+**MF-03B3 准备裁决（2026-08-20）：** B3 只实现非生产 P3 scanner。固定顺序为 B1 final plan
+逐层物化、InternalVoid、Shape、SupportType 同步、post-shape footprint OR、canonical replay digest；
+禁止提前执行 BaseProjection、outer/surface varnish priority、最终统计、material/closure 或写包。
+InternalVoid 与 Shape 完全沿用 retained 的连通、阈值、操作顺序、回滚和报告口径；报告通过同步 sink
+逐层交接且不保留 component pixel 列表。Result 仅保留 O(XY) footprint、逐层固定长度 digest 和总计。
+错误输入必须在状态修改前 fail closed，同层可修正重试；未完整消费不得 Finish。B3 不接
+`run_slicer`、Production Service、Profile、SPI 或 Worker。
+
+**MF-03B3 实际结果（2026-08-21）：** 新增 move-only `BoundedSupportShapeScanner`，按冻结顺序执行
+B1 final demand 单层物化、InternalVoid、retained Shape、SupportType 同步、post-shape footprint 和
+canonical SHA-256 replay digest。compact report 通过同步 sink 交接且不保存 component pixel 列表；
+Result 只保存 O(XY) footprint、逐层 32-byte digest 和 totals。错误层序、尺寸、非二值、别名、
+GeneralMesh、提前 Finish 均 fail closed；sink 异常会终止 scanner 且不提交 caller output。
+独立 retained oracle 对 support/type/footprint/compact report 字段全等；mask-only 热路径零分配、
+caller buffer 地址复用、固定 canonical digest golden 及 input/policy 域覆盖通过。重复 Finish、Finish 后
+Consume 和失败 sink 后继续调用均 fail closed。
+Release `/W4 /WX` 构建通过；B3/B2/B1/03A/02 与 outer-varnish CTest 6/6 PASS，既有 support shape
+11/11 PASS，`slicer_cli --version` PASS。新 scanner 未接 `run_slicer`、Production Service 或应用；
+生产仍为 Retained Dense。
+
+**完整验收：** S0/S3/S4、support/type/baseProjection/varnish、Stage 15/closure 逐层 diff=0；
+真实模型不减少连通分量或支撑连续层。
+
+**MF-03B4A 准备裁决（2026-08-21）：** B4A 只实现非生产 verified support final replay：复用 B3
+canonical 路径在 caller output 前逐层校验 digest；随后按 B3 footprint 应用 BaseProjection，保留
+`prepend_below_model` 前 N 层 type 覆盖；再按 outer-varnish priority 清 support/type 并输出 cleared
+overlap evidence；最后累计 final support/type/connectivity。Result 不保留 layer x pixel 栈，不接
+`run_slicer`、Production Service、Profile、SPI、Worker、TIFF、preview 或 report 文件。
+
+**MF-03B4A 验收：** disabled/overlay/prepend/clamp/model priority/type 覆盖、Base 后 varnish 清理、
+cleared evidence、final totals/connectivity 与独立 retained oracle 逐层零差异；identity/digest、层序、
+尺寸、二值、别名、sink/Finish/cancel fail closed；caller buffer/scratch 复用；Release MEMFLOW、outer
+varnish、support shape 与 CLI 回归通过，生产未接线。
+
+**MF-03B4A 实际结果（2026-08-21）：** 新增 non-production
+`BoundedSupportFinalReplayScanner`。B3 replay identity 现包含 B1 final plan 的 canonical SHA-256，
+verified Consume 在内部 report sink、caller output 和状态提交前校验逐层 digest；通过后严格执行
+BaseProjection、outer-varnish support/type 清理及 final support/type/connectivity 扫描。逐组件
+area/bbox 仅以同步 span 交接，Result 只保留 Base summary 与 O(1) totals，不保留 layer x pixel 栈。
+独立用例 10/10 覆盖 disabled/overlay/prepend/clamp/model priority、dense Base oracle、4/8 连通、
+identity/digest、生命周期、别名/二值/尺寸、sink 异常与 caller buffer 地址复用。Release `/W4 /WX`
+目标构建通过；MF-02/03A/03B1/03B2/03B3/03B4A + outer-varnish CTest 7/7 PASS，既有 support shape
+11/11 PASS，`slicer_cli --version` 报告 `0.2.0-dev`。全仓生产引用检查为空，未写 Package/RIP，
+生产仍为 Retained Dense。
+
+**MF-03B4B 准备裁决（2026-08-21）：** B4B 独立消费 B4A 同层结果，顺序固定为 compose -> Stage 15
+white carrier -> closure exact -> optional repair -> re-detect -> repair 后 channel/semantic/material totals。
+被 outer varnish 清掉的 support 只恢复进 closure `supportRequiredMask`，不进入 final support stats。
+B4B 不写包、不接生产；只有 B4A COMPLETE 后才可单独开工。
+
+**MF-03B4B 准备补充（2026-08-21）：** 多 Agent 只读审计发现原准备未冻结 public DTO、facts
+identity、caller output 提交时机、取消/错误状态机及 closure workspace，先判定 NO-GO 并补充专项 PREP。
+现已冻结 retained canonical helper 提取、11 个 semantic mask、canonical digest、sink 成功后提交、销毁式
+取消、固定 workspace/热路径零分配、独立 retained oracle 和 Release 组合 Gate，结论转为
+`PREPARED / IMPLEMENTATION GO`。Stage 15 保留 retained eligible-branch 语义，MaterialPolicy/texture/
+Stage 15 counter 保留 compose-time 口径；生产仍为 Retained Dense。
+
+## 7.1 MF-03X 主循环有界接线
+
+来源：`docs/slice/REPORT/REPORT_16C_06_MEMFLOW_主循环接线可行性探查_2026_09_04.md`。
+
+该探查推翻两个此前认知：`slicer_cli` 的 TIFF 输出**早已逐层流式**（故 MF-04 的
+内存收益不成立，其范围重定义为原子发布/staging 语义），真正瓶颈是七个 mask
+整栈驻留 —— 10um 场景下合计 **72.62 GB**，而三层窗口只需 156 MB。
+
+**故 MF-03X 是接线工作，不是新能力开发**：B1/B2/B3/B4A/B4B 的有界替代品全部
+已 COMPLETE 且各有 retained oracle，但此前没有一处接进 `slicer.cpp` 主循环。
+
+### MF-03X1 表面光油容器（COMPLETE，`0d2a1bf`）
+
+**目标：** `outer_surface_masks` / `inner_surface_masks` 由全层构建改为按层物化。
+
+**选它作起点的理由：** 该算法逐层独立 —— 每层只读本层 model mask，层间无依赖，
+故**不涉及** MF-03B2「悬空岛向下回写」那类时序等价风险；两容器各只有 4 个使用点。
+
+**验收（已通过）：**
+
+```text
+零漂移  默认路径 94 层 3cbfdec213cfcf1a3397cfd1860c5baa7bc649b669249eddc2238f0b4f363b5f
+        与长期基线一致
+        gubao04 六材质 129 层 8315b63c42e3f6a90faef6aa693f4d9f3443e95af1245268b86d8cf812a2aee1
+        与接线前逐字节一致
+门禁    接线净增 127 行，同步下沉表面光油几何簇后净减 137 行（5,988 行）
+        注：slicer.cpp 早在 642d29e 已登记 G2 豁免，门禁两种情况都会 PASS，
+        下沉并非门禁所迫；但该豁免 reason 只覆盖 MATOPQ，不含 MEMFLOW，
+        故本专项不依赖它，坚持每次接线同步下沉（见报告 §6 第 3 条）
+```
+
+**收益界定（不可夸大）：** 这两个容器仅在 `surface_varnish.enabled` 时分配，而该
+字段**默认 false**。用户的 10um 阻塞配置未开启表面光油，故本卡**对该阻塞场景收益
+为零**。它的价值是给开启光油的工艺（多图层透明→光油等预设）拆掉这个天花板。
+详见探查报告 §3.1。
+
+**副产物（后续共同前置）：** `geometry/SliceGridSpec.h` 提出 `GridSpec` 与
+`mask_index`。它们原在 `slicer.cpp` 匿名命名空间内，是**所有** mask 构建函数的
+共同参数类型；提头后，后续任何 mask 构建函数下沉都不再需要先解决符号共享。
+
+**同时删除：** 全层版 `BuildSurfaceVarnishMasks()` 与 `struct SurfaceVarnishMasks`
+—— 接线后已无调用者。原注释称「保留作零漂移对照」，但无人引用，留着只是负债。
+
+### MF-03X2 支撑耦合簇
+
+**范围：** `model_masks`、`support_masks`、`support_type_maps`、
+`outerVarnishMasks`、`upperBoundaryMasks`。
+
+**为什么不能继续「逐容器替换」：** 这六个全部通过一个整栈进、整栈出的函数耦合：
+
+```cpp
+// slicer.cpp:2031
+SupportGenerationResult generate_support_masks(
+    ..., const std::vector<std::vector<std::uint8_t>>& model_masks,
+         const std::vector<std::vector<std::uint8_t>>& upper_boundary_masks, ...);
+```
+
+且 `model_masks`（41 处引用）、`support_masks`（19 处）、`support_type_maps`
+（12 处）**各有恰好一处** `.at(target_layer)`，都落在同一个悬空岛向下回写循环内。
+只换其中之一，那处回写就会失去其余两者的整栈视图。
+
+**故替换单元不是「容器」，而是「把 `generate_support_masks` 整体改走
+B1/B2/B3/B4A 的有界路径」。** 工作量不可按 MF-03X1 线性外推。
+
+**验收：** 沿用 §5.2 判据 —— 三项零漂移全等 + `a-2/0.2.obj` @10um 的
+`peakWorkingSetBytes` 由 22~34 GB 降至百 MB 级 + `model/stl/suoguo-baseline/`
+八项既有基线不上升。
+
+#### MF-03X2a 用户阻塞配置（PREPARED / 解除阻塞关键路径）
+
+**为什么可以先只做这一档：** 逐项核对用户 `a2_probe.json` 配置下的实际激活项后
+发现，本卡涉及的三个耦合难点**在该配置下全部不激活**：
+
+| 难点 | 守卫条件 | `bottom_projection` 下 |
+|---|---|---|
+| `.at(target_layer)` 悬空岛向下回写 | `placement_policy.unsupported_only_enabled` | **false**（`support_mode_includes_unsupported()` 只认 `unsupported_only` 与 `bottom_projection_plus_unsupported`） |
+| 支撑形状优化整栈进出 | `support_shape_policy.enabled` ← `shape_enabled` | **false**（`config.h:312` 默认 false，探针未设） |
+| `outerVarnishMasks` / `upperBoundaryMasks` | 光油离散化 / `includes_outer_varnish_shell` | **false**（探针未配 `outerVarnish`） |
+
+**故该配置下不存在任何无界随机访问。** 剩余的向下遍历只有 bottom-projection 的
+`for (layer_index in [0, lower_layer))`，它是**按列**的 —— 每列填到该列最低模型层，
+是 `support_source_layers` / `column_ranges` 的纯函数，而这两个归约主循环**已在算**。
+
+**关键推论：本档不需要 B2/B3，故报告 §6 第 1 条「B2 时序等价是最大风险」在本档
+不适用。** 所需能力是 MF-03B1（Range-derived Support Demand）+ MF-03A
+（LayerOccupancyProvider）—— 两者均已 COMPLETE。
+
+**目标：** 该配置下 `model_masks` / `support_masks` / `support_type_maps` 三个整栈
+（31.11 GB）改为按列区间推导 + 按层物化。
+
+**验收：**
+
+```text
+零漂移  三项既有判据全等（默认路径 94 层 / gubao04 129 层 / tm2-5 全通道）
+        —— 注意默认路径与 gubao04 均为 bottom_projection，本档直接覆盖
+阻塞    a-2/0.2.obj @10um 的 peakWorkingSetBytes 由 22~34 GB 降至百 MB 级，
+        totalMs 由 20~31 分钟显著下降（换页消失）
+        0.2.obj + 0.3.obj 双模型不再内存不足（若仍不足则需 MF-05 Barrier）
+回归    model/stl/suoguo-baseline/ 八项既有基线（2,658~3,316 MB）不得上升
+守卫    非 bottom_projection 配置必须仍走 retained 路径，按 mode fail-safe 分流，
+        不得把未验证的有界路径应用到岛发现/形状/光油档
+```
+
+#### MF-03X2b 全模式（PREPARED / 范围待估算）
+
+**范围：** X2a 之外的档 —— `unsupported_only`、
+`bottom_projection_plus_unsupported`、`full_vertical_projection`、
+形状优化开启、两种光油开启。
+
+**最大风险：** B2 时序等价。「先全层 preliminary support、再顺序发现岛并向低层
+回写」的时序必须逐字节等价，否则支撑连通性会变。B2 已有 retained oracle，但
+**接线时的调用顺序**仍需逐层 digest 比对。
+
+## 7.2 MF-03X3 稀疏列剪枝（COMPLETE 第一批）
+
+**来源：** 用户 2026-09-05 提出「切片时间仍太久，20 分钟完成一次」。
+
+**先测再改。** 层循环内插临时子计时器，用 a-2/0.2.obj @0.1mm（143 层，
+7,369,346 列）取分布：`compose_layer` 55.9%、内部空腔洪泛 32.5%，两者占 88%。
+
+**根因：** `relief_report` 实测只有 **186,103 列（2.53%）**有模型，
+其余 97.47% 在任何一层都既无模型也无支撑，而每层每一遍都扫满幅面。
+包围盒剔除无效 —— 模型 bbox 就是整块幅面，它只是稀疏。
+
+**判据（精确等价，非近似）：** `compose_layer` 的分支链没有末尾 else，
+三个 mask 皆零的列不写任何字节。活动表须覆盖三者并集，且**不能**简单取
+「有模型的列」—— 面内被围住的空腔（环形件孔心）在所有层都无模型却要写支撑。
+`BuildBoundedActiveColumns` 改按「无模型且能经无模型列连到边界」排除。
+
+**效果（a-2@0.1mm）：** `layerComputeMs` 101,014 -> 46,726（-53.7%），
+`totalMs` 106,585 -> 52,145（-51.1%）。三判据逐字节全等。
+
+**一处反直觉发现：** 只做剪枝而不复用缓冲，内部空腔耗时几乎不降 ——
+真正的开销是每层新建两个 7.37 MB 缓冲。**按幅面计的固定开销与按占用计的
+工作量是两笔账**，只算后者会得出错误结论。
+
+## 7.3 MF-03X4 按幅面固定开销清理（PREPARED）
+
+**范围：** 同类「每层新建整幅面缓冲」还剩三处，合计仍占每层约 300 ms：
+
+```text
+compose_layer 的输出缓冲       每层新建 w*h*6 = 44.2 MB，当前最大单项
+model / support 单层物化       每层 std::fill 整幅面后只写活动列
+analyze_support_connectivity   每层新建 w*h 的 visited
+                               （已下沉为 support/SupportConnectivityAnalysis 备改）
+```
+
+**改法：** 与 MF-03X3 第 3 点相同 —— 缓冲跨层复用、每层只重置活动列。
+
+**未做原因：** 本轮先交付已验证的部分，不是判断它们不值得做。
+
+**验收：** 沿用零漂移四判据 + a-2/0.2.obj @10um 的 totalMs 继续下降。
+
+## 8. MF-04 单实例流式 Package
+
+> **范围已重定义（2026-09-04）。** 探查报告实测 `slicer.cpp:5364` 的
+> `WriteRgbwsvProductionLayerTiff` 位于层循环【内部】，`layer` 为本层局部变量、
+> 写完即释放，`RgbwsvProductionLayerView` 只持 `std::span` 不拷贝 ——
+> **`slicer_cli` 的生产路径早已逐层流式，不累积。**
+> 原描述「Writer 累积全部层后逐层写」只对整包发布入口
+> `WriteRgbwsvProductionPackage` 成立，CLI 不经过它。
+> 故本卡的**内存收益不成立**，价值重定义为「原子发布与 staging 语义」。
+> 内存收益由 MF-03X 承担。
+
+**目标：** 单实例 full-grid 从 Producer 逐层进入 staging Writer，取消与故障不发布半包。
+
+**验收：** TIFF/manifest/report/preview/RIP strict 与 Retained Dense 全等；取消和 Writer 故障不发布
+半包。~~Peak Working Set 明显下降~~ —— 该判据移交 MF-03X2。
+
+### 8.1 复核：功能已由 MF-05 覆盖，缺的是测试（2026-09-06）
+
+逐条对验收：
+
+| 验收项 | 现状 |
+|---|---|
+| 逐层进入 staging Writer | **已实现**：`RgbwsvProductionPackageSession` 的 Begin/AppendLayer/Finish 三段，MF-05 已把它接进场景路径并默认启用 |
+| 输出与 Retained Dense 全等 | **已验证**：四判据逐字节全等，digest 与长期基线相同 |
+| 故障不发布半包 | **已实现**：会话未 Finish 即析构时 RAII 回滚清 staging；MF-05 期间顺带修掉「`Finish()` 从未置 `State::finished`，成功发布后析构仍跑一遍恢复」这处遗漏 |
+| 取消不发布半包 | **行为已存在但缺专门测试**。MF-05 定位那十一项回归时，整条因果链的末端正是「包写一半被协作式取消 -> 会话 RAII 回滚清 staging -> 包从未发布」—— 那次是被误触发的，但它反过来证明该语义确实生效 |
+
+**故本卡的剩余工作只有一项：补两个专门测试**（作业中途取消、Writer 故障注入），
+把上表最后两行从「被一次误触发间接证明」变成「被断言直接钉住」。
+不补也不影响现有功能，补了才能把这张卡关掉。
+
+### 8.2 补测试时撞到一处真实缺陷（2026-09-06，本卡 COMPLETE）
+
+先说一个查证结果：**`RgbwsvProductionPackageSession` 此前在测试里零覆盖。**
+它是 MF-05 引入并【默认启用】的逐层发布入口，却只被场景路径的端到端用例
+间接带到过。补测试的第一个动作就是给它写直接用例。
+
+新增两条：
+
+| 用例 | 钉住什么 |
+|---|---|
+| `abandoned_session_publishes_nothing` | 写一半层后**不调用 Finish** 直接析构 -> 不得留 manifest、不得留任何 `package.staging.*` 目录 |
+| `finished_session_survives_destruction` | 正常 Finish 后包已发布；**并在会话析构之后**才检查产物，从而一并钉住「成功 Finish 后析构不再回滚」——那正是 MF-05 顺带修掉的 `State::finished` 遗漏 |
+
+#### 缺陷：Begin 阶段会按 `grid.layerCount` 遍历空的 `request.layers`
+
+第一条用例照生产用法写（逐层路径不预置整栈，`request.layers` 清空），
+一跑就是 `0xc0000409`。查下去是真缺陷，不是用法不当：
+
+```text
+会话构造 -> ValidateRequest(request, false)      // 只关了 compositionReady
+        -> writtenLayerCount 仍是 nullopt
+        -> layersInMemory = !writtenLayerCount.has_value() = true
+        -> for (layerIndex < request.grid.layerCount)
+               request.layers.at(layerIndex)      // layers 恒为空 -> 越界
+```
+
+该循环上方的注释写着「逐层会话下 layers 恒为空……跳过它，否则这里必然越界」
+—— **但跳过的判据在 Begin 阶段并不成立**。
+
+**生产至今没踩到，纯属巧合**：会话建立时 `writeRequest.grid.layerCount` 恰好
+还是 0（grid 由合成后补齐，见 `MultiModelProductionService` 的注释），
+循环遍历 0 次。那是巧合不是保证 —— **一旦把 grid 的补齐提前（一个完全合理的
+重构方向），Begin 就会当场崩**。
+
+**修法一行**：`ValidateRequest(request, false, 0)`，显式声明「逐层模式、
+已写 0 层」。第三参数为 0 时 `layersInMemory` 为假，循环被正确跳过；
+而「层数齐备」那条校验由 `compositionReady` 守卫，Begin 时本就不执行，
+故传 0 不会误判层数不足。
+
+测试保持「清空 `request.layers`」的生产语义 —— 改成预置整栈也能过，
+但那样这条回归保护就没了。
+
+## 9. MF-05 多实例 Layer Barrier
+
+> **升级为双模型阻塞的关键路径（2026-09-05）。** 依赖改为 MF-03X2a，不再等 MF-04
+> —— MF-04 的范围已重定义为 CLI 路径的原子发布语义，与本卡无先后关系。
+
+**目标：** 1/11/12/22 场景按 global layer 同步合成，释放同层所有实例 buffer。
+
+### 9.1 为什么必须做（量化根因见报告 §5.6）
+
+`MultiModelProductionService.cpp:813` 把**全部实例切完**才一起合成，而单实例
+`SceneInstanceRaster` 持有**全部层**，每层含 6 通道输出加 4 张归属 mask：
+
+```text
+每列每层 10 B/实例
+用户场景 1418 x 5197 x 1429  ->  103.7 GiB【每实例】，双模型 207 GiB
+```
+
+`LegacySceneLayerAdapter.cpp` 的 `ownedlayercallback` 逐层 `push_back` 且不释放，
+使 MF-02「Owned Layer Producer/Sink」合同「消费即释放」的用意归零。
+
+### 9.2 设计：生产者线程 + 层屏障
+
+合成第 L 层只需各实例的第 L 层。障碍在于实例是 **instance-major** 切的，
+而合成要 **layer-major**。`ownedlayercallback` 本来就是逐层交付的，
+故只需让每个实例在自己的线程里跑，并在回调内等屏障：
+
+```text
+每实例一个生产者线程
+  产出第 L 层 -> 存入该实例的单层槽 -> 等待「本层已被消费」信号
+合成线程
+  等齐全部 N 个槽 -> 合成为 global 第 L 层 -> 写出 -> 释放全部槽 -> 放行生产者
+
+峰值 O(实例数 x 列数)，与层数无关
+用户双模型 10um：2 x 44.2 MB + 合成缓冲 ≈ 132 MB（现为 207 GiB）
+```
+
+### 9.3 必须守住的语义
+
+```text
+确定性   合成顺序按 scene 内实例次序，【不按线程完成先后】，否则输出 hash 会抖
+取消     任一线程 ThrowIfCancellationRequested 后，屏障须唤醒全部等待者并传播
+异常     单实例抛错必须让屏障失效并让其余线程尽快退出，不得死锁
+fail closed  重叠/冲突/stale/层缺失沿用既有 admission 判据，不因并发放宽
+层数不齐  各实例 localgrid.layercount 可不同，屏障须按 global layer 对齐，
+          缺层的实例在该层贡献空槽而非阻塞
+```
+
+### 9.4 范围修正（2026-09-05，实施前逐段读代码后）
+
+§9.1 只算了每实例栅格，**低估了**。完整驻留链是三份整栈，且合成期间同时在场：
+
+```text
+N 份 每实例 SceneInstanceRaster   10 B/列/层 x N   -> 双模型 207.4 GiB
+1 份 SceneLayerComposeResult      6 B/列/层        ->        62.2 GiB
+                                                   合计 ≈ 269.6 GiB
+```
+
+`ComposeSceneLayersConsuming` 只覆盖**单实例快路径**（实为
+`ComposeSingleInstanceConsuming` 的转发），多实例仍走 Borrowed，借用不释放。
+
+**最关键的约束：合成侧流式化受类型不变量阻挡。**
+`ValidatedSceneLayerComposeResult` 的构造要求
+`layers.size() == grid.layercount` —— 「全部层同时在场」是该类型的**证据契约**，
+存在目的是让下游 report/package 免于重扫每个 RGBWSV 字节。
+故必须先把该证据由「一次性全量」改为「逐层累积」，否则要么破坏不变量，
+要么让下游退回全量重扫（把省下的内存换成一次全量扫描）。
+
+**这是触及既有架构不变量的改动，不是接线量级。**
+
+### 9.5 分步与验收
+
+> **范围第三次修正（2026-09-05）。** 实施编排层前查依赖，发现还有【写入器侧】：
+> `WriteValidatedMultiModelSceneProductionPackage` 接收整个 `composition`，
+> 内部交给 `WriteRgbwsvProductionPackage`（整包入口）。
+> 好消息是逐层写 TIFF 的能力早就存在（`WriteRgbwsvProductionLayerTiff`，
+> CLI 单模型路径一直在用），故这块是「让场景路径改用已有入口 + manifest/report
+> 改逐层累积」，不是从零造能力。
+
+> 三次修正的规律值得记下：**每次都发现范围比预想大，但同时也发现让工作变小的
+> 东西**（合成主循环本就 layer-major、实例校验本就逐层、逐层写 TIFF 本就存在）。
+> 隔着推测估工作量两个方向都会偏，只有读代码才准。
+
+```text
+步骤 0  SceneMemoryBench 多实例验证台                    COMPLETE
+步骤 1  SceneLayerBarrier 纯同步原语 + 并发单测          COMPLETE 94fafd8
+步骤 2  LegacySceneLayerAdapter 的 ownedlayercallback 改为存单层槽并等屏障
+步骤 3  合成侧改逐层合成、合成即写出、不累积 layers
+步骤 4  ValidatedSceneLayerComposeResult 的闭合证据改为逐层累积，
+        使「已验证」不再等价于「全部层在内存里」
+步骤 4b 写入器侧 session 化（见 §9.5.3）
+步骤 5  实测用户双模型 0.2 + 0.3 @10um
+```
+
+### 9.5.1 验证台与「修好前」基线（实测）
+
+`stage16c06_scene_memory_bench <层厚> <实例数>` 构造场景并跑生产服务。
+判据不是绝对值，而是**峰值随层数的斜率** —— 用户场景要 270 GB，无法直接跑对照。
+
+| 层厚 | 实例 | 层数 | 峰值 |
+|---|---|---|---|
+| 1.0mm | 1 | 15 | 2.12 GB |
+| 0.5mm | 1 | 29 | 3.15 GB |
+| 0.25mm | 1 | 58 | 5.29 GB |
+| 1.0mm | 2 | 15 | 3.84 GB |
+
+```text
+单实例   每层 73.7 MB（两段增量 73.6 / 73.8，线性）+ 常数底约 1.0 GB
+双实例   每层 189 MB（超过 2 倍：全局幅面也随实例并排而变宽）
+外推     189 MB/层 x 1,429 层 = 270 GB，与 §9.4 静态推算的 269.6 GiB 吻合
+```
+
+**两条独立路径（读代码估算、跑基准外推）得到同一数量级，故根因判断可采信。**
+修好后的判据：同样四组的峰值应与层数**无关**（只随实例数与列数变化）。
+
+### 9.5.6 ✅ 流式发布已启用（2026-09-06 完成）
+
+`kStreamingPackageWriteEnabled = true`。MF-05 目标达成。
+
+#### 最终效果
+
+| 场景 | 层数 | 峰值 |
+|---|---|---|
+| 单实例 1.0mm | 15 | 1.019 GB |
+| 单实例 0.5mm | 29 | **1.019 GB** |
+| 单实例 0.25mm | 58 | **1.019 GB** |
+| 双实例 1.0mm | 15 | 2.02 GB |
+| 三实例 0.25mm | 58 | 2.98 GB |
+
+**峰值只随实例数与列数变化，与层数无关。** 对照改前：双实例仅 15 层就要 3.84 GB，
+斜率 189 MB/层，用户 0.2+0.3 @10um 外推 270 GB。
+
+全量回归 10 失败 / 229 —— 与关闭时完全一致，无新增失败。
+
+#### 曾挡住它的两处，及其根因链
+
+**一、发布收尾越界**（第九处整栈假设）：`ValidateRequest` 按 `grid.layerCount`
+遍历 `request.layers` 做逐层内容校验，逐层路径下 layers 恒为空。
+修法是把该段抽成 `ValidateProductionLayer`，两条路径共用 —— 整栈路径照旧在
+`ValidateRequest` 里逐层调，逐层路径改由 `AppendLayer` 收到每层时调，
+**校验强度不降级，只是时机从「全部到齐后一次」变成「到一层校一层」**。
+
+**二、11 项回归**，根因是一条完整因果链，起点只是一个分母：
+
+```text
+会话在合成【之前】建立 -> request.grid.layerCount 此刻仍为 0
+-> expectedLayerCount = 0 -> 逐层进度上报 current=N total=0
+-> WorkerProtocol 判 current > total 为 file_contract_v1 语法违规
+-> WorkerClient 据此写取消标记 -> Worker 的 FileCancellationToken 立刻为真
+-> 包写到一半被协作式取消 -> 会话 RAII 回滚清掉 staging -> 包从未发布
+-> E_PACKAGE_NOT_FOUND / missing key packageDir / baseline package was not published
+```
+
+第二处差异是时序：`scene_package_write` 的 78% 锚点原在合成之后，而逐层回调发生
+在合成之中，事件序列成了 `72 -> 95 -> … -> 78`，Worker 又判「percent 倒退」。
+
+**三处修复**：会话增 `SetExpectedLayerCount` 并由服务在栅格相位后按各实例
+`localgrid` 的最大层数喂入；78% 锚点上移到会话建立之前（非流式保持原位，用
+`has_value` 守卫避免重复上报）；进度去重条件 `current < total` 在 `total<=0` 时
+恒不成立，改为 `std::max(total, 1)` 兜底。
+
+**顺带修掉一处遗漏**：`Finish()` 从未把 `State::finished` 置 true，成功发布后
+析构仍会再跑一遍 `RecoverPackageArtifacts`。当前那次恢复恰是无害空操作，
+但与「成功 Finish 后不再回滚」的约定不符，且一旦恢复语义变化就会变成删已发布的包。
+
+#### 一条方法论
+
+这条因果链**不是靠逐轮试错找到的** —— 我上一轮基于「这些入口不走流式路径」的
+错误前提试了一个候选，无效。真正定位靠的是一次只读的日志+源码静态推证
+（并行 agent 完成），它同时纠正了两个前提错误：新增是 11 项不是 10 项；
+`streamingInstances` 对单实例恒为 true，故开关一开几乎所有入口都进会话路径 ——
+**入口分散是佐证而非反证**。
+### 9.5.5 步骤 4 第二步（写入侧流式）的形状
+
+第一步（实例侧流式）已合入 `853bf14`：单实例斜率 73.7 -> 44.2 MB/层。
+剩余斜率来自合成结果累积（6 B/列/层），需让写入也逐层。
+
+**已就位：** 写入会话 `46fedc2`、合成逐层出口 `c6e88aa`、
+补齐与写出分离（本次）。
+
+**时序难点与解法：** `PrepareMultiModelScenePackageRequest` 依赖 composition，
+而会话必须在合成【之前】建立（layersink 要用它）。解法是利用会话持有 request
+引用的特性 —— Begin 只用发布身份（packageDir/jobId/attemptId/preview），
+合成后再补齐 grid/scene/能力摘要，Finish 时可见。
+
+**第四处整栈假设（本次发现）：** `BuildSceneCapabilitySummary` 会遍历
+`raster.layers` 统计每实例的 printPixels 与 min/max x/y/layer，流式下骨架为空。
+这次不是校验而是**实质计算**，本以为要新造逐层统计。
+
+**但不必新造：** `SceneInstanceComposeStatistics::RasterStatistics` 的字段
+（`printpixels`/`emptypixels`/`minimumx|y|layer`/`maximumx|y|layer`/`grid`）
+**完全覆盖**能力摘要所需，而合成侧的 `ValidateLayer` 在流式下已经逐层累积它们
+（步骤 2b 的改动）。故只需让能力摘要在 `raster.layers` 为空时改用
+`composition.statistics.instances` 里对应实例的统计。
+
+**剩余清单：**
+
+```text
+1  BuildSceneCapabilitySummary 支持从合成统计取数（raster.layers 为空时）
+2  服务：合成前建会话、layersink 里 AppendLayer、合成后 Prepare + Finish
+3  验收：验证台四组峰值与层数【脱钩】；回归不新增失败
+```
+
+### 9.5.4 步骤 4：编排层的最终设计（三块前置已全部就位）
+
+实例侧（2a）、合成侧（2b）、写入器侧（4b）均已合入且行为中性，
+`MultiModelLayerComposeRequest` 的出入口透传也已打通。剩下只是把它们串起来。
+
+**两处环形依赖，解法已确定：**
+
+```text
+一、屏障要按全局层号对齐，而 offsetz 由实例与全局栅格原点之差算出，
+    全局栅格又要等所有实例的局部栅格就位。
+    解：先跑栅格相位（adapter 的 gridready 在第一层之前触发），
+        主线程等齐后检查【所有实例 localgrid.originzmm 相等】——
+        相等则各 offsetz 必为 0，局部层号即全局层号，屏障可直接对齐。
+        判据只看各实例自身，不需要先有全局栅格。
+
+二、写入会话要在合成之前建立（layersink 要用它），而 writeRequest 里
+    grid.widthPx/heightPx/layerCount 看似要等合成结果。
+    解：实测 writeRequest 其余字段全部来自 contract 与 request，不依赖
+        composition；故把会话【延迟到 layersink 首次调用】时创建 ——
+        那时层的宽高已随层送达，全局层数由各实例 localgrid 推出。
+```
+
+**退回方案（最后一个设计点）：** z 原点不一致时不能报错（那会让本来能工作的
+场景失败），也不能重跑切片。故让 sink 读一个已稳定的标志分流：
+
+```cpp
+adapterRequest.layersink = [&](SceneInstanceRasterLayer&& layer) -> bool {
+    WaitUntilAlignmentDecided();          // 栅格相位在第一层之前完成，故不会久等
+    if (streamingRejected) {              // 退回 retained：照旧累积整栈
+        rasterSlots[i].layers.push_back(std::move(layer));
+        return true;
+    }
+    slots[i] = std::move(layer);
+    return barrier.DepositAndWait(i, layerIndex);
+};
+```
+
+**验收：** 验证台四组峰值应与层数【脱钩】（当前斜率 73.7 MB/层，
+单实例 1.0/0.5/0.25mm 三档现为 1.59 / 2.62 / 4.76 GB）；
+全量回归不新增失败；实例完成顺序不影响输出（不同调度多跑几次比对）。
+
+**风险：** 并发接线 + 退回分流，改错的表现是【挂住作业】或【发半包】
+而非报错，需独占一轮的验证预算（回归 + 斜率验证约 25 分钟）。
+
+### 9.5.3 步骤 4b：写入器 session 化（形状与风险）
+
+`WriteRgbwsvProductionPackage`（`RgbwsvPackageWriter.cpp:1024`，共 **330 行**）
+内部本就是逐层写：
+
+```cpp
+for (const RgbwsvProductionLayer& layer : request.layers) {
+    WriteRgbwsvProductionLayerTiff(stagingDir / relativePath, ...);
+    // 累积 manifest 条目、逐层 report
+}
+```
+
+**拆法：** 三段可单独调用，现有整包入口变成三段的薄封装（行为逐字不变）：
+
+```text
+BeginRgbwsvProductionPackage(request) -> Session   建 staging 目录与 identity
+AppendRgbwsvProductionLayer(session, layer)        写一层 TIFF + 累积 manifest 条目
+FinishRgbwsvProductionPackage(session) -> Result   写 manifest/report + 原子发布
+```
+
+场景路径的 `composeRequest.layersink` 直接调第二段，层写完即释放。
+
+**风险（为何单独一轮）：** 这 330 行承载 **staging 与原子发布**语义 ——
+取消与写失败时不得发布半包。把大量局部状态（stagingDir、profile、manifest
+数组、identity）提进 session 结构，容易在错误路径上漏掉回滚。
+**改错的后果是发出半包，而不是报错**，故必须配合取消/失败注入用例一起验，
+不适合与其他改动混在一批里。
+
+### 9.5.2 步骤 2/4 的已知形状（下次接手直接用）
+
+```text
+现状  MultiModelProductionService.cpp:817
+        for (instance) { adapted = AdaptLegacySceneLayers(...); rasters.push_back(...); }
+        composeRequest.instances = std::move(rasters);   // 全部切完才合成
+
+目标  SceneLayerBarrier barrier(visibleCount);
+        每实例一个线程跑 AdaptLegacySceneLayers，回调内写单层槽后 DepositAndWait
+        消费者 for (L) { ready = barrier.AwaitLayer(L); 合成第 L 层; 交给 layersink;
+                         barrier.ReleaseLayer(L); }
+```
+
+**关键前置已确认可行：** 合成器的实例校验本就是逐层的 ——
+`SceneLayerComposer.cpp` 的 `ValidateInstance` 内部是
+`for (layerIndex) { ValidateLayer(...); layerStatistics->push_back(...); }`。
+故「先整实例校验、再整体合成」可折成「逐层校验 + 逐层合成」，
+不需要新造校验逻辑，只需把 `ValidateLayer` 的调用点移进合成的层循环。
+
+**已完成的两半（均行为中性、可独立合入）：**
+
+```text
+步骤 3   SceneLayerComposeRequest.layersink    合成侧逐层交出   c6e88aa
+步骤 2a  LegacySceneLayerAdapterRequest.layersink  实例侧逐层交出  c5ebdcf
+```
+
+**剩下的是一处需要小心的手术（步骤 2b）：**
+
+合成器的 `ValidateInstance`（`SceneLayerComposer.cpp:589`）现在先整实例
+走一遍层：它同时做三件事 —— 校验层数齐备（`layers.size() == layercount`）、
+逐层调 `ValidateLayer`、累积 `instanceStatistics`（min/max x/y/layer 与通道统计）。
+流式化后 `instance.layers` 为空，这三件都要改：
+
+```text
+层数齐备   改为在层循环结束时断言「已校验层数 == layercount」
+ValidateLayer   调用点移进合成的层循环（该函数本就是逐层的，不必新造）
+instanceStatistics   min/max 与通道统计改为逐层累积，收尾部分移到层循环之后
+```
+
+另外合成主循环里的
+`placement.instance->layers.at(localLayerIndex)`（`SceneLayerComposer.cpp:1128`）
+要换成 provider 回调，返回空指针表示该实例本层无内容。
+
+**为什么单独标出来：** 这处改错【不会崩】，而是悄悄写出错误的场景报告
+（统计值偏差、闭合证据失真）。必须配合验证台与全量回归一起验，
+不适合在长会话尾段赶工。
+
+**仍需处理：** 实例的 `localgrid` 与 placement 要在第一层到达前就位
+（gridcallback 先于 ownedlayercallback 触发，可在屏障之外先收齐），
+以及 admission 判据（重叠/冲突/stale）保持在开跑前一次性完成、不因并发放宽。
+
+**不宜先合入半截：** 只做步骤 2 后峰值仍有约 62.2 GiB（合成结果），
+依旧超物理内存 31.6 GB，用户场景不会因此可用。
+步骤 2/3/4 必须一起交付才产生实际收益。
+
+验收   单实例场景输出与现状逐字节全等（先用单实例跑通屏障，N=1 退化为直通）
+       双实例 0.2+0.3 @10um 不再内存不足，peakWorkingSet 百 MB 级
+       实例完成顺序不影响输出 hash（用不同线程调度跑多次比对）
+       既有 scene 相关回归不新增失败
+```
+
+### 9.6 用户当前可用的规避
+
+单模型路径已可用：`0.2.obj` 与 `0.3.obj` **分两次作业**各自切片，
+每次峰值 1.18 GiB、耗时 10.7 分钟，合计约 21 分钟即可拿到两份包。
+这不是修复，只是在 MF-05 落地前的可行替代。
+
+### 9.6 shape 档：三步前置已做完，准入放开延后（2026-09-06）
+
+上一轮把 shape 档标为「需先定剪枝策略」。这一轮做完了精确调研，结论是
+**先做三步前置、准入放开延后**，理由与证据如下。
+
+#### 9.6.1 为什么延后
+
+| 理由 | 依据 |
+|---|---|
+| **收益只剩一半** | 形状优化的四项加法运算会把 activeColumns 之外的列写成非空，而 `ResetBoundedSupportLayer` 只清表内列 —— 那些像素**没有任何一层会清回 0**，会被下一层当作 pre-shape support 读进去再膨胀一圈，单调累积。故形状必须全幅面跑，等于交还 97.47% 的列剪枝（时间收益），只保住内存收益 |
+| **需求面窄** | `shape_enabled` 默认 `false`；全仓只有三个样例开它，其中只有 `three_mf_real_01_support_shape.json` 同时是 relief + 有界可准入。目前没有证据表明有真实用户在 10um 大幅面 relief 场景下开 shape |
+| **现状是安全的** | 当前 `Reject("support_shape_enabled")` 让这类配置走 retained 全栈 —— 慢、吃内存，但**结果正确**。放开后一旦踩中上面那条缓冲残留，失败模式是「输出少一圈 + 统计逐层放大」的静默漂移，比「内存不够跑不动」难查得多 |
+
+**放开的正确前提**：先有具体用户场景要求，且按既有规矩先出授权文档留痕。
+
+#### 9.6.2 已做完的三步（都不改行为，各自有独立价值）
+
+**一、堵死一个静默陷阱。** 有界路径下 `support_generation.support_masks` 整栈为空
+（`generate_support_masks` 根本没被调用）。若只把那条 `Reject` 删掉，
+`OptimizeSupportShape` 的层循环会跑 **0 次**，却仍报 `enabled = true`、
+added/removed 全 0 —— **不崩、不报错，产出一份没做过形状优化的包**。
+已在主循环加守卫：`shape_enabled && boundedReliefSupport.eligible` 直接抛。
+准入当前仍拒绝该档，故它不可能触发；它存在是为了让**将来放开那道准入**时立刻失败。
+
+**二、消除两份逐字副本。** 形状优化后的类型图同步逻辑此前有三份逐字副本：
+主循环的整栈版、`BoundedSupportShapeScan` 的逐层版、以及测试里的参考实现。
+前两份都是生产代码，各自漂移不会被任何断言发现。已提为共享定义
+`SynchronizeSupportShapeTypesForLayer`（做法与 `set_support_pixel` 一致），
+整栈版逐层调用它。**测试那一份有意保留** —— 对拍的 oracle 必须独立于被测实现，
+复用同一份定义会让比对退化成自反。
+
+**三、补对拍盲区 —— 这一步的发现比预期严重得多。**
+
+#### 9.6.3 「已有 CI 级哨兵」这个判断是错的
+
+调研时认为 `BoundedSupportShapeScanTests` 的 retained-oracle 对拍已经把两份实现
+钉住了，是「本次放开最重要的既有资产」。**补齐比对后发现它几乎什么都没测。**
+
+逐条查证的结果：
+
+```text
+夹具是 7x7、模型为 5x5 方框，BuildPlan 只在 0 号像素设需求
+  -> pre-shape support 只有一个孤立像素
+  -> 被 min_component_area_px = 2 剔除干净
+  -> 膨胀无源；唯一另一个支撑分量是被模型【四面围住】的 3x3 空腔，
+     其邻域全是模型，CanWriteSupportPixel 一律挡住
+  => added 恒为 0：膨胀、闭运算、水平桥接、垂直桥接【四项加法全部空转】
+  => max_added_support_ratio = 20.0 又使超比例回滚永不触发
+  => 实际只验到了「最小面积剔除」一步
+```
+
+同时 `CompactReportMatches` 对 `post.components` / `filteredComponents` /
+`bridgedGaps` **只比 size 不比内容** —— 两份实现只要条目数相同，内容与顺序
+全错也照样通过。桥接记录尤其危险：它的顺序由「水平全扫完再走垂直」这条同序
+约定决定，而那正是两份实现最容易分家的地方。
+
+**已补齐：**
+
+| 补的东西 | 效果 |
+|---|---|
+| `post.components` / `filteredComponents` / `bridgedGaps` 的内容与顺序比对 | 三处「只比 size」的盲区消除 |
+| `BuildPlan` 支持指定需求像素 | 可以把支撑放在模型**外侧**，让膨胀有处可写 |
+| 档二：需求像素在外侧 + ratio 20.0 | **四项加法真正生效**，且断言 `anyAdditions == true` 钉住 |
+| 档三：同夹具 + ratio 0.0 | **回滚分支必然触发**，且断言 `anyRollback == true` 钉住 |
+| 档一：保留原夹具 | 原有覆盖不丢，并显式断言它**不**触发加法 |
+
+后两条断言是关键：少了它们，把 ratio 改小、把需求像素挪个位置都只是换数字 ——
+被测路径依旧没被走到，而测试照样全绿。这正是原用例的失效方式。
+
+**结果：三档全过。** 即两份实现在四项加法与回滚分支上确实逐字节一致 ——
+调研的静态比对结论至此得到机器验证，而在此之前它只是静态结论。
+
+#### 9.6.4 一处顺带钉住的 oracle 缺陷
+
+补齐 `filteredComponents` 比对时先红了一次：scanner 报层号 1、oracle 报 0，
+面积与 bbox 完全一致。**不是实现漂移**，是 oracle `OptimizeSupportShapeForLayer`
+的已知缺陷 —— 它把单层包成一元 vector 再走整栈实现，故报告里的 `layer_index`
+恒为 0。已改为分别断言两侧各自的正确值并注明缘由：一旦哪天 oracle 改成报真实
+层号，这里会立刻红，提醒把断言改回直接相等。
+
+---
+
+## 10. MF-06 Sparse Tile/Span 候选
+
+**目标：** 只处理 active rect/tile/span，降低约 3% 占用场景的空白扫描。
+
+**验收：** `123.stl` 17 个连通分量、小组件、边界、支撑、光油 halo 不丢失；未通过前不允许自动路由。
+
+## 11. MF-07 自适应生产路由
+
+**目标：** 在作业开始前按显式内存预算和已实现能力选路；Host 只展示 Worker 权威 telemetry。
+
+**原验收（2026-09-06 之前）：** 小作业 retained、大作业 bounded；无法满足预算时明确失败；
+不运行中途回退；Profile hash 和输出协议不变。
+
+**修订后验收（2026-09-06，用户已授权按建议改写；理由见 11.0，逐条对应）：**
+
+| # | 修订后 | 相对原文改了什么 |
+|---|---|---|
+| A | **能力准入**：配置能走 bounded 就走 bounded，不能则 fail-safe 退回 retained，`reason` 记明是哪一项 | 替换「小作业 retained、大作业 bounded」。该准则与作业大小无关 —— 两条路径输出逐字等价而 bounded 内存严格更低，故**预算永远选不出 retained** |
+| B | **预算准入**：给定预算时，按【已建模的分配项】估算峰值；估算不满足即在作业开始前带命名错误码失败 | 原文「无法满足预算时明确失败」未限定依据。`slicer_core` 全程不观测自身内存，只能按解析模型估 —— 写明这一点，才不是一个兑现不了的承诺 |
+| C | **预估器单向正确**：允许高估、**禁止低估** | 新增。低估的表现形式恰是「承诺了预算然后 OOM」，比不做路由更糟，故验收不能写成「误差在 X% 以内」 |
+| D | **不运行中途回退** | 保留原文。**已实质满足，见 11.4** |
+| E | Profile hash 与输出协议不变 | 保留原文。硬约束见 11.1 下方 |
+| F | Host 只展示 Worker 权威 telemetry | 保留原文。MF-07a 已做 Worker 侧、MF-07b 前半已做 Host 侧 |
+
+**被删除的一条，及删除理由：** 「小作业 retained」在有实测证明「小作业走 retained
+更快」之前**不实现**。按大小切换路径需要一个门限，而目前没有任何数据支持该门限的
+存在与取值 —— 凭空造一个出来，只会让小作业无谓地多吃内存。
+若后续实测发现逐层重建对小作业有显著耗时代价，再按【耗时】立独立准则，
+而不是塞回这条以内存为名的验收里。
+
+### 11.0 对原验收的三条质疑（2026-09-06 调研后提出）
+
+动工前做了一次只读现状调研，结论是**原验收有两条需要改写、一条需要点名**。
+先写在这里，因为按字面实现会做出错的东西。
+
+**质疑一：「小作业 retained、大作业 bounded」这条方向可疑。**
+bounded 与 retained 在输出上逐字等价，而 bounded 内存严格更低。那么
+「小作业为什么要故意用更多内存」？按内存预算路由，答案永远是「能 bounded
+就 bounded」—— **预算根本选不出 retained**。能不能 bounded 是由
+`EvaluateBoundedReliefSupportPath` 的能力准入决定的，与预算无关。
+
+若保留 retained 的真实理由是**速度**（小作业省掉逐层重建的开销），
+那这条的准则是耗时、不是内存，与同卡的「无法满足预算时失败」不是一个维度。
+**处置：拆成两条独立准则，能力准入与预算准入各自表述。**
+在有实测证明「小作业 retained 更快」之前，不实现按大小切换 —— 那是一个
+没有依据的门限。
+
+**质疑二：「无法满足预算时明确失败」目前只能降格。**
+`slicer_core` 全程不观测自身内存（`ProcessMemoryStats.h` 在 `slicer.cpp`、
+`pipeline/`、`support/` 里零引用），预算只能对着**分配清单的解析模型**判，
+而分配器开销、TIFF 写出缓冲、`texture_runtime`、`materialVolumePlan`、
+OpenVDB 后端都不在那份清单里。
+**处置：改写为「按已建模的分配项估算，估算不满足即失败」**，
+否则是一个兑现不了的承诺。且预估器的验收必须是**单向的（允许高估、禁止低估）**
+—— 低估的表现形式恰恰是「承诺了预算然后 OOM」，比不做路由更糟。
+
+**质疑三：「不运行中途回退」这条只关于场景路径，卡面没点名。**
+单模型路径已经合规：准入在采样之前判定，层循环里只读同一个已定结论，
+没有任何改路点。真正的活全在 `MultiModelProductionService`：生产者线程
+**先启动**，主线程再按各实例 `originzmm` 是否相等判 Streaming / Rejected，
+而每个生产者的 layersink 在每一层都等这个决定再分流。
+走进 `Rejected` 的作业会静默退回累积整栈（实测斜率 189 MB/层），
+**任何预算承诺当场失效且用户看不到提示**。这一条才是该验收的确切目标。
+
+### 11.1 子卡拆分
+
+| 卡 | 范围 | 验收 | 风险 | 状态 |
+|---|---|---|---|---|
+| MF-07a | Worker 权威内存 telemetry | Worker 与 CLI 的 `peakWorkingSetBytes` 同口径；`SLICE_TIMING` 仍过协议解析；包字节与 profileHash 不变 | 低 | **COMPLETE** |
+| MF-07b | Host 停止伪造 telemetry | Worker 未声明 available 时不再强行置真 | 中 | **COMPLETE（前半）** |
+| MF-07c | 峰值预估器（纯函数、不接生产） | 四个实测点全部高估覆盖；大作业裕度 1.26~1.38x | 高 | **COMPLETE** |
+| MF-07d | 预算字段与开始前路由 | 预算字段放 **profile 之外**；profileHash 与包字节逐字节不变；超预算带命名错误码失败 | 中 | TODO |
+| MF-07e | 消除场景路径中途回退 | —— 见 11.4，该验收**已实质满足** | ~~最高~~ 已重估 | **CLOSED（无需改行为）** |
+
+**MF-07d 的一条硬约束（已查证）：** profileHash 是对**整份 profile JSON 文档**
+（剔除自声明的 `profileHash` 键）做 sha256，不是白名单字段。故预算字段
+**绝不能加进 profile**，否则 hash 必变、六处强制点会 fail-closed。
+放在 Worker 请求顶层或 CLI 参数则完全不受影响
+（`file_contract_v1.request.schema.json` 顶层是 `additionalProperties: true`）。
+`SLICE_TIMING` 同理：解析器是 required-keys + 首字段必须 `engine=`，
+对额外键宽容，故增补字段是向后兼容的。
+
+~~**MF-07e 为何风险最高：**~~ **该评估已被证伪，见 11.4。**
+原文（保留作对照）：它要把 localgrid 的 originz 语义复制到 `run_slicer`
+之外（第二份实现）；删掉 fallback 等于把今天能跑（只是吃内存）的场景变成
+硬失败。**两条都建立在「不对齐的场景真实存在」这个前提上，而该前提不成立。**
+
+### 11.2 MF-07a 实施记录（2026-09-06 COMPLETE）
+
+**修的是一处真缺陷，不是新功能。** Worker 的 `SLICE_TIMING` 行把内存
+硬编码成 `workingSetBytes=0 peakWorkingSetBytes=0`，且 result JSON 的
+`timing` 对象里连内存字段都没有。于是「Host 只展示 Worker 权威 telemetry」
+从源头就无从谈起 —— 宿主只能拿自己的轮询观测值补齐，再把结果标成
+`available: true`（`HostSliceJobController`），那正是 MF-07b 要拆掉的。
+
+改动：Worker 在收尾处采一次 `CaptureProcessMemoryStats()`，
+**SLICE_TIMING 行与 result JSON 共用同一组数**（分两次采会让 JSON 侧的
+peak 恒 >= 行侧，因为峰值单调不减，对拍时那点差额会被当成两条通道不一致），
+并补上此前缺失的 `memoryAvailable=` 字段，口径与 `slicer_cli` 完全一致。
+
+**一并补了断言。** 原测试只查 `SLICE_TIMING` 这个字符串是否存在、不查值
+—— 所以它被写死成 0 多久都不会有人发现。现按「可得则必须非零」钉住：
+平台不支持时 `available` 为假、允许为 0，一旦声明 available 就不能再报 0。
+result JSON 侧同样钉住三个字段的存在性与 peak 非零。
+
+### 11.3 MF-07b 实施记录（2026-09-06 前半 COMPLETE）
+
+`HostSliceJobController` 原先在 Worker 未声明 `available` 时**强行置真**，
+于是宿主自己的轮询估算会被当作 Worker 权威 telemetry 展示 —— 那正是本条
+验收要消除的。已改为只反映 Worker 的真实声明：无权威数据时 `available`
+保持假，面板据此不展示细分耗时；补齐值仍留在 `timing` 里并标 `approximate`，
+供诊断查看，但不再冒充权威。
+
+**正常路径行为不变，有据可查：** `slicer.cpp:4200` 无条件设
+`profile.available = true`，且七个耗时字段 Worker 全都提供，
+故补齐与置位在 Worker 正常返回时**本就不触发** —— 这段一直是只在 Worker
+沉默时才生效的兜底，而它兜的方式是撒谎。验证：`hostflow_hb06_slice_job`
+（断言「成功作业必须返回 Worker 核心细分耗时」，即 `available` 为真）
+通过；hostflow / 14e 全组 38 项中 4 项失败，**全部在既有失败基线内**。
+
+**后半已完成（2026-09-06，用户授权后实施）。** 见 11.3.1。
+
+#### 11.3.1 后半：两类数据分区，而不是一概不显示
+
+**先说一个前半引入的退步。** 前半只是不再伪造 `available`，补齐值仍混在
+`timing` 里；而面板的判定是 `if (timing.available)`，于是这些值一概不显示
+—— **作业失败时用户什么诊断信息都看不到，而那恰是最需要信息的时候**。
+把「不诚实」换成「什么都不说」并不是正确的终点。
+
+后半的做法是让两类数据**分开存放、分区展示**：
+
+| | 原始 | 前半之后 | 现在 |
+|---|---|---|---|
+| `timing.available` | **`true`（伪造）** | `false` | `false` |
+| 宿主观测值位置 | 混在 `timing` 内 | 仍混在 `timing` 内 | **独立字段 `observedtiming`** |
+| 面板细分耗时 | 显示，**当作权威** | **完全不显示** | 显示，**引擎栏标注非权威** |
+| 引擎栏文案 | `失败前阶段进度估算` | 同左 | `宿主估算·非 Worker 权威（失败前阶段进度）` |
+
+`timing` 从此只装 Worker 自己报的东西；`observedtiming` 装宿主按
+`pollResolutionMs` 轮询估出来的，并原样带上 `approximate` / `source` /
+`activePhase` / `hostElapsedMs`，让面板能说明这些数字是怎么来的。
+
+#### 11.3.2 顺带发现第二处冒充
+
+改到一半发现 `FinishTransportFailure`（通信失败路径）里有一句
+`m_completion.timing = FinalizeObservedTiming(...)` —— **把宿主观测值
+直接赋给 `timing`**。那是与补齐处同一类的冒充，只是走的是另一条分支，
+前半没有覆盖到。已一并改为赋给 `observedtiming`，`timing` 保持空。
+
+这一处也说明「Host 只展示 Worker 权威 telemetry」这条验收，
+光看一处赋值是判断不了的 —— 得把所有给 `timing` 赋值的路径都过一遍。
+
+#### 11.3.3 改动面与验证
+
+调用链需要贯通：`SigCompleted` 信号 -> `HostMainWindow::OnSliceJobCompleted`
+-> `HostSliceJobPanel::ShowCompletion` -> `ApplyTiming`，四处签名各加一个
+`observedTiming` 参数；`ApplyTiming` 内部据 `authoritative / estimated`
+选择取值源。
+
+验证：`slicer_host_sim` 编译通过；`hostflow_hb06_slice_job`
+（断言「成功作业必须返回 Worker 核心细分耗时」，即 `available` 为真）通过
+—— 即正常路径行为未变，这与前半的判断一致：
+`slicer.cpp` 无条件设 `profile.available = true`，
+故补齐与分区在 Worker 正常返回时本就不触发。
+
+---
+
+### 11.4 MF-07e 重估：那条验收已实质满足（2026-09-06）
+
+**动工前先查证了一个前提，结果前提不成立，于是这张卡不需要改任何行为。**
+
+#### 11.4.1 事实
+
+生产路径上 `SceneRaster.localgrid.originzmm` **恒为 0**。
+
+```text
+slicer.cpp  构造 SliceRunRasterGrid 时最后一个字段写的是字面量 0.0
+   -> LegacySceneLayerAdapter 的 gridcallback 原样拷进 localgrid.originzmm
+   -> MultiModelProductionService 的对齐判定读它
+```
+
+全仓 grep `originzmm =` / `originZmm =`，生产代码里再无第二处赋值
+（`MultiModelSliceOrchestrator` 那处写的也是 `0.0`）；只有四个单测会设非零，
+用于直接构造 raster 夹具、不经过切片路径。
+
+#### 11.4.2 推论
+
+对齐判定是：
+
+```cpp
+bool aligned = producerCount > 0U && !barrier.Failed();
+for (...) if (!slot.gridreceived || slot.grid.originzmm != slots[0]->grid.originzmm)
+              aligned = false;
+```
+
+既然 `originzmm` 恒相等，那个不等式**恒不成立**。`Rejected` 只可能来自其余三项：
+
+| 触发条件 | 含义 |
+|---|---|
+| `producerCount == 0` | 没有可见实例 |
+| `barrier.Failed()` | 屏障已失效，作业正在中止 |
+| 某 slot `!gridreceived` | 该实例在报出栅格前就结束（失败或取消） |
+
+**三者都意味着作业已经或即将失败。** 即：**正常路径上不存在「运行中途改路」。**
+
+#### 11.4.3 对验收的结论
+
+MF-07 的「不运行中途回退」这条**已实质满足**，无需改动行为。
+单模型路径本就合规（准入在采样前判定、层循环内只读同一结论）；
+场景路径的运行时分叉在正常路径下恒走同一支。
+
+#### 11.4.4 更正上一轮的表述
+
+上一轮（11.0 质疑三）写的是：
+
+> 走进 `Rejected` 的作业会静默退回累积整栈（实测斜率 189 MB/层），
+> **任何预算承诺当场失效且用户看不到提示**。
+
+**这句技术上正确，但漏掉了触发条件——那三种情况全是错误路径。**
+按它读出来的印象是「正常作业可能悄悄退回并吃掉 270 GB」，而实际不会。
+189 MB/层那个数字是 MF-05 之前**所有**场景作业的斜率，不是 Rejected 分支特有的。
+两者被并列在一起，读起来像是后者仍在发生。**保留原文于此，不删。**
+
+#### 11.4.5 为何仍不把 Rejected 改成报错
+
+走到那里时，真正的失败原因在生产者侧、由 `collectProducerResults` 带出。
+在 layersink 里另造一个错误只会**遮蔽**它 —— 用户看到的会是「流式对齐失败」
+而不是「模型 B 加载失败」。此处累积的整栈随后连同错误一起丢弃，
+代价是一次性的，换来的是错误归因不被污染。
+
+#### 11.4.6 将来什么时候要重开这张卡
+
+一旦引入**实例 Z 偏移**（各实例 `originzmm` 不再恒等），该判据就成为真正的
+运行时分叉，届时必须重新评估：那时「不对齐」是合法的业务场景而非错误，
+退回整栈才会成为真实的内存风险。代码注释已就地标注这一条。
+
+---
+
+### 11.5 MF-07c 实施记录（2026-09-06 COMPLETE）
+
+`src/slicer_core/system/SlicePeakMemoryEstimate.{h,cpp}`，纯函数、**不接生产**。
+
+#### 11.5.1 契约是单向的
+
+**允许高估，禁止低估。** 这不是「误差在 X% 以内」的精度要求 ——
+低估的表现形式是「承诺了预算然后 OOM」，比不做路由更糟；
+高估只会让一个本可跑通的作业被拒，用户立刻发现并调高预算。
+故每一处取舍都选偏大的一侧：活动列表按列数上界计（不猜 2.53% 的稀疏度）、
+条件分配拿不准时按分配计。
+
+#### 11.5.2 不复制任何常量
+
+所有逐列字节数由 `sizeof` 就地取得，条件判据直接调用生产函数本身
+（例如表面光油走 `SurfaceVarnishMasksRequired`，而不是照抄它的 `enabled` 判断）。
+
+理由不是洁癖：**抄一份就等于埋一处必然漂移的常量，而漂移方向不可控 ——
+可能正好导致低估**，那正是本卡唯一禁止的失败方向。
+
+为此把 `ReliefColumnInfo` 从 `slicer.cpp` 下沉到
+`geometry/ReliefColumnInfo.h`（它此前只在 `slicer.cpp` 内使用，18 处引用不变）。
+该结构每列一份，10um 下 736 万列即数百 MB，是模型里必须计入的大项。
+顺带使 `slicer.cpp` 再减 11 行。
+
+#### 11.5.3 建模了什么、没建模什么
+
+逐列项（O(列数)，两条路径共有）：`relief_columns`、两份 `column_ranges`、
+`support_source_layers`、compose 输出缓冲、表面光油两个单层。
+有界路径另加：`spans`、活动列表、三个单层缓冲。
+
+整栈项（O(列数 x 层数)，**仅 retained**）：`model_masks`、`support_masks`、
+`support_type_maps` 三份恒有（后两者的 resize 在 `support.enabled` 检查**之前**）；
+外光油开启时再加 `outer_varnish_masks` 与 `upper_support_boundary_masks`；
+shape 开启时再加一份 `originalSupportMasks` 整栈深拷贝。
+
+**未建模**（清单写在头文件里，必须随代码更新）：进程与运行时固定开销、
+`texture_runtime` 的纹理像素、`materialVolumePlan` 与 OpenVDB 体数据、
+模型网格本身、以及**分配器未归还给 OS 的部分** —— 注意实测 peak working set
+含最后这一块，故实测值天然高于「分配量之和」，这也是必须留余量的原因之一。
+
+余量取 **256 MiB**，是由实测点标定的**经验上界**，不是推导值。
+
+#### 11.5.4 实测校验结果
+
+四个点全部被高估覆盖：
+
+| 场景 | 估算 | 实测 | 裕度 |
+|---|---|---|---|
+| r01 @0.05mm（bounded） | 275 MiB | 85 MiB | 3.21x |
+| gubao04 @0.05mm（bounded） | 279 MiB | 126 MiB | 2.21x |
+| a-2 @10um（bounded） | 1,134 MiB | 902 MiB | **1.26x** |
+| a-2 @10um（retained，专项介入前） | 31,129 MiB | 22,528 MiB | **1.38x** |
+
+小作业裕度 2~3 倍是固定余量占主导所致，无害 —— 小作业本来就不触及预算。
+**大作业裕度收敛到 1.26~1.38 倍**，那正是预算判定真正起作用的区间。
+
+一处交叉验证：retained 估算 30.4 GB，与报告 §3.1 里**独立**算出的
+31.11 GB 几乎重合 —— 两次计算路径不同（一次逐项手算、一次由代码按
+`sizeof` 求和），结果吻合是对建模清单的一次旁证。
+
+#### 11.5.5 测试怎么钉住它
+
+`stage16c06_slice_peak_memory_estimate_unit_tests`：
+
+- **禁止低估**：四个实测点逐一断言 `predicted >= measured`，并把裕度打印出来
+  —— 只知道「没低估」不够，高估十倍的模型同样没用，而模型一旦漂移，
+  最先变的就是这个比值；
+- **有界估算必须与层数无关**：15 层与 1429 层结果逐字节相同，且有界路径
+  不得含任何 `scalesWithLayers` 的项。这是 MF-03X2a/MF-05 的核心成果，
+  也是判断模型有没有抄错路径的判据。对照断言 retained 必须随层数增长；
+- **准入未过时带出原因**：报 reason 而不是给一个永远达不到的数字；
+- **退化输入**：列数为 0 时只剩余量（不能报 0 —— 那会让预算判定误以为
+  「不占内存」）；层数非法时逐列项照旧、整栈项必须消失。
+
+#### 11.5.6 它还不能做什么
+
+**没有接进生产路径**，因为路由需要预算字段，而那是 MF-07d 的范围。
+本卡只交付一个可独立验证的纯函数。
+
+「禁止低估」目前只对上表四个点被机器证实。它们覆盖了两个数量级与两条路径，
+但**不构成普遍证明** —— 尤其是未建模项里的纹理与体数据，在贴图极大或
+OpenVDB 开启的配置下可能超过 256 MiB 的余量。接进生产前应当先补这两类场景的
+实测点；若余量不够，正确的处置是**提高余量**而不是让它低估。
+
+---
+
+## 12. MF-08 收口
+
+**矩阵：** `123.stl`、Reality 5/5、标准甲片、Stage 15 fixture，S0/S3/S4，support/material/varnish，
+1/11/12/22，cold/warm，Retained/Bounded/Sparse candidate。
+
+**出口：** 逐层 hash、RIP strict、取消恢复、wall/CPU/Peak Working Set 和 build identity。正式设备
+SLA/内存上限缺失时，只完成工程 Gate，不宣称 production SLA PASS。
+
+## 13. 修订记录
+
+| 日期 | 版本 | 变更 |
+|---|---|---|
+| 2026-08-21 | v2.2 | MF-03B4B 专项准备补齐：冻结 public DTO、facts identity、retained 精确顺序、Stage 15 eligible branch、caller output/sink 强异常边界、closure 固定 workspace、独立 oracle 与实施拆分；结论 PREPARED / IMPLEMENTATION GO，生产仍未接线。 |
+| 2026-08-21 | v2.1 | MF-03B4A COMPLETE：实现 plan-bound verified replay、Base/outer-varnish 最终化、逐层 compact connectivity sink 与 fail-closed 生命周期；Release 组合 Gate 通过且生产零接线。MF-03B4B 解除依赖等待但未开工。 |
+| 2026-08-21 | v2.0 | 完成 MF-03B4 准备审计并拆为 B4A/B4B；冻结 replay identity/digest checkpoint、Base/varnish/统计、材料/Stage15/closure、生命周期与零漂移 Gate。B4A 转 PREPARED，B4B 等待 B4A。 |
+| 2026-08-21 | v1.9 | MF-03B3 COMPLETE：实现非生产 InternalVoid/Shape/footprint/compact report sink/replay digest scanner，retained oracle 与 Release 定向回归通过；B4 和生产接线仍未准入。 |
+| 2026-08-20 | v1.8 | MF-03B3 转 PREPARED：冻结 InternalVoid/Shape 精确顺序、type 同步、post-shape footprint、compact report sink、canonical digest 和非生产边界。 |
+| 2026-08-20 | v1.7 | MF-03B2 COMPLETE：实现 bounded outer-boundary/unsupported 顺序 scanner、独立 retained oracle、强错误边界和热路径零分配 Gate；仍未接生产，B3/B4 继续部分准备。 |
+| 2026-08-19 | v1.6 | MF-03B2 转 PREPARED：冻结 P1 outer-boundary 顺序扫描、P2 unsupported discovery 状态机、compact demand/事件摘要、取消与错误边界及 retained oracle；B3/B4 仍未准入。 |
+| 2026-08-19 | v1.5 | MF-03B1 COMPLETE：实现 move-only range-derived support demand 与双 Mask caller-owned pre-shape 单层物化；retained oracle、错误/别名 Gate、Release 定向回归通过，未接生产。 |
+| 2026-08-19 | v1.4 | 完成 MF-03B 可执行准备审计并拆为 B1..B4；冻结 P0..P4 多遍顺序、B1 纯合同边界和测试矩阵。仅 MF-03B1 转 PREPARED，完整生产重放仍未准入。 |
+| 2026-08-18 | v1.3 | MF-02 COMPLETE：新增 owned layer 同步背压/错误合同并把 Legacy Adapter 改为移动交接；MF-03A COMPLETE：新增 compact occupancy ranges 和 caller-owned 单层物化，S0/S3/S4 与独立 Retained 对照零差异。MF-03B 仅完成部分准备，未接生产。 |
+| 2026-08-18 | v1.2 | 完成 MF-02/03 开发准备补充：冻结 owned callback 生命周期与错误合同；将 MF-03 拆为可独立验证的 MF-03A Occupancy Materializer 和高风险 MF-03B 多遍支撑重放。MF-02 转 ACTIVE。 |
+| 2026-08-18 | v1.1 | MF-01 COMPLETE：新增溢出安全 RasterMemoryBudget、稳定路由名和 123 大 Grid 预算证据；区分场景 RGBWSV 与逐实例 Mask 占用，独立用例 8/8、Release CTest 1/1 PASS。MF-02 转 PREPARED，生产仍为 Retained Dense。 |
+| 2026-08-18 | v1.0 | 用户授权开启 16C-06-MEMFLOW；完成 MF-00 文档准备并启动 MF-01。 |

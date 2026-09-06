@@ -1,6 +1,7 @@
 #pragma once
 
 #include <cstdint>
+#include <span>
 #include <vector>
 
 namespace slicer_core
@@ -29,6 +30,26 @@ struct MaterialClosureSemanticLayerInput
     std::vector<std::uint8_t> supportRequiredMask;
     std::vector<std::uint8_t> expectedOccupiedDomainMask;
     std::vector<std::uint8_t> layerEmptyMask;
+};
+
+/** @brief Borrowed semantic evidence used by the allocation-free detector core. */
+struct MaterialClosureSemanticLayerInputView
+{
+    int layerIndex{0};
+    double zMm{0.0};
+    int widthPx{0};
+    int heightPx{0};
+    std::span<const std::uint8_t> textureSurfaceMask;
+    std::span<const std::uint8_t> modelFillMask;
+    std::span<const std::uint8_t> modelMaterialMask;
+    std::span<const std::uint8_t> supportFillMask;
+    std::span<const std::uint8_t> internalVoidSupportMask;
+    std::span<const std::uint8_t> surfaceVarnishMask;
+    std::span<const std::uint8_t> outerVarnishShellMask;
+    std::span<const std::uint8_t> modelEnvelopeMask;
+    std::span<const std::uint8_t> supportRequiredMask;
+    std::span<const std::uint8_t> expectedOccupiedDomainMask;
+    std::span<const std::uint8_t> layerEmptyMask;
 };
 
 /**
@@ -76,6 +97,57 @@ struct MaterialClosureSemanticLayerAnalysis
     std::vector<std::uint8_t> internalVoidGapMask;
     std::vector<std::uint8_t> varnishSupportGapMask;
 };
+
+/** @brief Borrowed analysis masks valid until the workspace is reused. */
+struct MaterialClosureSemanticLayerAnalysisView
+{
+    int widthPx{0};
+    int heightPx{0};
+    MaterialClosureSemanticLayerResult summary;
+    std::span<const std::uint8_t> externalBackgroundMask;
+    std::span<const std::uint8_t> candidateGapMask;
+    std::span<const std::uint8_t> colorFillGapMask;
+    std::span<const std::uint8_t> modelSupportGapMask;
+    std::span<const std::uint8_t> colorSupportGapMask;
+    std::span<const std::uint8_t> internalVoidGapMask;
+    std::span<const std::uint8_t> varnishSupportGapMask;
+};
+
+/** @brief Caller-owned storage reused by semantic detector calls. */
+struct MaterialClosureSemanticWorkspace
+{
+    void Prepare(std::size_t pixelCount);
+
+    std::vector<std::uint8_t> externalBackgroundMask;
+    std::vector<std::uint8_t> candidateGapMask;
+    std::vector<std::uint8_t> colorFillGapMask;
+    std::vector<std::uint8_t> modelSupportGapMask;
+    std::vector<std::uint8_t> colorSupportGapMask;
+    std::vector<std::uint8_t> internalVoidGapMask;
+    std::vector<std::uint8_t> varnishSupportGapMask;
+    std::vector<std::size_t> traversalQueue;
+};
+
+/** @brief Create a borrowed view over the existing owning semantic DTO. */
+[[nodiscard]] MaterialClosureSemanticLayerInputView ViewMaterialClosureSemanticLayerInput(
+    const MaterialClosureSemanticLayerInput& input) noexcept;
+
+/**
+ * @brief Analyze one layer using caller-prepared reusable storage.
+ * @throws std::invalid_argument When input or workspace dimensions are invalid.
+ */
+MaterialClosureSemanticLayerAnalysisView AnalyzeMaterialClosureSemanticLayer(
+    const MaterialClosureSemanticLayerInputView& input,
+    int connectivity,
+    int maxGapPx,
+    MaterialClosureSemanticWorkspace& workspace);
+
+/** @brief Detect one layer using caller-prepared reusable storage. */
+MaterialClosureSemanticLayerResult DetectMaterialClosureSemanticLayer(
+    const MaterialClosureSemanticLayerInputView& input,
+    int connectivity,
+    int maxGapPx,
+    MaterialClosureSemanticWorkspace& workspace);
 
 /**
  * @brief Analyzes exact material gaps and retains masks for a later repair plan.

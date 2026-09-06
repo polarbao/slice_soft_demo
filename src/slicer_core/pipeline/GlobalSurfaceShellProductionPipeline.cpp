@@ -333,6 +333,11 @@ SliceRunResult RunGlobalSurfaceShellProductionPipeline(
     const std::filesystem::path& configPath,
     const SliceRunOptions& options)
 {
+    if (options.ownedlayercallback)
+    {
+        throw std::invalid_argument(
+            "owned layer callback is available only for the Legacy pipeline");
+    }
     const Clock::time_point runStart = Clock::now();
     const Clock::time_point configStart = Clock::now();
     const SliceConfig config = load_slice_config(configPath);

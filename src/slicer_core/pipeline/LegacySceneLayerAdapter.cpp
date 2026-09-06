@@ -205,28 +205,51 @@ SceneRasterAdapterResult AdaptLegacySceneLayers(
             result.raster.localgrid.layerthicknessmm =
                 grid.layerthicknessmm;
             gridReceived = true;
+            if (request.gridready)
+            {
+                request.gridready(result.raster.localgrid);
+            }
         };
-    options.layercallback =
+    options.ownedlayercallback =
         [&request, &result](
-            const RgbwsvProductionLayer& output,
-            const MaterialClosureSemanticLayerInput& semantic)
+            SliceRunOwnedLayer&& produced)
         {
             ThrowIfCancellationRequested(request);
             SceneInstanceRasterLayer layer;
-            layer.layerindex = output.layerIndex;
-            layer.zmm = output.zMm;
-            layer.output = output;
-            layer.modelownership = semantic.modelMaterialMask;
+            layer.layerindex = produced.output.layerIndex;
+            layer.zmm = produced.output.zMm;
+            layer.modelownership =
+                std::move(produced.semantic.modelMaterialMask);
             layer.modelvarnishownership =
                 BuildModelVarnishOwnership(
-                    output,
+                    produced.output,
                     layer.modelownership,
                     result.raster.protocol);
             layer.outervarnishownership =
-                semantic.outerVarnishShellMask;
-            layer.supportownership = semantic.supportFillMask;
-            result.raster.layers.push_back(std::move(layer));
+                std::move(
+                    produced.semantic.outerVarnishShellMask);
+            layer.supportownership =
+                std::move(produced.semantic.supportFillMask);
+            layer.output = std::move(produced.output);
+            if (request.layersink)
+            {
+                // MF-05：交出即释放，不再累积整栈。
+                if (!request.layersink(std::move(layer)))
+                {
+                    // 消费方已中止：按合同回 Cancelled，使产线停下，
+                    // 避免生产者空转或挂在屏障上。
+                    SliceRunLayerConsumeResult aborted;
+                    aborted.status = SliceRunLayerConsumeStatus::Cancelled;
+                    aborted.detail = "scene layer barrier aborted";
+                    return aborted;
+                }
+            }
+            else
+            {
+                result.raster.layers.push_back(std::move(layer));
+            }
             ThrowIfCancellationRequested(request);
+            return SliceRunLayerConsumeResult{};
         };
 
     try
@@ -253,6 +276,18 @@ SceneRasterAdapterResult AdaptLegacySceneLayers(
             SceneRasterErrorCode::Cancelled,
             "canceltoken",
             "Legacy scene-layer adapter stopped at a cooperative checkpoint");
+        return result;
+    }
+    catch (const SliceRunLayerConsumerError& error)
+    {
+        BlockLegacyAdapter(
+            result,
+            request,
+            error.Status() == SliceRunLayerConsumeStatus::Cancelled
+                ? SceneRasterErrorCode::Cancelled
+                : SceneRasterErrorCode::ProducerFailed,
+            "ownedlayerconsumer",
+            error.what());
         return result;
     }
     catch (const std::exception& exception)
@@ -282,11 +317,15 @@ SceneRasterAdapterResult AdaptLegacySceneLayers(
         return result;
     }
 
+    // MF-05：设置 layersink 时层已逐层交出，raster.layers 恒为空，
+    // 故此处只校验栅格；「层数齐备」改由消费方在合成时按已校验层数断言。
+    const bool layersStreamed = static_cast<bool>(request.layersink);
     if (!gridReceived
         || !result.raster.localgrid.IsValid()
-        || result.raster.layers.size()
-            != static_cast<std::size_t>(
-                result.raster.localgrid.layercount))
+        || (!layersStreamed
+            && result.raster.layers.size()
+                != static_cast<std::size_t>(
+                    result.raster.localgrid.layercount)))
     {
         BlockLegacyAdapter(
             result,

@@ -1335,7 +1335,7 @@ bool VerifyStage16Diagnostics(QTextStream& errors)
         QString{},
         QString{},
         QStringLiteral("package"),
-        timing,
+        timing, QJsonObject{},
         20,
         -1);
     auto* scanValue = jobPanel.findChild<QLabel*>(

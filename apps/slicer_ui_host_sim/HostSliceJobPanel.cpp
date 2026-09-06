@@ -418,6 +418,7 @@ void HostSliceJobPanel::ShowCompletion(
     const QString& detail,
     const QString& packageDirectory,
     const QJsonObject& timing,
+    const QJsonObject& observedTiming,
     const qint64 elapsedMs,
     const qint64 cancelLatencyMs)
 {
@@ -441,7 +442,7 @@ void HostSliceJobPanel::ShowCompletion(
             QStringLiteral("totalMs"),
             static_cast<double>(m_lastWorkerElapsedMs));
     }
-    ApplyTiming(displayTiming, elapsedMs);
+    ApplyTiming(displayTiming, observedTiming, elapsedMs);
     QStringList details{
         QStringLiteral("错误码：%1").arg(
             code.isEmpty() ? QStringLiteral("未返回") : code),
@@ -482,43 +483,60 @@ void HostSliceJobPanel::ShowCompletion(
 
 void HostSliceJobPanel::ApplyTiming(
     const QJsonObject& timing,
+    const QJsonObject& observedTiming,
     const qint64 hostElapsedMs)
 {
     ResetTiming();
+    // MF-07b 后半：两类数据分区展示。
+    //   有 Worker 权威 -> 用它，引擎栏显示引擎名；
+    //   没有但宿主有估算 -> 用估算值填表，引擎栏【明确说明这是估算】；
+    //   两者都没有 -> 表格留空。
+    // 此前的做法是把宿主估算并进 timing 再冒充权威（更早）、
+    // 或者一概不显示（前半修完之后）—— 前者不诚实，后者让失败诊断变瞎。
+    const bool authoritative =
+        timing.value(QStringLiteral("available")).toBool();
+    const bool estimated = !authoritative && !observedTiming.isEmpty();
+    const QJsonObject& source = authoritative ? timing : observedTiming;
     const QString engine = timing.value(
         QStringLiteral("engine")).toString();
+    // 三态，不可合并：`available` 说的是「有没有细分耗时可显示」，
+    // `approximate` 说的是「这些值本身是不是估算的」—— 两者正交。
+    // 我最初把它们耦合成两态，丢掉了「有权威数据但其值为估算」这一种组合，
+    // hostflow_hb05 的夹具（available 与 approximate 同时为真）当场红了。
     m_engineValue->setText(
-        timing.value(QStringLiteral("approximate")).toBool()
-            ? QStringLiteral("失败前阶段进度估算")
-            : engine.isEmpty() ? QStringLiteral("未提供") : engine);
-    if (timing.value(QStringLiteral("available")).toBool())
+        estimated
+            ? QStringLiteral("宿主估算·非 Worker 权威（失败前阶段进度）")
+            : timing.value(QStringLiteral("approximate")).toBool()
+                ? QStringLiteral("失败前阶段进度估算")
+                : engine.isEmpty() ? QStringLiteral("未提供") : engine);
+    if (authoritative || estimated)
     {
         SetTimingValue(
             m_configLoadValue,
-            timing,
+            source,
             QStringLiteral("configLoadMs"));
-        SetTimingValue(m_modelLoadValue, timing, QStringLiteral("modelLoadMs"));
-        SetTimingValue(m_gridSetupValue, timing, QStringLiteral("gridSetupMs"));
+        SetTimingValue(m_modelLoadValue, source, QStringLiteral("modelLoadMs"));
+        SetTimingValue(m_gridSetupValue, source, QStringLiteral("gridSetupMs"));
         SetTimingValue(
             m_sliceProcessingValue,
-            timing,
+            source,
             QStringLiteral("sliceProcessingMs"));
         SetTimingValue(
             m_layerComputeValue,
-            timing,
+            source,
             QStringLiteral("layerComputeMs"));
         SetTimingValue(
             m_layerComposeValue,
-            timing,
+            source,
             QStringLiteral("layerComposeMs"));
-        SetTimingValue(m_tiffWriteValue, timing, QStringLiteral("tiffWriteMs"));
+        SetTimingValue(m_tiffWriteValue, source, QStringLiteral("tiffWriteMs"));
         SetTimingValue(
             m_previewWriteValue,
-            timing,
+            source,
             QStringLiteral("previewWriteMs"));
-        const double reportBuildMs = timing.value(
+        const double reportBuildMs = source.value(
             QStringLiteral("reportBuildMs")).toDouble(-1.0);
-        const double reportWriteMs = timing.value(
+        const double reportWriteMs = source.value(
             QStringLiteral("reportWriteMs")).toDouble(-1.0);
         m_reportValue->setText(
             reportBuildMs >= 0.0 && reportWriteMs >= 0.0
@@ -526,9 +544,9 @@ void HostSliceJobPanel::ApplyTiming(
                 : QStringLiteral("未提供"));
         SetTimingValue(
             m_outputWriteValue,
-            timing,
+            source,
             QStringLiteral("outputWriteMs"));
-        const int scanCount = timing.value(
+        const int scanCount = source.value(
             QStringLiteral("supportStatisticsScanCount")).toInt(-1);
         m_supportStatisticsScanValue->setText(
             scanCount >= 0

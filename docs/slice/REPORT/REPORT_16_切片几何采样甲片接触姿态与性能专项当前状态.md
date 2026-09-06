@@ -1,7 +1,7 @@
 # REPORT_16 切片几何采样、甲片接触姿态与性能专项当前状态
 
 > 状态：**ENGINEERING CANDIDATE COMPLETE / PRODUCTION DEFAULT DEFERRED**
-> 日期：2026-08-17
+> 日期：2026-08-18
 > 当前默认：**Legacy + S0 + P0**
 
 ## 1. Current State
@@ -15,6 +15,7 @@ Stage 16 已完成准入审计、采样合同与候选、姿态诊断、性能 t
 16B-01..03         COMPLETE
 16C-01..03         COMPLETE
 16C-05             IMPLEMENTATION COMPLETE / PERFORMANCE RE-MEASURE PENDING
+16C-06-MEMFLOW     ACTIVE / MF-00..03B3 COMPLETE / MF-03B4 PREPARATION PARTIAL
 16D-01..04         COMPLETE
 16D-05             NOT AUTHORIZED
 ```
@@ -85,7 +86,7 @@ buffer。持久化 TIFF 仍由严格 Reader 独立解码核验，不以内部证
 | 平移实例复用 | Stage 13B 已满足既定范围 |
 | Bottom Projection Range Provider | 未实现，保留后续优化 |
 | Compose/Buffer 复用 | 16C-05 已实施并通过功能门禁；完整五模型同请求性能复测待补 |
-| Occupancy 流式化 | 未实现，保留后续优化 |
+| Occupancy 流式化 | 16C-06-MEMFLOW MF-00..03B3 已完成、MF-03B4 仅部分准备；生产仍为 Retained Dense |
 | 生产几何/支撑缓存 | 未实现，保留后续优化 |
 | Preview/I/O 解耦、自适应 Preview | 未实现，保留后续优化 |
 | 有内存预算的有限并行 | 未实现，等待内存预算 |

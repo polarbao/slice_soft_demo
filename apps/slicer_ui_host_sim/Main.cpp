@@ -295,6 +295,7 @@ int RunHostFlowJobUiSmoke(const QString& modulePath)
             {QStringLiteral("modelLoadMs"), 12.5},
             {QStringLiteral("tiffWriteMs"), 8.0},
             {QStringLiteral("totalMs"), 20.5}},
+        QJsonObject{},   // Worker 已给权威 telemetry，宿主观测值不参与
         25,
         -1);
     if (!detailView->toPlainText().contains(
@@ -337,6 +338,13 @@ int RunHostFlowJobUiSmoke(const QString& modulePath)
         QString{},
         QString{},
         QJsonObject{},
+        // MF-07b 后半：Worker 没给权威 telemetry 时，宿主估算走这个独立通道。
+        // 本用例正是该场景，故给一份观测值，让面板展示「非权威」分区。
+        QJsonObject{
+            {QStringLiteral("approximate"), true},
+            {QStringLiteral("source"), QStringLiteral("progress_telemetry")},
+            {QStringLiteral("pollResolutionMs"), 100},
+            {QStringLiteral("gridSetupMs"), 12.0}},
         22,
         -1);
     if (modelLoadValue->text() != QStringLiteral("未提供")

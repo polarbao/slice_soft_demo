@@ -444,6 +444,16 @@ void TestRealProductionExecution(
                 && instances.at(0U).at("composeMs").as_double() >= 0.0
                 && instances.at(0U).at("layerCount").as_int() > 0,
             "Worker serializes one visible instance core and compose timing");
+        // MF-07a：result 的 timing 此前连内存字段都没有，宿主只好拿自测值补齐
+        // 再标成 available —— 这一条是「Host 只展示 Worker 权威 telemetry」
+        // 的前提，故与 SLICE_TIMING 行一并钉住。
+        Check(timing.contains("memoryAvailable")
+                && timing.contains("workingSetBytes")
+                && timing.contains("peakWorkingSetBytes"),
+            "Worker result timing carries memory counters");
+        Check(!timing.at("memoryAvailable").as_bool()
+                || timing.at("peakWorkingSetBytes").as_double() > 0.0,
+            "Worker result reports a real peak working set when available");
     }
     Check(std::filesystem::is_regular_file(packageDirectory / "manifest.json"),
         "real SliceFacade publishes a manifest");
@@ -451,6 +461,24 @@ void TestRealProductionExecution(
             && protocol.str().find("percent=100") != std::string::npos
             && protocol.str().find("SLICE_TIMING") != std::string::npos,
         "reserved progress and timing lines are emitted");
+    // MF-07a：内存量此前是硬编码的 "workingSetBytes=0 peakWorkingSetBytes=0"，
+    // 而上面那条只查 SLICE_TIMING 是否存在 —— 于是它被写死了多久都没人发现。
+    // 此处按「可得则必须非零」钉住：平台不支持时 available 为假、允许为 0，
+    // 但一旦声明 available 就不能再报 0。
+    {
+        const std::string emitted = protocol.str();
+        const std::size_t timingAt = emitted.find("SLICE_TIMING");
+        const std::string timingLine =
+            emitted.substr(timingAt, emitted.find('\n', timingAt) - timingAt);
+        const bool declaresAvailable =
+            timingLine.find("memoryAvailable=1") != std::string::npos;
+        Check(!declaresAvailable
+                || (timingLine.find("peakWorkingSetBytes=0") == std::string::npos
+                    && timingLine.find("workingSetBytes=0") == std::string::npos),
+            "SLICE_TIMING reports real memory counters when they are available");
+        Check(timingLine.find("memoryAvailable=") != std::string::npos,
+            "SLICE_TIMING declares whether memory counters are available");
+    }
 }
 
 void TestCancelledBeforeMaterialization(

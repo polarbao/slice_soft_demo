@@ -4,6 +4,8 @@
 #include "slicer_core/diagnostics/MaterialClosureSemanticDetector.h"
 #include "slicer_core/geometry/SceneModelTriangleMeshAdapter.h"
 #include "slicer_core/geometry/LayerOccupancyProvider.h"
+#include "slicer_core/geometry/SliceGridSpec.h"
+#include "slicer_core/geometry/ReliefColumnInfo.h"
 #include "slicer_core/geometry/TransformedModelAdapter.h"
 #include "slicer_core/json_value.h"
 #include "slicer_core/material/MaterialClosureRepair.h"
@@ -12,10 +14,12 @@
 #include "slicer_core/materials/volume/MaterialOpacityVarnishResolver.h"
 #include "slicer_core/materials/volume/MaterialVolumePlan.h"
 #include "slicer_core/materials/volume/MaterialVolumeWhiteCarrier.h"
+#include "slicer_core/material/RetainedMaterialLayerComposer.h"
 #include "slicer_core/materials/texture_application/TextureFillPartitionAdmission.h"
 #include "slicer_core/materials/texture_application/TextureWhiteCarrierPolicy.h"
 #include "slicer_core/materials/transfer/LegacyTransferChannelSession.h"
 #include "slicer_core/materials/varnish_geometry/OuterVarnishDiscretization.h"
+#include "slicer_core/materials/varnish_geometry/SurfaceVarnishMasks.h"
 #include "slicer_core/model.h"
 #include "slicer_core/output/rgbwsv/RgbwsvPackageWriter.h"
 #include "slicer_core/output/rgbwsvt/RgbwsvtLegacyPackageMetadata.h"
@@ -23,10 +27,14 @@
 #include "slicer_core/reports/MaterialVolumeReport.h"
 #include "slicer_core/reports/MaterialClosureReport.h"
 #include "slicer_core/reports/ReportBase.h"
+#include "slicer_core/support/BoundedReliefSupportPlan.h"
+#include "slicer_core/support/InternalVoidSupport.h"
 #include "slicer_core/support/SupportBaseProjection.h"
+#include "slicer_core/support/SupportConnectivityAnalysis.h"
 #include "slicer_core/support/SupportShapePipeline.h"
 #include "slicer_core/support/SupportShapePolicy.h"
 #include "slicer_core/support/SupportShapeReport.h"
+#include "slicer_core/support/SupportType.h"
 #include "slicer_core/texture_image.h"
 #include "slicer_core/tiff_io.h"
 
@@ -100,16 +108,6 @@ bool ShouldNotifyLayerProgress(const int completedLayers, const int layerCount)
     return completedLayers % interval == 0;
 }
 
-struct GridSpec {
-    int width_px{0};
-    int height_px{0};
-    int layer_count{0};
-    double pixel_size_x_mm{0.0};
-    double pixel_size_y_mm{0.0};
-    double origin_x_mm{0.0};
-    double origin_y_mm{0.0};
-};
-
 struct Segment2 {
     double x0{0.0};
     double y0{0.0};
@@ -123,37 +121,10 @@ struct RasterResult {
     int filled_spans{0};
 };
 
-using ChannelStats = TiffChannelStats;
+using ChannelStats = BoundedMaterialChannelStats;
 
-struct SupportComponentSummary {
-    int area_px{0};
-    int min_x{0};
-    int min_y{0};
-    int max_x{0};
-    int max_y{0};
-};
 
-struct SupportConnectivityDiagnostics {
-    bool enabled{false};
-    int component_count{0};
-    int largest_component_pixels{0};
-    int small_component_count{0};
-    int tiny_component_count{0};
-    std::vector<SupportComponentSummary> components;
-};
-
-struct LayerSemanticStats {
-    int texture_surface_pixels{0};
-    std::uint64_t unprintable_white_carrier_pixels{0};
-    int model_fill_pixels{0};
-    int support_pixels{0};
-    int internal_void_support_pixels{0};
-    int outer_varnish_pixels{0};
-    int outer_surface_varnish_pixels{0};
-    int inner_surface_varnish_pixels{0};
-    /// @brief MO-04：因不透明度判据改写 V 通道的像素数。
-    std::uint64_t opacity_varnish_pixels{0};
-};
+using LayerSemanticStats = BoundedMaterialLayerSemanticStats;
 
 struct LayerDiagnostics {
     int layer_index{0};
@@ -205,18 +176,6 @@ struct ReliefReportData {
     Json::Array warnings;
 };
 
-struct ReliefColumnInfo {
-    bool has_model{false};
-    int lower_layer{-1};
-    int upper_layer{-1};
-    double z_min_mm{0.0};
-    double z_max_mm{0.0};
-    int hit_count{0};
-    bool multi_hit{false};
-    int top_triangle_index{-1};
-    std::array<double, 3> top_barycentric{0.0, 0.0, 0.0};
-};
-
 /**
  * @brief 逐列逐材质的顶面（MATOPQ-RGB M2）。
  *
@@ -251,16 +210,6 @@ struct ReliefSamplingResult {
     std::vector<ReliefColumnInfo> columns;
     ReliefPerMaterialTopSurface per_material_top;
     ReliefReportData report;
-};
-
-enum class SupportType : std::uint8_t {
-    None = 0,
-    BottomProjection = 1,
-    UnsupportedIsland = 2,
-    FullVerticalProjection = 3,
-    InternalVoid = 4,
-    UpperProjection = 5,
-    ProjectionBase = 6,
 };
 
 struct SupportPlacementPolicy {
@@ -309,18 +258,7 @@ struct UpperSupportBoundaryInfo
     std::string source{"model_envelope"};
 };
 
-struct SurfaceVarnishMasks {
-    std::vector<std::vector<std::uint8_t>> outer_surface_masks;
-    std::vector<std::vector<std::uint8_t>> inner_surface_masks;
-};
-
-struct TextureColumnColor {
-    bool has_color{false};
-    std::array<std::uint8_t, 3> rgb{0, 0, 0};
-    bool sampled_texture{false};
-    bool used_fallback{false};
-    bool uv_out_of_range{false};
-};
+using TextureColumnColor = BoundedTextureColumnFact;
 
 struct TextureReportData {
     bool enabled{false};
@@ -340,11 +278,7 @@ struct TextureReportData {
     Json::Array warnings;
 };
 
-struct ColumnLayerRange {
-    bool has_model{false};
-    int lower_layer{-1};
-    int upper_layer{-1};
-};
+using ColumnLayerRange = BoundedMaterialColumnRangeFact;
 
 struct MaterialPixel {
     std::uint8_t r{255};
@@ -370,20 +304,8 @@ struct MaterialPolicyReportData {
     Json::Array warnings;
 };
 
-enum class MaterialRole {
-    Rgb,
-    White,
-    Varnish,
-    Ignore,
-    SupportCandidate,
-    Support,
-};
-
-struct MaterialRoleColumn {
-    bool has_role{false};
-    MaterialRole role{MaterialRole::Rgb};
-    std::array<std::uint8_t, 3> rgb{0, 0, 0};
-};
+using MaterialRole = BoundedMaterialRole;
+using MaterialRoleColumn = BoundedMaterialRoleColumnFact;
 
 struct MaterialRoleMappingReportData {
     bool enabled{false};
@@ -808,64 +730,6 @@ bool should_write_preview(const PreviewConfig& preview, const int layer_index, c
     return layer_index == 0 || layer_index + 1 == layer_count || (layer_index % interval) == 0;
 }
 
-std::size_t mask_index(const GridSpec& grid, const int x, const int y) {
-    return static_cast<std::size_t>(y) * grid.width_px + x;
-}
-
-std::vector<std::uint8_t> BuildExternalEmptyMask(
-    const GridSpec& grid,
-    const std::vector<std::uint8_t>& modelMask)
-{
-    const std::size_t pixelCount = static_cast<std::size_t>(grid.width_px) * grid.height_px;
-    std::vector<std::uint8_t> externalEmpty(pixelCount, 0);
-    std::vector<int> stack;
-    stack.reserve(pixelCount);
-
-    const auto pushExternalEmpty = [&](const int x, const int y)
-    {
-        if (x < 0 || x >= grid.width_px || y < 0 || y >= grid.height_px)
-        {
-            return;
-        }
-        const std::size_t index = mask_index(grid, x, y);
-        if (modelMask.at(index) != 0 || externalEmpty.at(index) != 0)
-        {
-            return;
-        }
-        externalEmpty.at(index) = 1;
-        stack.push_back(static_cast<int>(index));
-    };
-
-    for (int x{0}; x < grid.width_px; ++x)
-    {
-        pushExternalEmpty(x, 0);
-        pushExternalEmpty(x, grid.height_px - 1);
-    }
-    for (int y{0}; y < grid.height_px; ++y)
-    {
-        pushExternalEmpty(0, y);
-        pushExternalEmpty(grid.width_px - 1, y);
-    }
-
-    constexpr std::array<std::array<int, 2>, 8> neighbors8{{
-        {{-1, -1}}, {{0, -1}}, {{1, -1}}, {{-1, 0}}, {{1, 0}}, {{-1, 1}}, {{0, 1}}, {{1, 1}},
-    }};
-
-    while (!stack.empty())
-    {
-        const int current = stack.back();
-        stack.pop_back();
-        const int x = current % grid.width_px;
-        const int y = current / grid.width_px;
-        for (const auto& neighbor : neighbors8)
-        {
-            pushExternalEmpty(x + neighbor.at(0), y + neighbor.at(1));
-        }
-    }
-
-    return externalEmpty;
-}
-
 std::vector<std::uint8_t> DilateMaskPhysical(
     const GridSpec& grid,
     const std::vector<std::uint8_t>& sourceMask,
@@ -998,98 +862,6 @@ std::vector<std::vector<std::uint8_t>> BuildUpperSupportBoundaryMasks(
         }
     }
     return boundaryMasks;
-}
-
-SurfaceVarnishMasks BuildSurfaceVarnishMasks(
-    const SliceConfig& config,
-    const GridSpec& grid,
-    const std::vector<std::vector<std::uint8_t>>& modelMasks)
-{
-    SurfaceVarnishMasks masks;
-    if (!config.surface_varnish.enabled
-        || (!config.surface_varnish.outer_surface && !config.surface_varnish.inner_surface))
-    {
-        return masks;
-    }
-
-    const std::size_t pixelCount = static_cast<std::size_t>(grid.width_px) * grid.height_px;
-    masks.outer_surface_masks.resize(
-        static_cast<std::size_t>(grid.layer_count),
-        std::vector<std::uint8_t>(pixelCount, 0));
-    masks.inner_surface_masks.resize(
-        static_cast<std::size_t>(grid.layer_count),
-        std::vector<std::uint8_t>(pixelCount, 0));
-
-    const int radiusPx = std::max(1, config.surface_varnish.thickness_px);
-    for (int layerIndex{0}; layerIndex < grid.layer_count; ++layerIndex)
-    {
-        const std::vector<std::uint8_t>& modelMask = modelMasks.at(layerIndex);
-        const bool hasModel = std::any_of(modelMask.begin(), modelMask.end(), [](const std::uint8_t value)
-        {
-            return value != 0;
-        });
-        if (!hasModel)
-        {
-            continue;
-        }
-
-        const std::vector<std::uint8_t> externalEmpty = BuildExternalEmptyMask(grid, modelMask);
-        for (int y{0}; y < grid.height_px; ++y)
-        {
-            for (int x{0}; x < grid.width_px; ++x)
-            {
-                const std::size_t index = mask_index(grid, x, y);
-                if (modelMask.at(index) == 0)
-                {
-                    continue;
-                }
-
-                bool touchesExternalEmpty{false};
-                bool touchesInternalEmpty{false};
-                for (int dy{-radiusPx}; dy <= radiusPx; ++dy)
-                {
-                    for (int dx{-radiusPx}; dx <= radiusPx; ++dx)
-                    {
-                        if (dx == 0 && dy == 0)
-                        {
-                            continue;
-                        }
-                        const int nx{x + dx};
-                        const int ny{y + dy};
-                        if (nx < 0 || nx >= grid.width_px || ny < 0 || ny >= grid.height_px)
-                        {
-                            touchesExternalEmpty = true;
-                            continue;
-                        }
-                        const std::size_t neighborIndex = mask_index(grid, nx, ny);
-                        if (modelMask.at(neighborIndex) != 0)
-                        {
-                            continue;
-                        }
-                        if (externalEmpty.at(neighborIndex) != 0)
-                        {
-                            touchesExternalEmpty = true;
-                        }
-                        else
-                        {
-                            touchesInternalEmpty = true;
-                        }
-                    }
-                }
-
-                if (config.surface_varnish.outer_surface && touchesExternalEmpty)
-                {
-                    masks.outer_surface_masks.at(layerIndex).at(index) = 1;
-                }
-                if (config.surface_varnish.inner_surface && touchesInternalEmpty)
-                {
-                    masks.inner_surface_masks.at(layerIndex).at(index) = 1;
-                }
-            }
-        }
-    }
-
-    return masks;
 }
 
 int ApplyOuterVarnishSupportPriority(
@@ -1331,7 +1103,11 @@ ReliefSamplingResult sample_relief_heightfield_masks(
     std::vector<LayerDiagnostics>& diagnostics,
     // M2：MATVOL 的材质名表。非空时按 (材质, 列) 记录逐材质顶面，使被遮住的
     // 下层材质也能采到自己的贴图；为空（MATVOL 未启用）时完全不建表，零开销。
-    const std::span<const std::string>* planMaterialNames = nullptr)
+    const std::span<const std::string>* planMaterialNames = nullptr,
+    // MF-03X2a：false 时【不分配也不填充】整栈 model mask，只产出 columns。
+    // 10um 大幅面场景该整栈约 10.4 GB，是三个无条件分配之一。
+    // 列区间仍照常写入 columns，主循环据此按层重建（见 BoundedReliefSupportPlan）。
+    const bool materializeModelMaskStack = true)
 {
     const std::size_t pixelCount{static_cast<std::size_t>(grid.width_px) * grid.height_px};
     std::vector<double> zMin(pixelCount, std::numeric_limits<double>::max());
@@ -1607,9 +1383,12 @@ ReliefSamplingResult sample_relief_heightfield_masks(
         }
     }
 
-    result.model_masks.resize(
-        static_cast<std::size_t>(grid.layer_count),
-        std::vector<std::uint8_t>(pixelCount, 0));
+    if (materializeModelMaskStack)
+    {
+        result.model_masks.resize(
+            static_cast<std::size_t>(grid.layer_count),
+            std::vector<std::uint8_t>(pixelCount, 0));
+    }
     diagnostics.clear();
     diagnostics.reserve(grid.layer_count);
     for (int layerIndex{0}; layerIndex < grid.layer_count; ++layerIndex)
@@ -1664,6 +1443,11 @@ ReliefSamplingResult sample_relief_heightfield_masks(
         }
         column.lower_layer = startLayer;
         column.upper_layer = endLayer;
+        if (!materializeModelMaskStack)
+        {
+            // MF-03X2a：列区间已写入 column，整栈由主循环按层重建。
+            continue;
+        }
         for (int layerIndex{startLayer}; layerIndex <= endLayer; ++layerIndex)
         {
             result.model_masks.at(layerIndex).at(pixelIndex) = 1;
@@ -1752,11 +1536,11 @@ std::vector<ColumnLayerRange> compute_mask_column_ranges(
                 continue;
             }
             ColumnLayerRange& range = ranges.at(i);
-            if (!range.has_model) {
-                range.has_model = true;
-                range.lower_layer = layer_index;
+            if (!range.hasModel) {
+                range.hasModel = true;
+                range.lowerLayer = layer_index;
             }
-            range.upper_layer = layer_index;
+            range.upperLayer = layer_index;
         }
     }
     return ranges;
@@ -1768,26 +1552,6 @@ bool support_mode_includes_bottom_projection(const std::string& mode) {
 
 bool support_mode_includes_unsupported(const std::string& mode) {
     return mode == "unsupported_only" || mode == "bottom_projection_plus_unsupported";
-}
-
-int support_type_priority(const SupportType type) {
-    switch (type) {
-        case SupportType::InternalVoid:
-            return 6;
-        case SupportType::UnsupportedIsland:
-            return 5;
-        case SupportType::FullVerticalProjection:
-            return 4;
-        case SupportType::UpperProjection:
-            return 3;
-        case SupportType::BottomProjection:
-            return 2;
-        case SupportType::ProjectionBase:
-            return 1;
-        case SupportType::None:
-            return 0;
-    }
-    return 0;
 }
 
 std::string support_type_name(const SupportType type) {
@@ -1837,176 +1601,6 @@ SupportPlacementPolicy ResolveSupportPlacementPolicy(const SliceConfig& config)
     return policy;
 }
 
-void set_support_pixel(
-    std::vector<std::uint8_t>& support_mask,
-    std::vector<SupportType>& support_type_map,
-    const std::size_t index,
-    const SupportType type) {
-    support_mask.at(index) = 1;
-    if (support_type_priority(type) >= support_type_priority(support_type_map.at(index))) {
-        support_type_map.at(index) = type;
-    }
-}
-
-void SynchronizeSupportShapeTypeMaps(
-    const std::vector<std::vector<std::uint8_t>>& originalSupportMasks,
-    const std::vector<std::vector<std::uint8_t>>& optimizedSupportMasks,
-    std::vector<std::vector<SupportType>>& supportTypeMaps)
-{
-    for (std::size_t layerIndex{0}; layerIndex < optimizedSupportMasks.size(); ++layerIndex)
-    {
-        const std::vector<std::uint8_t>& originalMask = originalSupportMasks.at(layerIndex);
-        const std::vector<std::uint8_t>& optimizedMask = optimizedSupportMasks.at(layerIndex);
-        std::vector<SupportType>& typeMap = supportTypeMaps.at(layerIndex);
-        for (std::size_t index{0}; index < optimizedMask.size(); ++index)
-        {
-            if (optimizedMask.at(index) == 0)
-            {
-                typeMap.at(index) = SupportType::None;
-            }
-            else if (originalMask.at(index) == 0 && typeMap.at(index) == SupportType::None)
-            {
-                typeMap.at(index) = SupportType::BottomProjection;
-            }
-        }
-    }
-}
-
-void AddInternalVoidSupportForLayer(
-    const SliceConfig& config,
-    const GridSpec& grid,
-    const std::vector<std::uint8_t>& modelMask,
-    std::vector<std::uint8_t>& supportMask,
-    std::vector<SupportType>& supportTypeMap)
-{
-    if (!config.support.internal_void.enabled)
-    {
-        return;
-    }
-
-    const std::size_t pixelCount = static_cast<std::size_t>(grid.width_px) * grid.height_px;
-    std::vector<std::uint8_t> externalEmpty(pixelCount, 0);
-    std::vector<int> stack;
-    stack.reserve(pixelCount);
-
-    const auto pushExternalEmpty = [&](const int x, const int y)
-    {
-        if (x < 0 || x >= grid.width_px || y < 0 || y >= grid.height_px)
-        {
-            return;
-        }
-        const std::size_t index = mask_index(grid, x, y);
-        if (modelMask.at(index) != 0 || externalEmpty.at(index) != 0)
-        {
-            return;
-        }
-        externalEmpty.at(index) = 1;
-        stack.push_back(static_cast<int>(index));
-    };
-
-    for (int x{0}; x < grid.width_px; ++x)
-    {
-        pushExternalEmpty(x, 0);
-        pushExternalEmpty(x, grid.height_px - 1);
-    }
-    for (int y{0}; y < grid.height_px; ++y)
-    {
-        pushExternalEmpty(0, y);
-        pushExternalEmpty(grid.width_px - 1, y);
-    }
-
-    const std::array<std::array<int, 2>, 8> neighbors8{{
-        {{-1, -1}}, {{0, -1}}, {{1, -1}}, {{-1, 0}}, {{1, 0}}, {{-1, 1}}, {{0, 1}}, {{1, 1}},
-    }};
-    const std::array<std::array<int, 2>, 4> neighbors4{{
-        {{0, -1}}, {{-1, 0}}, {{1, 0}}, {{0, 1}},
-    }};
-
-    while (!stack.empty())
-    {
-        const int current = stack.back();
-        stack.pop_back();
-        const int x = current % grid.width_px;
-        const int y = current / grid.width_px;
-        if (config.support.connectivity == 8)
-        {
-            for (const auto& neighbor : neighbors8)
-            {
-                pushExternalEmpty(x + neighbor.at(0), y + neighbor.at(1));
-            }
-        }
-        else
-        {
-            for (const auto& neighbor : neighbors4)
-            {
-                pushExternalEmpty(x + neighbor.at(0), y + neighbor.at(1));
-            }
-        }
-    }
-
-    std::vector<std::uint8_t> visited(pixelCount, 0);
-    for (std::size_t start{0}; start < pixelCount; ++start)
-    {
-        if (modelMask.at(start) != 0 || externalEmpty.at(start) != 0 || visited.at(start) != 0)
-        {
-            continue;
-        }
-
-        std::vector<int> component;
-        component.reserve(64);
-        stack.push_back(static_cast<int>(start));
-        visited.at(start) = 1;
-        while (!stack.empty())
-        {
-            const int current = stack.back();
-            stack.pop_back();
-            component.push_back(current);
-            const int x = current % grid.width_px;
-            const int y = current / grid.width_px;
-            const auto pushComponentNeighbor = [&](const int nx, const int ny)
-            {
-                if (nx < 0 || nx >= grid.width_px || ny < 0 || ny >= grid.height_px)
-                {
-                    return;
-                }
-                const std::size_t next = mask_index(grid, nx, ny);
-                if (modelMask.at(next) == 0 && externalEmpty.at(next) == 0 && visited.at(next) == 0)
-                {
-                    visited.at(next) = 1;
-                    stack.push_back(static_cast<int>(next));
-                }
-            };
-            if (config.support.connectivity == 8)
-            {
-                for (const auto& neighbor : neighbors8)
-                {
-                    pushComponentNeighbor(x + neighbor.at(0), y + neighbor.at(1));
-                }
-            }
-            else
-            {
-                for (const auto& neighbor : neighbors4)
-                {
-                    pushComponentNeighbor(x + neighbor.at(0), y + neighbor.at(1));
-                }
-            }
-        }
-
-        if (static_cast<int>(component.size()) < config.support.internal_void.min_area_px)
-        {
-            continue;
-        }
-        for (const int pixel : component)
-        {
-            set_support_pixel(
-                supportMask,
-                supportTypeMap,
-                static_cast<std::size_t>(pixel),
-                SupportType::InternalVoid);
-        }
-    }
-}
-
 void AddUpperProjectionSupport(
     const GridSpec& grid,
     const std::vector<std::vector<std::uint8_t>>& modelMasks,
@@ -2017,11 +1611,11 @@ void AddUpperProjectionSupport(
     for (std::size_t index{0}; index < columnRanges.size(); ++index)
     {
         const ColumnLayerRange& range = columnRanges.at(index);
-        if (!range.has_model || range.upper_layer < 0)
+        if (!range.hasModel || range.upperLayer < 0)
         {
             continue;
         }
-        for (int layerIndex{range.upper_layer + 1}; layerIndex < grid.layer_count; ++layerIndex)
+        for (int layerIndex{range.upperLayer + 1}; layerIndex < grid.layer_count; ++layerIndex)
         {
             if (modelMasks.at(layerIndex).at(index) != 0)
             {
@@ -2036,104 +1630,6 @@ void AddUpperProjectionSupport(
     }
 }
 
-SupportConnectivityDiagnostics analyze_support_connectivity(
-    const std::vector<std::uint8_t>& support_mask,
-    const GridSpec& grid,
-    const int connectivity) {
-    constexpr int tiny_component_area_px{8};
-    constexpr int small_component_area_px{512};
-    const std::size_t pixel_count = static_cast<std::size_t>(grid.width_px) * grid.height_px;
-    SupportConnectivityDiagnostics diagnostics;
-    diagnostics.enabled = true;
-    std::vector<std::uint8_t> visited(pixel_count, 0);
-    const std::array<std::array<int, 2>, 8> neighbors8{{
-        {{-1, -1}}, {{0, -1}}, {{1, -1}}, {{-1, 0}}, {{1, 0}}, {{-1, 1}}, {{0, 1}}, {{1, 1}},
-    }};
-    const std::array<std::array<int, 2>, 4> neighbors4{{
-        {{0, -1}}, {{-1, 0}}, {{1, 0}}, {{0, 1}},
-    }};
-
-    for (std::size_t start{0}; start < pixel_count; ++start) {
-        if (support_mask.at(start) == 0 || visited.at(start) != 0) {
-            continue;
-        }
-
-        SupportComponentSummary component;
-        component.min_x = grid.width_px;
-        component.min_y = grid.height_px;
-        component.max_x = -1;
-        component.max_y = -1;
-        std::vector<int> stack{static_cast<int>(start)};
-        visited.at(start) = 1;
-        while (!stack.empty()) {
-            const int current = stack.back();
-            stack.pop_back();
-            const int x = current % grid.width_px;
-            const int y = current / grid.width_px;
-            ++component.area_px;
-            component.min_x = std::min(component.min_x, x);
-            component.min_y = std::min(component.min_y, y);
-            component.max_x = std::max(component.max_x, x);
-            component.max_y = std::max(component.max_y, y);
-
-            if (connectivity == 8) {
-                for (const auto& neighbor : neighbors8) {
-                    const int nx{x + neighbor.at(0)};
-                    const int ny{y + neighbor.at(1)};
-                    if (nx < 0 || nx >= grid.width_px || ny < 0 || ny >= grid.height_px) {
-                        continue;
-                    }
-                    const std::size_t next = mask_index(grid, nx, ny);
-                    if (support_mask.at(next) != 0 && visited.at(next) == 0) {
-                        visited.at(next) = 1;
-                        stack.push_back(static_cast<int>(next));
-                    }
-                }
-            } else {
-                for (const auto& neighbor : neighbors4) {
-                    const int nx{x + neighbor.at(0)};
-                    const int ny{y + neighbor.at(1)};
-                    if (nx < 0 || nx >= grid.width_px || ny < 0 || ny >= grid.height_px) {
-                        continue;
-                    }
-                    const std::size_t next = mask_index(grid, nx, ny);
-                    if (support_mask.at(next) != 0 && visited.at(next) == 0) {
-                        visited.at(next) = 1;
-                        stack.push_back(static_cast<int>(next));
-                    }
-                }
-            }
-        }
-
-        ++diagnostics.component_count;
-        diagnostics.largest_component_pixels =
-            std::max(diagnostics.largest_component_pixels, component.area_px);
-        if (component.area_px <= tiny_component_area_px) {
-            ++diagnostics.tiny_component_count;
-        } else if (component.area_px <= small_component_area_px) {
-            ++diagnostics.small_component_count;
-        }
-        diagnostics.components.push_back(component);
-    }
-
-    std::sort(diagnostics.components.begin(), diagnostics.components.end(), [](const auto& lhs, const auto& rhs) {
-        return lhs.area_px > rhs.area_px;
-    });
-    return diagnostics;
-}
-
-std::vector<int> compute_last_model_layers(const std::vector<std::vector<std::uint8_t>>& model_masks, const GridSpec& grid) {
-    std::vector<int> last_model_layer(static_cast<std::size_t>(grid.width_px) * grid.height_px, -1);
-    for (int layer_index{0}; layer_index < static_cast<int>(model_masks.size()); ++layer_index) {
-        const auto& mask = model_masks.at(layer_index);
-        for (std::size_t i{0}; i < mask.size(); ++i) {
-            if (mask.at(i) != 0) {
-                last_model_layer.at(i) = layer_index;
-            }
-        }
-    }
-    return last_model_layer;
-}
 
 std::vector<std::uint8_t> make_supported_base_mask(
     const std::vector<std::uint8_t>& previous_model_mask,
@@ -2291,7 +1787,8 @@ SupportGenerationResult generate_support_masks(
     }
 
     if (placement_policy.full_vertical_projection_enabled) {
-        const std::vector<int> last_model_layers = compute_last_model_layers(model_masks, grid);
+        const std::vector<int> last_model_layers =
+            ComputeRetainedLastModelLayers(model_masks, grid);
         for (std::size_t index{0}; index < last_model_layers.size(); ++index) {
             const int last_layer = last_model_layers.at(index);
             for (int layer_index{0}; layer_index < last_layer; ++layer_index) {
@@ -2378,11 +1875,77 @@ SupportGenerationResult generate_support_masks(
     return result;
 }
 
-void CalculateSupportGenerationStats(
+/**
+ * @brief 把逐层支撑统计累加进 result 与该层 diagnostics。
+ *
+ * MF-03X2a 从 CalculateSupportGenerationStats 原样抽出，使有界路径能在层循环内
+ * 逐层累积，而不必先物化整栈。retained 路径由下方包装函数逐层调用本函数，
+ * 累加顺序与原实现一致，故统计值逐字不变。
+ */
+void AccumulateSupportLayerStats(
     SupportGenerationResult& result,
-    std::vector<LayerDiagnostics>& diagnostics,
+    LayerDiagnostics& layerDiagnostics,
+    const std::vector<std::uint8_t>& support_mask,
+    const std::vector<SupportType>& support_type_map,
     const GridSpec& grid,
     const SliceConfig& config)
+{
+    const std::size_t pixel_count = static_cast<std::size_t>(grid.width_px) * grid.height_px;
+    bool layer_has_support{false};
+    layerDiagnostics.bottom_projection_support_pixels = 0;
+    layerDiagnostics.unsupported_island_support_pixels = 0;
+    layerDiagnostics.full_vertical_projection_support_pixels = 0;
+    layerDiagnostics.internal_void_support_pixels = 0;
+    layerDiagnostics.upper_projection_support_pixels = 0;
+    layerDiagnostics.projection_base_support_pixels = 0;
+    for (std::size_t index{0}; index < pixel_count; ++index)
+    {
+        if (support_mask.at(index) == 0)
+        {
+            continue;
+        }
+        layer_has_support = true;
+        ++result.support_pixels;
+        switch (support_type_map.at(index))
+        {
+            case SupportType::BottomProjection:
+                ++result.bottom_projection_support_pixels;
+                ++layerDiagnostics.bottom_projection_support_pixels;
+                break;
+            case SupportType::UnsupportedIsland:
+                ++result.unsupported_island_support_pixels;
+                ++layerDiagnostics.unsupported_island_support_pixels;
+                break;
+            case SupportType::FullVerticalProjection:
+                ++result.full_vertical_projection_support_pixels;
+                ++layerDiagnostics.full_vertical_projection_support_pixels;
+                break;
+            case SupportType::InternalVoid:
+                ++result.internal_void_support_pixels;
+                ++layerDiagnostics.internal_void_support_pixels;
+                break;
+            case SupportType::UpperProjection:
+                ++result.upper_projection_support_pixels;
+                ++layerDiagnostics.upper_projection_support_pixels;
+                break;
+            case SupportType::ProjectionBase:
+                ++result.projection_base_support_pixels;
+                ++layerDiagnostics.projection_base_support_pixels;
+                break;
+            case SupportType::None:
+                break;
+        }
+    }
+    if (layer_has_support)
+    {
+        ++result.layers_with_support;
+    }
+    layerDiagnostics.support_connectivity =
+        analyze_support_connectivity(support_mask, grid, config.support.connectivity);
+}
+
+/// 统计累加前的清零。retained 与有界两条路径共用，避免两处漂移。
+void ResetSupportGenerationStats(SupportGenerationResult& result)
 {
     result.support_pixels = 0;
     result.bottom_projection_support_pixels = 0;
@@ -2392,62 +1955,24 @@ void CalculateSupportGenerationStats(
     result.upper_projection_support_pixels = 0;
     result.projection_base_support_pixels = 0;
     result.layers_with_support = 0;
-    const std::size_t pixel_count = static_cast<std::size_t>(grid.width_px) * grid.height_px;
+}
+
+void CalculateSupportGenerationStats(
+    SupportGenerationResult& result,
+    std::vector<LayerDiagnostics>& diagnostics,
+    const GridSpec& grid,
+    const SliceConfig& config)
+{
+    ResetSupportGenerationStats(result);
     for (int layer_index{0}; layer_index < grid.layer_count; ++layer_index)
     {
-        bool layer_has_support{false};
-        diagnostics.at(layer_index).bottom_projection_support_pixels = 0;
-        diagnostics.at(layer_index).unsupported_island_support_pixels = 0;
-        diagnostics.at(layer_index).full_vertical_projection_support_pixels = 0;
-        diagnostics.at(layer_index).internal_void_support_pixels = 0;
-        diagnostics.at(layer_index).upper_projection_support_pixels = 0;
-        diagnostics.at(layer_index).projection_base_support_pixels = 0;
-        const auto& support_mask = result.support_masks.at(layer_index);
-        const auto& support_type_map = result.support_type_maps.at(layer_index);
-        for (std::size_t index{0}; index < pixel_count; ++index)
-        {
-            if (support_mask.at(index) == 0)
-            {
-                continue;
-            }
-            layer_has_support = true;
-            ++result.support_pixels;
-            switch (support_type_map.at(index))
-            {
-                case SupportType::BottomProjection:
-                    ++result.bottom_projection_support_pixels;
-                    ++diagnostics.at(layer_index).bottom_projection_support_pixels;
-                    break;
-                case SupportType::UnsupportedIsland:
-                    ++result.unsupported_island_support_pixels;
-                    ++diagnostics.at(layer_index).unsupported_island_support_pixels;
-                    break;
-                case SupportType::FullVerticalProjection:
-                    ++result.full_vertical_projection_support_pixels;
-                    ++diagnostics.at(layer_index).full_vertical_projection_support_pixels;
-                    break;
-                case SupportType::InternalVoid:
-                    ++result.internal_void_support_pixels;
-                    ++diagnostics.at(layer_index).internal_void_support_pixels;
-                    break;
-                case SupportType::UpperProjection:
-                    ++result.upper_projection_support_pixels;
-                    ++diagnostics.at(layer_index).upper_projection_support_pixels;
-                    break;
-                case SupportType::ProjectionBase:
-                    ++result.projection_base_support_pixels;
-                    ++diagnostics.at(layer_index).projection_base_support_pixels;
-                    break;
-                case SupportType::None:
-                    break;
-            }
-        }
-        if (layer_has_support)
-        {
-            ++result.layers_with_support;
-        }
-        diagnostics.at(layer_index).support_connectivity =
-            analyze_support_connectivity(support_mask, grid, config.support.connectivity);
+        AccumulateSupportLayerStats(
+            result,
+            diagnostics.at(layer_index),
+            result.support_masks.at(layer_index),
+            result.support_type_maps.at(layer_index),
+            grid,
+            config);
     }
 }
 
@@ -2562,7 +2087,7 @@ std::array<std::uint8_t, 3> material_rgb_for_role(
     const std::vector<TextureColumnColor>* texture_columns,
     const std::size_t pixel_index,
     const std::string& material_name) {
-    if (texture_columns != nullptr && pixel_index < texture_columns->size() && texture_columns->at(pixel_index).has_color) {
+    if (texture_columns != nullptr && pixel_index < texture_columns->size() && texture_columns->at(pixel_index).hasColor) {
         return texture_columns->at(pixel_index).rgb;
     }
     const MaterialInfo* material = find_material_info_by_name(model_report, material_name);
@@ -2636,7 +2161,7 @@ std::vector<MaterialRoleColumn> build_material_role_columns(
         const TriangleTextureInfo& texture_info =
             model_report.triangle_textures.at(static_cast<std::size_t>(column.top_triangle_index));
         MaterialRoleColumn& role_column = result.at(index);
-        role_column.has_role = true;
+        role_column.hasRole = true;
         role_column.role = map_input_material_to_role(texture_info.material_name, config.material_role_mapping);
         role_column.rgb = material_rgb_for_role(config, model_report, texture_columns, index, texture_info.material_name);
     }
@@ -2737,7 +2262,7 @@ std::vector<TextureColumnColor> build_relief_texture_columns(
             model_report.triangle_textures.at(static_cast<std::size_t>(column.top_triangle_index));
         const RuntimeMaterialTexture* material = find_runtime_material(runtime, texture_info.material_name);
         TextureColumnColor& color = result.at(index);
-        color.has_color = true;
+        color.hasColor = true;
 
         if (texture_info.has_uv && material != nullptr && material->loaded) {
             const double u = column.top_barycentric.at(0) * texture_info.uv.at(0).u
@@ -2748,11 +2273,11 @@ std::vector<TextureColumnColor> build_relief_texture_columns(
                 + column.top_barycentric.at(2) * texture_info.uv.at(2).v;
             bool uv_out_of_range{false};
             color.rgb = sample_texture_rgb(material->image, u, v, sample_options, uv_out_of_range);
-            color.sampled_texture = true;
-            color.uv_out_of_range = uv_out_of_range;
+            color.sampledTexture = true;
+            color.uvOutOfRange = uv_out_of_range;
         } else {
             color.rgb = fallback_texture_rgb(config, material);
-            color.used_fallback = true;
+            color.usedFallback = true;
         }
     }
     return result;
@@ -2806,9 +2331,9 @@ std::vector<TextureColumnColor> build_per_material_texture_columns(
         TextureColumnColor& color = result.at(slot);
         color.rgb = sample_texture_rgb(
             material->image, u, v, sample_options, uv_out_of_range);
-        color.has_color = true;
-        color.sampled_texture = true;
-        color.uv_out_of_range = uv_out_of_range;
+        color.hasColor = true;
+        color.sampledTexture = true;
+        color.uvOutOfRange = uv_out_of_range;
     }
     return result;
 }
@@ -2959,7 +2484,7 @@ ModelFillMaterial ResolveModelFillMaterial(
     }
     if (config.model_fill.material == "material_role")
     {
-        if (roleColumn == nullptr || !roleColumn->has_role)
+        if (roleColumn == nullptr || !roleColumn->hasRole)
         {
             return ResolveProfileDefaultModelFillMaterial(config);
         }
@@ -3010,7 +2535,7 @@ bool WriteModelFillPixel(
     switch (material)
     {
         case ModelFillMaterial::Rgb:
-            if (roleColumn != nullptr && roleColumn->has_role && roleColumn->role == MaterialRole::Rgb
+            if (roleColumn != nullptr && roleColumn->hasRole && roleColumn->role == MaterialRole::Rgb
                 && config.model_fill.material == "material_role")
             {
                 pixels.at(base + 0U) = roleColumn->rgb.at(0);
@@ -3077,11 +2602,11 @@ TextureColumnColor resolve_texture_color(
     const std::vector<TextureColumnColor>* texture_columns,
     const std::size_t pixel_index) {
     TextureColumnColor color;
-    color.has_color = true;
+    color.hasColor = true;
     color.rgb = config.texture.fallback_rgb;
-    color.used_fallback = true;
+    color.usedFallback = true;
     if (texture_columns != nullptr && pixel_index < texture_columns->size()
-        && texture_columns->at(pixel_index).has_color) {
+        && texture_columns->at(pixel_index).hasColor) {
         color = texture_columns->at(pixel_index);
     }
     return color;
@@ -3091,13 +2616,13 @@ void update_texture_report_for_color(const TextureColumnColor& color, TextureRep
     if (texture_report == nullptr) {
         return;
     }
-    if (color.sampled_texture) {
+    if (color.sampledTexture) {
         ++texture_report->sampled_pixels;
     }
-    if (color.used_fallback) {
+    if (color.usedFallback) {
         ++texture_report->fallback_pixels;
     }
-    if (color.uv_out_of_range) {
+    if (color.uvOutOfRange) {
         ++texture_report->uv_out_of_range_pixels;
     }
 }
@@ -3111,11 +2636,11 @@ bool is_top_material_layer(
         return false;
     }
     const ColumnLayerRange& range = column_ranges->at(pixel_index);
-    if (!range.has_model || range.upper_layer < range.lower_layer) {
+    if (!range.hasModel || range.upperLayer < range.lowerLayer) {
         return false;
     }
-    const int first_top_layer = std::max(range.lower_layer, range.upper_layer - top_layers + 1);
-    return layer_index >= first_top_layer && layer_index <= range.upper_layer;
+    const int first_top_layer = std::max(range.lowerLayer, range.upperLayer - top_layers + 1);
+    return layer_index >= first_top_layer && layer_index <= range.upperLayer;
 }
 
 bool ShouldApplyTextureToLayer(
@@ -3217,7 +2742,7 @@ bool write_material_role_pixel(
     std::vector<std::uint8_t>& pixels,
     const std::size_t base,
     const MaterialRoleColumn& role_column) {
-    if (!role_column.has_role) {
+    if (!role_column.hasRole) {
         pixels.at(base + 0U) = role_column.rgb.at(0);
         pixels.at(base + 1U) = role_column.rgb.at(1);
         pixels.at(base + 2U) = role_column.rgb.at(2);
@@ -3274,7 +2799,7 @@ std::vector<std::uint8_t> build_texture_preview_mask(
                 && pixel_index < material_role_columns->size())
             {
                 const MaterialRoleColumn& role_column = material_role_columns->at(pixel_index);
-                rgb_role = !role_column.has_role || role_column.role == MaterialRole::Rgb;
+                rgb_role = !role_column.hasRole || role_column.role == MaterialRole::Rgb;
             }
             if (rgb_role && ShouldApplyTextureToLayer(config, column_ranges, pixel_index, layer_index))
             {
@@ -3383,7 +2908,15 @@ void PopulateMaterialClosureEmptyMask(
     return ownerIndex == topIndex;
 }
 
-std::vector<std::uint8_t> compose_layer(
+/**
+ * @brief 合成单层六通道输出。
+ *
+ * MF-03X4：`pixels` 由调用方持有并跨层复用。原实现每层新建 w*h*6 字节
+ * （10um 大幅面场景 44.2 MB），每层都要重新触碰新页 —— 这是按幅面计的固定开销，
+ * 与模型占多少列无关。改为 assign 后容量足够即不重新分配，只做填充。
+ */
+void compose_layer(
+    std::vector<std::uint8_t>& pixels,
     const SliceConfig& config,
     const GridSpec& grid,
     const std::vector<std::uint8_t>& model_mask,
@@ -3403,6 +2936,10 @@ std::vector<std::uint8_t> compose_layer(
     const std::vector<std::uint32_t>* material_volume_owner,
     // M2：按 (材质, 列) 预采好的各材质自身贴图色；为空则 MATVOL 分支沿用 Kd（M1 行为）。
     const std::vector<TextureColumnColor>* per_material_texture_columns,
+    // MF-03X2b 稀疏遍历：非空时只遍历这些列，其余列保持预填的 background.value。
+    // 这是【精确等价】而非近似：下方 else 链没有末尾 else，故 model / outer_varnish /
+    // support 三者皆零的列在原实现里也不写任何字节。调用方须保证该列表覆盖三者的并集。
+    const std::vector<std::uint32_t>* active_columns,
     const int layer_index,
     TextureReportData* texture_report,
     MaterialPolicyReportData* material_policy_report,
@@ -3410,17 +2947,39 @@ std::vector<std::uint8_t> compose_layer(
     LayerSemanticStats& semantic_stats,
     int& model_pixels,
     int& support_pixels) {
-    std::vector<std::uint8_t> pixels(
-        static_cast<std::size_t>(grid.width_px) * grid.height_px * rgbwsv_channel_count,
-        config.background.value);
+    const std::size_t composeByteCount =
+        static_cast<std::size_t>(grid.width_px) * grid.height_px * rgbwsv_channel_count;
+    if (active_columns == nullptr || pixels.size() != composeByteCount)
+    {
+        pixels.assign(composeByteCount, config.background.value);
+    }
+    else
+    {
+        // MF-03X4：稀疏遍历下只有活动列会被写，表外的列自上次填充后恒为背景值，
+        // 故每层只需重置活动列 —— 省掉每层一次 w*h*6（10um 场景 44.2 MB）的整幅面写。
+        for (const std::uint32_t column : *active_columns)
+        {
+            std::fill_n(
+                pixels.begin()
+                    + static_cast<std::ptrdiff_t>(
+                        static_cast<std::size_t>(column) * rgbwsv_channel_count),
+                rgbwsv_channel_count,
+                config.background.value);
+        }
+    }
     const bool whiteCarrierEnabled =
         config.texture.unprintable_white_policy == "white_underbase";
 
-    for (int y{0}; y < grid.height_px; ++y) {
-        for (int x{0}; x < grid.width_px; ++x) {
-            const std::size_t pixel_index = mask_index(grid, x, y);
-            const std::size_t base =
-                (static_cast<std::size_t>(y) * grid.width_px + x) * rgbwsv_channel_count;
+    const std::size_t composeColumnCount =
+        static_cast<std::size_t>(grid.width_px) * grid.height_px;
+    const std::size_t composeIterationCount =
+        active_columns != nullptr ? active_columns->size() : composeColumnCount;
+    for (std::size_t composeIndex{0}; composeIndex < composeIterationCount; ++composeIndex) {
+        {
+            const std::size_t pixel_index = active_columns != nullptr
+                ? static_cast<std::size_t>(active_columns->at(composeIndex))
+                : composeIndex;
+            const std::size_t base = pixel_index * rgbwsv_channel_count;
             if (model_mask.at(pixel_index) != 0) {
                 bool counted_model_pixel{false};
                 bool texture_surface_pixel{false};
@@ -3431,7 +2990,7 @@ std::vector<std::uint8_t> compose_layer(
                     bool wrote_model{false};
                     const bool apply_texture =
                         config.texture.enabled && ShouldApplyTextureToLayer(config, column_ranges, pixel_index, layer_index);
-                    if (role_column.has_role && role_column.role == MaterialRole::Rgb && config.texture.enabled
+                    if (role_column.hasRole && role_column.role == MaterialRole::Rgb && config.texture.enabled
                         && !apply_texture) {
                         if (ModelFillUsesExplicitPolicy(config)) {
                             wrote_model = WriteModelFillPixel(pixels, base, config, &role_column);
@@ -3448,13 +3007,13 @@ std::vector<std::uint8_t> compose_layer(
                     }
                     if (wrote_model) {
                         counted_model_pixel = true;
-                        if (role_column.has_role && role_column.role == MaterialRole::Rgb && apply_texture) {
+                        if (role_column.hasRole && role_column.role == MaterialRole::Rgb && apply_texture) {
                             const TextureColumnColor color =
                                 resolve_texture_color(config, texture_columns, pixel_index);
                             update_texture_report_for_color(color, texture_report);
                             texture_surface_pixel = true;
                         } else if (config.model_fill.enabled) {
-                            model_fill_pixel = !role_column.has_role
+                            model_fill_pixel = !role_column.hasRole
                                 || role_column.role == MaterialRole::Rgb
                                 || (role_column.role == MaterialRole::White && config.model_fill.material == "white")
                                 || (role_column.role == MaterialRole::Varnish && config.model_fill.material == "varnish");
@@ -3544,7 +3103,7 @@ std::vector<std::uint8_t> compose_layer(
                                 static_cast<std::size_t>(owner) * columnCount
                                 + pixel_index;
                             if (slot < per_material_texture_columns->size()
-                                && per_material_texture_columns->at(slot).has_color) {
+                                && per_material_texture_columns->at(slot).hasColor) {
                                 const TextureColumnColor& color =
                                     per_material_texture_columns->at(slot);
                                 pixels.at(base + 0U) = color.rgb.at(0);
@@ -3710,66 +3269,101 @@ std::vector<std::uint8_t> compose_layer(
         }
     }
 
+}
+
+std::vector<std::uint8_t> compose_retained_layer(
+    const BoundedMaterialReplayPolicy& policy,
+    const GridSpec& grid,
+    const std::vector<std::uint8_t>& model_mask,
+    const std::vector<std::uint8_t>& outer_varnish_mask,
+    const std::vector<std::uint8_t>& outer_surface_varnish_mask,
+    const std::vector<std::uint8_t>& inner_surface_varnish_mask,
+    const std::vector<std::uint8_t>& support_mask,
+    const std::vector<SupportType>& support_type_map,
+    const std::vector<TextureColumnColor>* texture_columns,
+    const std::vector<MaterialRoleColumn>* material_role_columns,
+    const std::vector<ColumnLayerRange>& column_ranges,
+    const int layer_index,
+    TextureReportData* const texture_report,
+    MaterialPolicyReportData* const material_policy_report,
+    MaterialClosureSemanticLayerInput* const materialClosureInput,
+    LayerSemanticStats& semantic_stats,
+    int& model_pixels,
+    int& support_pixels)
+{
+    const std::size_t pixelCount =
+        static_cast<std::size_t>(grid.width_px) * grid.height_px;
+    std::vector<std::uint8_t> pixels(
+        pixelCount * kRetainedMaterialChannelCount,
+        policy.backgroundValue);
+    const std::span<const TextureColumnColor> textureFacts =
+        texture_columns == nullptr
+        ? std::span<const TextureColumnColor>{}
+        : std::span<const TextureColumnColor>{*texture_columns};
+    const std::span<const MaterialRoleColumn> roleFacts =
+        material_role_columns == nullptr
+        ? std::span<const MaterialRoleColumn>{}
+        : std::span<const MaterialRoleColumn>{*material_role_columns};
+    const BoundedMaterialLayerComposeResult result =
+        ComposeRetainedMaterialLayer(
+            BoundedMaterialLayerComposeRequest{
+                &policy,
+                grid.width_px,
+                grid.height_px,
+                layer_index,
+                model_mask,
+                outer_varnish_mask,
+                outer_surface_varnish_mask,
+                inner_surface_varnish_mask,
+                support_mask,
+                support_type_map,
+                textureFacts,
+                roleFacts,
+                column_ranges},
+            pixels,
+            materialClosureInput);
+    semantic_stats = result.semantic;
+    model_pixels = result.modelPixels;
+    support_pixels = result.supportPixels;
+    if (texture_report != nullptr)
+    {
+        texture_report->sampled_pixels += result.texture.sampledPixels;
+        texture_report->fallback_pixels += result.texture.fallbackPixels;
+        texture_report->uv_out_of_range_pixels +=
+            result.texture.uvOutOfRangePixels;
+    }
+    if (material_policy_report != nullptr)
+    {
+        material_policy_report->rgb_print_pixels +=
+            result.materialPolicy.rgbPrintPixels;
+        material_policy_report->white_print_pixels +=
+            result.materialPolicy.whitePrintPixels;
+        material_policy_report->varnish_print_pixels +=
+            result.materialPolicy.varnishPrintPixels;
+    }
     return pixels;
 }
 
-void update_layer_channel_stats(const std::vector<std::uint8_t>& layer, LayerDiagnostics& diagnostics) {
-    const std::size_t pixel_count = layer.size() / rgbwsv_channel_count;
-    for (std::size_t i{0}; i < pixel_count; ++i) {
-        const std::size_t base{i * rgbwsv_channel_count};
-        for (std::size_t channel{0}; channel < rgbwsv_channel_count; ++channel) {
-            const int value = layer.at(base + channel);
-            ChannelStats& stats = diagnostics.channel_stats.at(channel);
-            stats.min_value = std::min(stats.min_value, value);
-            stats.max_value = std::max(stats.max_value, value);
-            if (value == 255) {
-                ++stats.empty_pixels;
-            } else {
-                ++stats.print_pixels;
-                if (value == 0) {
-                    ++stats.full_print_pixels;
-                } else {
-                    ++stats.partial_print_pixels;
-                }
-            }
-        }
-        if (layer.at(base + 0U) < 255U || layer.at(base + 1U) < 255U || layer.at(base + 2U) < 255U) {
-            ++diagnostics.rgb_non_zero_pixels;
-        }
-        if (layer.at(base + 3U) < 255U) {
-            ++diagnostics.white_non_zero_pixels;
-        }
-        if (layer.at(base + 4U) < 255U) {
-            ++diagnostics.support_non_zero_pixels;
-        }
-        if (layer.at(base + 5U) < 255U) {
-            ++diagnostics.varnish_non_zero_pixels;
-        }
-    }
+void update_layer_channel_stats(
+    const std::vector<std::uint8_t>& layer,
+    LayerDiagnostics& diagnostics,
+    const std::vector<std::uint32_t>* active_columns = nullptr,
+    const std::uint8_t background_value = 255U) {
+    const auto stats = AnalyzeRetainedMaterialLayerChannels(
+        layer, active_columns, background_value);
+    diagnostics.channel_stats = stats.channels;
+    diagnostics.rgb_non_zero_pixels = stats.rgbNonZeroPixels;
+    diagnostics.white_non_zero_pixels = stats.whiteNonZeroPixels;
+    diagnostics.support_non_zero_pixels = stats.supportNonZeroPixels;
+    diagnostics.varnish_non_zero_pixels = stats.varnishNonZeroPixels;
 }
 
 void merge_channel_stats(std::array<ChannelStats, rgbwsv_channel_count>& totals, const LayerDiagnostics& diagnostics) {
-    for (std::size_t channel{0}; channel < rgbwsv_channel_count; ++channel) {
-        ChannelStats& total = totals.at(channel);
-        const ChannelStats& layer = diagnostics.channel_stats.at(channel);
-        total.print_pixels += layer.print_pixels;
-        total.full_print_pixels += layer.full_print_pixels;
-        total.partial_print_pixels += layer.partial_print_pixels;
-        total.empty_pixels += layer.empty_pixels;
-        total.min_value = std::min(total.min_value, layer.min_value);
-        total.max_value = std::max(total.max_value, layer.max_value);
-    }
+    AccumulateRetainedMaterialChannelStats(totals, diagnostics.channel_stats);
 }
 
 void merge_semantic_stats(LayerSemanticStats& totals, const LayerSemanticStats& layer) {
-    totals.texture_surface_pixels += layer.texture_surface_pixels;
-    totals.unprintable_white_carrier_pixels += layer.unprintable_white_carrier_pixels;
-    totals.model_fill_pixels += layer.model_fill_pixels;
-    totals.support_pixels += layer.support_pixels;
-    totals.internal_void_support_pixels += layer.internal_void_support_pixels;
-    totals.outer_varnish_pixels += layer.outer_varnish_pixels;
-    totals.outer_surface_varnish_pixels += layer.outer_surface_varnish_pixels;
-    totals.inner_surface_varnish_pixels += layer.inner_surface_varnish_pixels;
+    AccumulateRetainedMaterialSemanticStats(totals, layer);
 }
 
 Json channel_stats_to_json(const ChannelStats& stats) {
@@ -4521,11 +4115,52 @@ bool MatchesSourceIdentity(
 
 }  // namespace
 
+SliceRunLayerConsumerError::SliceRunLayerConsumerError(
+    const SliceRunLayerConsumeStatus status,
+    const int layerIndex,
+    std::string detail)
+    : std::runtime_error(
+          "owned layer consumer "
+          + std::string(
+              status == SliceRunLayerConsumeStatus::Cancelled
+                  ? "cancelled"
+                  : "failed")
+          + " at layer " + std::to_string(layerIndex)
+          + (detail.empty() ? std::string{} : ": " + detail)),
+      status_(status),
+      layerIndex_(layerIndex)
+{
+}
+
+SliceRunLayerConsumeStatus SliceRunLayerConsumerError::Status() const noexcept
+{
+    return status_;
+}
+
+int SliceRunLayerConsumerError::LayerIndex() const noexcept
+{
+    return layerIndex_;
+}
+
 SliceRunResult run_slicer(const std::filesystem::path& config_path) {
     return run_slicer(config_path, SliceRunOptions{});
 }
 
 SliceRunResult run_slicer(const std::filesystem::path& config_path, const SliceRunOptions& options) {
+    if (options.layercallback && options.ownedlayercallback)
+    {
+        throw std::invalid_argument(
+            "legacy const and owned layer callbacks are mutually exclusive");
+    }
+    if (options.ownedlayercallback
+        && (options.write_tiff_layers
+            || options.write_preview_files
+            || options.write_reports))
+    {
+        throw std::invalid_argument(
+            "owned layer callback requires producer file output to be disabled");
+    }
+
     SliceRunProfile profile;
     profile.available = true;
     profile.profile_level = "coarse";
@@ -4763,6 +4398,20 @@ SliceRunResult run_slicer(const std::filesystem::path& config_path, const SliceR
     std::vector<ReliefColumnInfo> relief_columns;
     ReliefPerMaterialTopSurface relief_per_material_top;
     std::vector<std::vector<std::uint8_t>> model_masks;
+    // MF-03X2a：判定本次配置能否走有界路径。判定只看配置，故可在采样【之前】求出，
+    // 从而连采样阶段的整栈分配（10um 场景约 10.4 GB）一起省掉。
+    const BoundedReliefSupportEligibility boundedReliefSupport =
+        EvaluateBoundedReliefSupportPath(config);
+    std::vector<BoundedReliefColumnSpan> boundedReliefSpans;
+    // MF-03X2b 稀疏遍历的活动列表。实测 a-2/0.2.obj 只有 186,103 / 7,369,346 列
+    // （2.53%）有模型，其余 97.47% 在任何一层都是空白 —— compose_layer 的 else 链
+    // 没有末尾 else，那些列本来就不写任何字节，故跳过它们是【精确等价】。
+    // 判据不能简单取「有模型的列」：内部空腔支撑会写到面内被围住的空列（环形件
+    // 孔心在所有层都没有模型）。见 BuildBoundedActiveColumns。
+    std::vector<std::uint32_t> boundedActiveColumns;
+    InternalVoidScratch boundedInternalVoidScratch;
+    // MF-03X4：compose 的输出缓冲跨层复用，避免每层重新触碰 w*h*6 字节的新页。
+    std::vector<std::uint8_t> layer;
     if (config.slicing_mode == "relief_heightfield") {
         // M2：MATVOL 启用时把材质名表传入采样，使其一并解出逐材质顶面。
         // plan 在本调用之前建成（见上方 BuildMaterialVolumePlan），故此处可用。
@@ -4776,9 +4425,23 @@ SliceRunResult run_slicer(const std::filesystem::path& config_path, const SliceR
             grid,
             layer_diagnostics,
             planMaterialNamesForSampling.has_value()
-                ? &planMaterialNamesForSampling.value() : nullptr);
+                ? &planMaterialNamesForSampling.value() : nullptr,
+            !boundedReliefSupport.eligible);
         model_masks = std::move(relief_sampling.model_masks);
         relief_columns = std::move(relief_sampling.columns);
+        if (boundedReliefSupport.eligible)
+        {
+            // 整栈未物化，改为留下逐列闭区间；主循环按层重建。
+            boundedReliefSpans.resize(relief_columns.size());
+            for (std::size_t column{0}; column < relief_columns.size(); ++column)
+            {
+                const ReliefColumnInfo& info = relief_columns.at(column);
+                boundedReliefSpans.at(column) = BoundedReliefColumnSpan{
+                    info.has_model, info.lower_layer, info.upper_layer};
+            }
+            boundedActiveColumns = BuildBoundedActiveColumns(
+                boundedReliefSpans, grid.width_px, grid.height_px);
+        }
         relief_per_material_top = std::move(relief_sampling.per_material_top);
         relief_report = std::move(relief_sampling.report);
     } else {
@@ -4851,8 +4514,26 @@ SliceRunResult run_slicer(const std::filesystem::path& config_path, const SliceR
         : owned_upper_support_boundary_masks;
     const std::vector<ColumnLayerRange> upper_support_boundary_column_ranges =
         compute_mask_column_ranges(upper_support_boundary_masks, grid);
-    const SurfaceVarnishMasks surface_varnish_masks =
-        BuildSurfaceVarnishMasks(config, grid, model_masks);
+    // MF-03X：表面光油 mask 由全层构建改为按层物化。原 BuildSurfaceVarnishMasks
+    // 一次分配 列数 x 层数 x 2 字节，10um 大幅面场景下两个容器各约 10.4 GB。
+    // 该算法逐层独立（每层只读本层 model mask），故改为下方层循环内按需物化，
+    // 缓冲跨层复用、只覆写不重分配。全层版本已无调用者，随本次改动删除。
+    const std::size_t surfaceVarnishPixelCount =
+        static_cast<std::size_t>(grid.width_px) * grid.height_px;
+    const bool surfaceVarnishRequired = SurfaceVarnishMasksRequired(config);
+    std::vector<std::uint8_t> outerSurfaceVarnishLayer(
+        surfaceVarnishRequired ? surfaceVarnishPixelCount : 0U, 0U);
+    std::vector<std::uint8_t> innerSurfaceVarnishLayer(
+        surfaceVarnishRequired ? surfaceVarnishPixelCount : 0U, 0U);
+    // MF-03X2a：有界路径的三个单层缓冲，跨层复用、只覆写不重分配。
+    // 峰值由 O(列数 x 层数) x 3 降为 O(列数) x 3 —— 10um 场景 31.11 GB -> 约 23 MB。
+    std::vector<std::uint8_t> boundedModelLayer(
+        boundedReliefSupport.eligible ? surfaceVarnishPixelCount : 0U, 0U);
+    std::vector<std::uint8_t> boundedSupportLayer(
+        boundedReliefSupport.eligible ? surfaceVarnishPixelCount : 0U, 0U);
+    std::vector<SupportType> boundedSupportTypeLayer(
+        boundedReliefSupport.eligible ? surfaceVarnishPixelCount : 0U,
+        SupportType::None);
     const OuterVarnishDiscretization outerVarnishDiscretization =
         ComputeOuterVarnishDiscretization(
             config.outer_varnish,
@@ -4863,20 +4544,39 @@ SliceRunResult run_slicer(const std::filesystem::path& config_path, const SliceR
               return layer > 0;
           }))
         : 0;
-    SupportGenerationResult support_generation =
-        generate_support_masks(
-            config,
-            grid,
-            model_masks,
-            upper_support_boundary_masks,
-            support_source_layers,
-            column_ranges,
-            upper_support_boundary_column_ranges,
-            layer_diagnostics);
+    // MF-03X2a：有界路径下 support_masks / support_type_maps 保持为空，
+    // 由层循环内按 bottom projection 谓词逐层物化（该谓词只依赖本层 model mask
+    // 与按列标量 support_source_layers，无任何跨层数据）。
+    SupportGenerationResult support_generation;
+    if (!boundedReliefSupport.eligible)
+    {
+        support_generation =
+            generate_support_masks(
+                config,
+                grid,
+                model_masks,
+                upper_support_boundary_masks,
+                support_source_layers,
+                column_ranges,
+                upper_support_boundary_column_ranges,
+                layer_diagnostics);
+    }
     const SupportShapePolicy support_shape_policy = MakeSupportShapePolicy(config.support);
     SupportShapeOptimizationResult support_shape_result;
     if (support_shape_policy.enabled)
     {
+        // 有界路径下 support_masks 整栈为空（generate_support_masks 根本没被调用），
+        // 于是下面的整栈形状优化会跑 0 层，却仍报 enabled=true、added/removed 全 0
+        // —— 不崩、不报错、结果静默错误。准入当前拒绝 shape 档（见
+        // EvaluateBoundedReliefSupportPath），故此处不可能触发；它存在是为了让
+        // 【将来放开那道准入】时立刻失败，而不是悄悄产出一份没做过形状优化的包。
+        if (boundedReliefSupport.eligible)
+        {
+            throw std::runtime_error(
+                "support shape optimization requires the retained support stack; "
+                "the bounded path must materialize shape per layer before the "
+                "support_shape_enabled admission is relaxed");
+        }
         const std::vector<std::vector<std::uint8_t>> originalSupportMasks = support_generation.support_masks;
         support_shape_result = ApplySupportShapePolicy(
             support_shape_policy,
@@ -4937,7 +4637,8 @@ SliceRunResult run_slicer(const std::filesystem::path& config_path, const SliceR
         && (options.write_reports || repairMaterialClosure);
     const bool collectMaterialClosureSemantic =
         collectMaterialClosureExact
-        || static_cast<bool>(options.layercallback);
+        || static_cast<bool>(options.layercallback)
+        || static_cast<bool>(options.ownedlayercallback);
     std::vector<std::vector<std::size_t>> clearedOuterVarnishSupportIndices;
     const int cleared_outer_varnish_support_pixels =
         ApplyOuterVarnishSupportPriority(
@@ -4946,11 +4647,27 @@ SliceRunResult run_slicer(const std::filesystem::path& config_path, const SliceR
             collectMaterialClosureSemantic
                 ? &clearedOuterVarnishSupportIndices
                 : nullptr);
-    CalculateSupportGenerationStats(
-        support_generation,
-        layer_diagnostics,
-        grid,
-        config);
+    if (boundedReliefSupport.eligible)
+    {
+        // ApplyOuterVarnishSupportPriority 按 support_masks.size() 定尺，
+        // 有界路径下整栈为空会得到 0 长度，使层循环内 .at(layer_index) 抛异常。
+        // 此处按层数补尺；有界路径已排除外光油，故内容必为空集。
+        if (collectMaterialClosureSemantic)
+        {
+            clearedOuterVarnishSupportIndices.assign(
+                static_cast<std::size_t>(grid.layer_count), {});
+        }
+        // 统计改为层循环内逐层累积，此处只清零。
+        ResetSupportGenerationStats(support_generation);
+    }
+    else
+    {
+        CalculateSupportGenerationStats(
+            support_generation,
+            layer_diagnostics,
+            grid,
+            config);
+    }
     profile.support_statistics_scan_count = 1;
     profile.support_generation_ms = ElapsedMsSince(phase_start);
     NotifyProgress(options, run_start, "layer_processing", 0, grid.layer_count, 36);
@@ -4994,6 +4711,8 @@ SliceRunResult run_slicer(const std::filesystem::path& config_path, const SliceR
     const std::size_t layerPixelCount =
         static_cast<std::size_t>(grid.width_px)
         * static_cast<std::size_t>(grid.height_px);
+    const BoundedMaterialReplayPolicy retainedMaterialPolicy =
+        MakeBoundedMaterialReplayPolicy(config);
     const std::vector<std::uint8_t> emptyOptionalMask(layerPixelCount, 0U);
     // 未归属模型像素的填补（用户 2026-08-24 裁定「确有间隙则填补为下层材料」）。
     // 该逻辑曾在 03.obj 上恒不触发而被当作死代码撤除；08/09 的 3 条真开边给出了
@@ -5068,6 +4787,13 @@ SliceRunResult run_slicer(const std::filesystem::path& config_path, const SliceR
             }
         }
     }
+    // MF-03X4：relief_columns 是 64 B/列的结构，10um 大幅面场景约 450 MB ——
+    // 单模型峰值 1.18 GiB 里最大的一块。它的全部消费者（贴图列、角色列、列区间、
+    // 支撑起始层、逐列闭区间、MATVOL 顶面索引）都在层循环【之前】跑完，
+    // 层循环只用 12 B/列的 boundedReliefSpans，故此处即可归还。
+    relief_columns.clear();
+    relief_columns.shrink_to_fit();
+
     std::vector<std::uint32_t> materialVolumeOwner;
     std::vector<std::uint8_t> materialVolumeRgb;
     std::vector<std::uint8_t> materialVolumeVarnishMask;
@@ -5082,28 +4808,94 @@ SliceRunResult run_slicer(const std::filesystem::path& config_path, const SliceR
         int layer_model_pixels{0};
         int layer_support_pixels{0};
         LayerDiagnostics& diagnostics = layer_diagnostics.at(layer_index);
+        // MF-03X2a：有界路径下三个整栈均未物化，此处按层重建。
+        // model mask 由逐列闭区间重建；support 由 bottom projection 谓词重建
+        // （只依赖本层 model mask 与按列标量）；统计逐层累积，语义与 retained 一致。
+        if (boundedReliefSupport.eligible)
+        {
+            MaterializeReliefModelLayer(
+                boundedReliefSpans, layer_index, boundedModelLayer,
+                &boundedActiveColumns);
+            MaterializeBoundedSupportLayer(
+                boundedReliefSupport.placement,
+                boundedReliefSpans,
+                support_source_layers,
+                boundedModelLayer,
+                config.support.enabled,
+                layer_index,
+                boundedSupportLayer,
+                boundedSupportTypeLayer,
+                &boundedActiveColumns);
+            if (config.support.enabled)
+            {
+                // 与 retained 的 generate_support_masks 同序：放置分支之后逐层补
+                // 内部空腔支撑。该函数【逐层独立】（只读本层 model mask、只改本层
+                // support），故有界路径可原样复用；`internal_void.enabled` 默认为
+                // true，漏掉它会把本应 InternalVoid 的像素误标成 BottomProjection。
+                // retained 在 support.enabled 为 false 时提前返回、不跑本段，
+                // 故此处同样以该开关为守卫。
+                AddInternalVoidSupportForLayer(
+                    config,
+                    grid,
+                    boundedModelLayer,
+                    boundedSupportLayer,
+                    boundedSupportTypeLayer,
+                    &boundedActiveColumns,
+                    &boundedInternalVoidScratch);
+            }
+            AccumulateSupportLayerStats(
+                support_generation,
+                diagnostics,
+                boundedSupportLayer,
+                boundedSupportTypeLayer,
+                grid,
+                config);
+        }
+        const std::vector<std::uint8_t>& current_model_mask =
+            boundedReliefSupport.eligible
+            ? boundedModelLayer
+            : model_masks.at(static_cast<std::size_t>(layer_index));
+        const std::vector<std::uint8_t>& current_support_mask =
+            boundedReliefSupport.eligible
+            ? boundedSupportLayer
+            : support_generation.support_masks.at(
+                static_cast<std::size_t>(layer_index));
+        const std::vector<SupportType>& current_support_type_map =
+            boundedReliefSupport.eligible
+            ? boundedSupportTypeLayer
+            : support_generation.support_type_maps.at(
+                static_cast<std::size_t>(layer_index));
         const std::vector<std::uint8_t>& outerVarnishMask =
             outer_varnish_masks.empty()
             ? emptyOptionalMask
             : outer_varnish_masks.at(layer_index);
+        // MF-03X：本层表面光油 mask 就地物化，替代原来的全层索引。
+        if (surfaceVarnishRequired)
+        {
+            MaterializeSurfaceVarnishLayer(
+                config,
+                grid,
+                current_model_mask,
+                layer_index,
+                outerSurfaceVarnishLayer,
+                innerSurfaceVarnishLayer);
+        }
         const std::vector<std::uint8_t>& outerSurfaceVarnishMask =
-            surface_varnish_masks.outer_surface_masks.empty()
-            ? emptyOptionalMask
-            : surface_varnish_masks.outer_surface_masks.at(layer_index);
+            surfaceVarnishRequired ? outerSurfaceVarnishLayer : emptyOptionalMask;
         const std::vector<std::uint8_t>& innerSurfaceVarnishMask =
-            surface_varnish_masks.inner_surface_masks.empty()
-            ? emptyOptionalMask
-            : surface_varnish_masks.inner_surface_masks.at(layer_index);
+            surfaceVarnishRequired ? innerSurfaceVarnishLayer : emptyOptionalMask;
         MaterialClosureSemanticLayerInput materialClosureInput;
         MaterialClosureSemanticLayerInput* materialClosureInputPointer{nullptr};
         if (collectMaterialClosureSemantic)
         {
-            materialClosureInput = InitializeMaterialClosureSemanticInput(
-                grid,
+            materialClosureInput =
+                InitializeRetainedMaterialClosureSemanticInputFromIndices(
                 layer_index,
                 diagnostics.z_mm,
-                model_masks.at(layer_index),
-                support_generation.support_masks.at(layer_index),
+                grid.width_px,
+                grid.height_px,
+                current_model_mask,
+                current_support_mask,
                 clearedOuterVarnishSupportIndices.at(layer_index),
                 outerVarnishMask);
             materialClosureInputPointer = &materialClosureInput;
@@ -5113,11 +4905,11 @@ SliceRunResult run_slicer(const std::filesystem::path& config_path, const SliceR
             MaterializeMaterialOwnershipLayer(
                 materialVolumePlan.value(),
                 layer_index,
-                model_masks.at(static_cast<std::size_t>(layer_index)),
+                current_model_mask,
                 materialVolumeOwner);
             {
                 const std::vector<std::uint8_t>& matvolMask =
-                    model_masks.at(static_cast<std::size_t>(layer_index));
+                    current_model_mask;
                 for (std::size_t column{0}; column < layerPixelCount; ++column)
                 {
                     if (materialVolumeOwner[column] != kNoMaterialOwner)
@@ -5150,7 +4942,7 @@ SliceRunResult run_slicer(const std::filesystem::path& config_path, const SliceR
             ComposeMaterialLayerRgb(
                 materialVolumeRgbTable.value(),
                 materialVolumeOwner,
-                model_masks.at(static_cast<std::size_t>(layer_index)),
+                current_model_mask,
                 materialVolumeRgb);
             if (config.material_volume_policy.opacity_varnish.enabled)
             {
@@ -5171,17 +4963,18 @@ SliceRunResult run_slicer(const std::filesystem::path& config_path, const SliceR
                 materialVolumePlan.value(),
                 layer_index,
                 materialVolumeOwner,
-                model_masks.at(static_cast<std::size_t>(layer_index))));
+                current_model_mask));
         }
-                std::vector<std::uint8_t> layer = compose_layer(
+                compose_layer(
+            layer,
             config,
             grid,
-            model_masks.at(layer_index),
+            current_model_mask,
             outerVarnishMask,
             outerSurfaceVarnishMask,
             innerSurfaceVarnishMask,
-            support_generation.support_masks.at(layer_index),
-            support_generation.support_type_maps.at(layer_index),
+            current_support_mask,
+            current_support_type_map,
             config.texture.enabled ? &texture_columns : nullptr,
             config.material_role_mapping.enabled ? &material_role_columns : nullptr,
             &column_ranges,
@@ -5194,6 +4987,7 @@ SliceRunResult run_slicer(const std::filesystem::path& config_path, const SliceR
             materialVolumeOwner.empty() ? nullptr : &materialVolumeOwner,
             per_material_texture_columns.empty()
                 ? nullptr : &per_material_texture_columns,
+            boundedReliefSupport.eligible ? &boundedActiveColumns : nullptr,
             layer_index,
             config.texture.enabled ? &texture_runtime.report : nullptr,
             config.material_policy.enabled ? &material_policy_report : nullptr,
@@ -5205,7 +4999,7 @@ SliceRunResult run_slicer(const std::filesystem::path& config_path, const SliceR
         diagnostics.support_pixels = layer_support_pixels;
         if (collectMaterialClosureSemantic)
         {
-            PopulateMaterialClosureEmptyMask(layer, materialClosureInput);
+            PopulateRetainedMaterialClosureEmptyMask(layer, materialClosureInput);
         }
         if (collectMaterialClosureExact)
         {
@@ -5266,7 +5060,7 @@ SliceRunResult run_slicer(const std::filesystem::path& config_path, const SliceR
                     .layerIndex = layer_index, .zMm = diagnostics.z_mm,
                     .widthPx = grid.width_px, .heightPx = grid.height_px,
                     .channels = layer},
-                model_masks.at(static_cast<std::size_t>(layer_index)));
+                current_model_mask);
             // 光油（V）与弹性材料（T）不得占用同一像素：一个体素不可能同时是两种材料。
             //
             // ComposeRgbwsvtLayer 对缩裹像素【丢弃全部六通道只写 T】，
@@ -5315,7 +5109,11 @@ SliceRunResult run_slicer(const std::filesystem::path& config_path, const SliceR
             materialVolumeLayerStats.back().unprintableWhiteCarrierPixels =
                 diagnostics.semantic.unprintable_white_carrier_pixels;
         }
-        update_layer_channel_stats(layer, diagnostics);
+        update_layer_channel_stats(
+            layer,
+            diagnostics,
+            boundedReliefSupport.eligible ? &boundedActiveColumns : nullptr,
+            config.background.value);
         total_model_pixels += layer_model_pixels;
         total_support_pixels += layer_support_pixels;
         total_rgb_non_zero_pixels += diagnostics.rgb_non_zero_pixels;
@@ -5370,7 +5168,7 @@ SliceRunResult run_slicer(const std::filesystem::path& config_path, const SliceR
             const std::vector<std::uint8_t> texture_preview_mask = build_texture_preview_mask(
                 config,
                 grid,
-                model_masks.at(layer_index),
+                current_model_mask,
                 config.material_role_mapping.enabled ? &material_role_columns : nullptr,
                 &column_ranges,
                 layer_index);
@@ -5409,6 +5207,34 @@ SliceRunResult run_slicer(const std::filesystem::path& config_path, const SliceR
         slice_layers.push_back(layer_diagnostics_to_json(diagnostics));
         contour_layers.push_back(layer_diagnostics_to_json(diagnostics));
         profile.layer_compute_ms += ElapsedMsSince(layerMetadataStart);
+        if (options.ownedlayercallback)
+        {
+            SliceRunOwnedLayer ownedLayer;
+            ownedLayer.output.layerIndex = layer_index;
+            ownedLayer.output.zMm = diagnostics.z_mm;
+            ownedLayer.output.widthPx = grid.width_px;
+            ownedLayer.output.heightPx = grid.height_px;
+            ownedLayer.output.channels = std::move(layer);
+            ownedLayer.semantic = std::move(materialClosureInput);
+            const SliceRunLayerConsumeResult consumeResult =
+                options.ownedlayercallback(std::move(ownedLayer));
+            switch (consumeResult.status)
+            {
+            case SliceRunLayerConsumeStatus::Accepted:
+                break;
+            case SliceRunLayerConsumeStatus::Cancelled:
+            case SliceRunLayerConsumeStatus::Failed:
+                throw SliceRunLayerConsumerError(
+                    consumeResult.status,
+                    layer_index,
+                    consumeResult.detail);
+            default:
+                throw SliceRunLayerConsumerError(
+                    SliceRunLayerConsumeStatus::Failed,
+                    layer_index,
+                    "owned layer consumer returned an invalid status");
+            }
+        }
         const int completedLayers = layer_index + 1;
         if (ShouldNotifyLayerProgress(completedLayers, grid.layer_count))
         {
@@ -5443,11 +5269,27 @@ SliceRunResult run_slicer(const std::filesystem::path& config_path, const SliceR
             layer.channel_stats[5U].print_pixels,
             layer.semantic.unprintable_white_carrier_pixels});
     }
+    // MF-03B4B：ChannelStats 已从 TiffChannelStats 改为 BoundedMaterialChannelStats，
+    // 使 bounded 路径的统计不再依赖 TiffReadApi.h。两者字段【逐项相同】（6 个字段、
+    // 类型与默认值一致），故此处按字段显式转换而非 reinterpret——布局相同不等于
+    // 标准保证可互相解释，显式转换才经得起将来任一侧增删字段。
+    std::array<TiffChannelStats, rgbwsv_channel_count> reportChannelTotals{};
+    for (std::size_t channel{0}; channel < rgbwsv_channel_count; ++channel)
+    {
+        const ChannelStats& src = total_channel_stats.at(channel);
+        TiffChannelStats& dst = reportChannelTotals.at(channel);
+        dst.print_pixels = src.print_pixels;
+        dst.full_print_pixels = src.full_print_pixels;
+        dst.partial_print_pixels = src.partial_print_pixels;
+        dst.empty_pixels = src.empty_pixels;
+        dst.min_value = src.min_value;
+        dst.max_value = src.max_value;
+    }
     Json material_process_report = BuildMaterialProcessReport(MaterialProcessReportRequest{
         &config, model_report.format, model_report.model_path,
         grid.width_px, grid.height_px, grid.layer_count,
         grid.pixel_size_x_mm, grid.pixel_size_y_mm,
-        materialProcessLayers, total_channel_stats});
+        materialProcessLayers, reportChannelTotals});
     Json transfer_channel_report;
     if (transferSession.has_value() && options.write_tiff_layers)
     {

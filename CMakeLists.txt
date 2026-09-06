@@ -221,6 +221,7 @@ set(SLICESOFT_CORE_SOURCES
     src/slicer_core/geometry/PointInClosedMeshQuery.h
     src/slicer_core/geometry/SceneModelTriangleMeshAdapter.cpp
     src/slicer_core/geometry/SceneModelTriangleMeshAdapter.h
+    src/slicer_core/geometry/SliceGridSpec.h
     src/slicer_core/geometry/TransformedModelAdapter.cpp
     src/slicer_core/geometry/TransformedModelAdapter.h
     src/slicer_core/geometry/ShellMask.cpp
@@ -241,6 +242,8 @@ set(SLICESOFT_CORE_SOURCES
     src/slicer_core/material/MaterialChannelComposer.h
     src/slicer_core/material/MaterialClosureRepair.cpp
     src/slicer_core/material/MaterialClosureRepair.h
+    src/slicer_core/material/RetainedMaterialLayerComposer.cpp
+    src/slicer_core/material/RetainedMaterialLayerComposer.h
     src/slicer_core/materials/material_policy/MaterialPolicy.cpp
     src/slicer_core/materials/material_policy/MaterialPolicy.h
     src/slicer_core/materials/volume/MaterialVolumeError.cpp
@@ -297,6 +300,8 @@ set(SLICESOFT_CORE_SOURCES
     src/slicer_core/materials/texture_application/SurfaceTextureTransfer.h
     src/slicer_core/materials/varnish_geometry/OuterVarnishDiscretization.cpp
     src/slicer_core/materials/varnish_geometry/OuterVarnishDiscretization.h
+    src/slicer_core/materials/varnish_geometry/SurfaceVarnishMasks.cpp
+    src/slicer_core/materials/varnish_geometry/SurfaceVarnishMasks.h
     src/slicer_core/materials/varnish_geometry/VarnishGeometryPolicy.cpp
     src/slicer_core/materials/varnish_geometry/VarnishGeometryPolicy.h
     src/slicer_core/model.cpp
@@ -326,6 +331,8 @@ set(SLICESOFT_CORE_SOURCES
     src/slicer_core/output/rgbwsv/RgbwsvSceneExtension.h
     src/slicer_core/pipeline/PipelineContext.cpp
     src/slicer_core/pipeline/PipelineContext.h
+    src/slicer_core/pipeline/RasterMemoryBudget.cpp
+    src/slicer_core/pipeline/RasterMemoryBudget.h
     src/slicer_core/pipeline/DiagnosticEffectiveConfig.cpp
     src/slicer_core/pipeline/DiagnosticEffectiveConfig.h
     src/slicer_core/pipeline/TextureFillPartitionDiagnosticFacade.cpp
@@ -347,6 +354,8 @@ set(SLICESOFT_CORE_SOURCES
     src/slicer_core/pipeline/SceneLayerComposer.cpp
     src/slicer_core/pipeline/SceneLayerComposer.h
     src/slicer_core/pipeline/SceneRasterTypes.cpp
+    src/slicer_core/pipeline/SceneLayerBarrier.cpp
+    src/slicer_core/pipeline/SceneLayerBarrier.h
     src/slicer_core/pipeline/SceneRasterTypes.h
     src/slicer_core/pipeline/TranslatedSceneRasterReuse.cpp
     src/slicer_core/pipeline/TranslatedSceneRasterReuse.h
@@ -449,6 +458,20 @@ set(SLICESOFT_CORE_SOURCES
     src/slicer_core/slicer.h
     src/slicer_core/support/SupportComponentAnalysis.cpp
     src/slicer_core/support/SupportComponentAnalysis.h
+    src/slicer_core/support/BoundedSupportDemand.cpp
+    src/slicer_core/support/BoundedSupportDemand.h
+    src/slicer_core/support/BoundedSupportDiscovery.cpp
+    src/slicer_core/support/BoundedSupportDiscovery.h
+    src/slicer_core/support/BoundedSupportFinalReplay.cpp
+    src/slicer_core/support/BoundedSupportFinalReplay.h
+    src/slicer_core/support/BoundedSupportShapeScan.cpp
+    src/slicer_core/support/BoundedSupportShapeScan.h
+    src/slicer_core/support/BoundedReliefSupportPlan.cpp
+    src/slicer_core/support/BoundedReliefSupportPlan.h
+    src/slicer_core/support/InternalVoidSupport.cpp
+    src/slicer_core/support/InternalVoidSupport.h
+    src/slicer_core/support/SupportConnectivityAnalysis.cpp
+    src/slicer_core/support/SupportConnectivityAnalysis.h
     src/slicer_core/support/SupportBaseProjection.cpp
     src/slicer_core/support/SupportBaseProjection.h
     src/slicer_core/support/SupportPolicy.cpp
@@ -456,11 +479,13 @@ set(SLICESOFT_CORE_SOURCES
     src/slicer_core/support/SupportShapeOptimizer.cpp
     src/slicer_core/support/SupportShapeOptimizer.h
     src/slicer_core/support/SupportShapePipeline.cpp
+    src/slicer_core/system/SlicePeakMemoryEstimate.cpp
     src/slicer_core/support/SupportShapePipeline.h
     src/slicer_core/support/SupportShapePolicy.cpp
     src/slicer_core/support/SupportShapePolicy.h
     src/slicer_core/support/SupportShapeReport.cpp
     src/slicer_core/support/SupportShapeReport.h
+    src/slicer_core/support/SupportType.h
     src/slicer_core/system/ProcessMemoryStats.cpp
     src/slicer_core/system/ProcessMemoryStats.h
     src/slicer_core/system/Sha256.cpp
@@ -529,6 +554,14 @@ target_compile_definitions(
 )
 
 if(MSVC)
+    set_source_files_properties(
+        src/slicer_core/support/BoundedSupportDemand.cpp
+        src/slicer_core/support/BoundedSupportDiscovery.cpp
+        src/slicer_core/support/BoundedSupportFinalReplay.cpp
+        src/slicer_core/support/BoundedSupportShapeScan.cpp
+        src/slicer_core/material/RetainedMaterialLayerComposer.cpp
+        PROPERTIES COMPILE_OPTIONS "/W4;/WX"
+    )
     target_compile_options(
         slicer_base PRIVATE /bigobj ${SLICESOFT_MSVC_PARALLEL_COMPILE_OPTION})
     target_compile_options(
@@ -1692,6 +1725,87 @@ add_executable(stage16_layer_occupancy_provider_tests
 
 target_link_libraries(stage16_layer_occupancy_provider_tests PRIVATE slicer_core)
 
+add_executable(stage16c06_memory_budget_unit_tests
+    tests/stage16/RasterMemoryBudgetTests.cpp
+)
+
+target_link_libraries(stage16c06_memory_budget_unit_tests PRIVATE slicer_core)
+
+add_executable(stage16c06_owned_layer_consumer_unit_tests
+    tests/stage16/OwnedLayerConsumerTests.cpp
+)
+
+target_compile_definitions(stage16c06_owned_layer_consumer_unit_tests PRIVATE
+    SLICESOFT_SOURCE_DIR="${CMAKE_CURRENT_SOURCE_DIR}"
+)
+
+target_link_libraries(stage16c06_owned_layer_consumer_unit_tests PRIVATE slicer_core)
+
+add_executable(stage16c06_bounded_support_demand_unit_tests
+    tests/stage16/BoundedSupportDemandTests.cpp
+)
+
+target_link_libraries(stage16c06_bounded_support_demand_unit_tests PRIVATE slicer_core)
+if(MSVC)
+    target_compile_options(stage16c06_bounded_support_demand_unit_tests PRIVATE /W4 /WX)
+endif()
+
+add_executable(stage16c06_scene_layer_barrier_unit_tests
+    tests/stage16/SceneLayerBarrierTests.cpp
+)
+
+target_link_libraries(stage16c06_scene_layer_barrier_unit_tests PRIVATE slicer_core)
+if(MSVC)
+    target_compile_options(stage16c06_scene_layer_barrier_unit_tests PRIVATE /W4 /WX)
+endif()
+
+add_test(NAME stage16c06_scene_layer_barrier_unit_tests COMMAND stage16c06_scene_layer_barrier_unit_tests)
+
+add_executable(stage16c06_slice_peak_memory_estimate_unit_tests
+    tests/stage16/SlicePeakMemoryEstimateTests.cpp
+)
+
+target_link_libraries(stage16c06_slice_peak_memory_estimate_unit_tests PRIVATE slicer_core)
+if(MSVC)
+    target_compile_options(stage16c06_slice_peak_memory_estimate_unit_tests PRIVATE /W4 /WX)
+endif()
+
+add_executable(stage16c06_bounded_relief_support_plan_unit_tests
+    tests/stage16/BoundedReliefSupportPlanTests.cpp
+)
+
+target_link_libraries(stage16c06_bounded_relief_support_plan_unit_tests PRIVATE slicer_core)
+if(MSVC)
+    target_compile_options(stage16c06_bounded_relief_support_plan_unit_tests PRIVATE /W4 /WX)
+endif()
+
+add_executable(stage16c06_bounded_support_discovery_unit_tests
+    tests/stage16/BoundedSupportDiscoveryTests.cpp
+)
+
+target_link_libraries(stage16c06_bounded_support_discovery_unit_tests PRIVATE slicer_core)
+if(MSVC)
+    target_compile_options(stage16c06_bounded_support_discovery_unit_tests PRIVATE /W4 /WX)
+endif()
+
+add_executable(stage16c06_bounded_support_shape_unit_tests
+    tests/stage16/BoundedSupportShapeScanTests.cpp
+)
+
+target_link_libraries(stage16c06_bounded_support_shape_unit_tests PRIVATE slicer_core)
+if(MSVC)
+    target_compile_options(stage16c06_bounded_support_shape_unit_tests PRIVATE /W4 /WX)
+endif()
+
+add_executable(stage16c06_bounded_support_final_replay_unit_tests
+    tests/stage16/BoundedSupportFinalReplayTests.cpp
+)
+
+target_link_libraries(stage16c06_bounded_support_final_replay_unit_tests PRIVATE slicer_core)
+if(MSVC)
+    target_compile_options(stage16c06_bounded_support_final_replay_unit_tests PRIVATE /W4 /WX)
+endif()
+
 add_executable(matvol_facts_unit_tests
     tests/matvol/MatvolFactsTests.cpp
 )
@@ -2081,6 +2195,20 @@ add_executable(multi_model_package_writer_unit_tests
 )
 
 target_link_libraries(multi_model_package_writer_unit_tests PRIVATE slicer_core)
+
+# MF-05 多实例内存验证台：不是回归用例，不注册 add_test。
+# 它按 <层厚> <实例数> 跑场景生产，用于观察峰值随层数的斜率。
+add_executable(stage16c06_scene_memory_bench
+    tests/stage16/SceneMemoryBench.cpp
+)
+
+target_link_libraries(stage16c06_scene_memory_bench PRIVATE slicer_core)
+target_compile_definitions(stage16c06_scene_memory_bench PRIVATE
+    SLICESOFT_SOURCE_DIR="${CMAKE_CURRENT_SOURCE_DIR}"
+)
+if(WIN32)
+    target_link_libraries(stage16c06_scene_memory_bench PRIVATE psapi)
+endif()
 
 add_executable(multi_model_production_service_unit_tests
     tests/unit/multi_model_production_service/Main.cpp
@@ -2822,6 +2950,14 @@ add_test(NAME geometry_kernel_service_unit_tests COMMAND geometry_kernel_service
 add_test(NAME openvdb_sdf_utility_report_unit_tests COMMAND openvdb_sdf_utility_report_unit_tests)
 add_test(NAME stage16_geometry_sampling_fixture_tests COMMAND stage16_geometry_sampling_fixture_tests)
 add_test(NAME stage16_layer_occupancy_provider_tests COMMAND stage16_layer_occupancy_provider_tests)
+add_test(NAME stage16c06_memory_budget_unit_tests COMMAND stage16c06_memory_budget_unit_tests)
+add_test(NAME stage16c06_owned_layer_consumer_unit_tests COMMAND stage16c06_owned_layer_consumer_unit_tests)
+add_test(NAME stage16c06_bounded_support_demand_unit_tests COMMAND stage16c06_bounded_support_demand_unit_tests)
+add_test(NAME stage16c06_bounded_relief_support_plan_unit_tests COMMAND stage16c06_bounded_relief_support_plan_unit_tests)
+add_test(NAME stage16c06_slice_peak_memory_estimate_unit_tests COMMAND stage16c06_slice_peak_memory_estimate_unit_tests)
+add_test(NAME stage16c06_bounded_support_discovery_unit_tests COMMAND stage16c06_bounded_support_discovery_unit_tests)
+add_test(NAME stage16c06_bounded_support_shape_unit_tests COMMAND stage16c06_bounded_support_shape_unit_tests)
+add_test(NAME stage16c06_bounded_support_final_replay_unit_tests COMMAND stage16c06_bounded_support_final_replay_unit_tests)
 add_test(NAME matvol_facts_unit_tests COMMAND matvol_facts_unit_tests)
 add_test(NAME matvol_topology_unit_tests COMMAND matvol_topology_unit_tests)
 add_test(NAME matvol_interval_unit_tests COMMAND matvol_interval_unit_tests)

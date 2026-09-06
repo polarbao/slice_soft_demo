@@ -22,6 +22,21 @@ namespace slicer_core
  * @return Atomic package publication summary.
  * @throws std::invalid_argument when scene evidence is invalid or stale.
  */
+/**
+ * @brief 按合成结果补齐写请求（栅格、场景报告、能力摘要），不写任何字节。
+ *
+ * MF-05 步骤 4 第二步需要「先建发布会话逐层写层、最后补齐再发布」，
+ * 故把补齐从写出里分离出来。`WriteMultiModelSceneProductionPackage`
+ * 现在是「补齐 + 整栈写出」的组合，语义不变。
+ */
+void PrepareMultiModelScenePackageRequest(
+    RgbwsvProductionPackageWriteRequest& request,
+    const SceneLayerComposeResult& composition,
+    const MultiModelScene& scene,
+    const SceneCollisionResult& admission,
+    const std::vector<SceneInstanceRaster>& instanceRasters,
+    const std::filesystem::path& profileConfigPath);
+
 RgbwsvProductionPackageWriteResult
 WriteMultiModelSceneProductionPackage(
     RgbwsvProductionPackageWriteRequest request,
@@ -37,12 +52,20 @@ WriteMultiModelSceneProductionPackage(
  * The persisted staging package is still independently decoded and strictly
  * validated before publication.
  */
+/**
+ * @param request 按引用传入：MF-05 流式路径下发布会话在合成【之前】就已建好并
+ *        持有同一个 request，本函数补齐的 grid/scene/能力摘要必须对 `session`
+ *        的 `Finish()` 可见，故不能用副本。
+ * @param session 非空表示层已由调用方逐层写入该会话，本函数不再整栈写出，
+ *        只补齐请求并收尾发布。
+ */
 RgbwsvProductionPackageWriteResult
 WriteValidatedMultiModelSceneProductionPackage(
-    RgbwsvProductionPackageWriteRequest request,
+    RgbwsvProductionPackageWriteRequest& request,
     ValidatedSceneLayerComposeResult composition,
     const MultiModelScene& scene,
     const SceneCollisionResult& admission,
-    const std::filesystem::path& profileConfigPath = {});
+    const std::filesystem::path& profileConfigPath = {},
+    RgbwsvProductionPackageSession* session = nullptr);
 
 }  // namespace slicer_core
