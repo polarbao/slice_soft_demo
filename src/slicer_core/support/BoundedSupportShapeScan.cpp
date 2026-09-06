@@ -1,5 +1,7 @@
 #include "slicer_core/support/BoundedSupportShapeScan.h"
 
+#include "slicer_core/support/SupportShapePipeline.h"
+
 #include "slicer_core/system/Sha256Internal.h"
 
 #include <algorithm>
@@ -296,25 +298,6 @@ void AddInternalVoidSupport(
                 typeMap,
                 static_cast<std::size_t>(pixel),
                 SupportType::InternalVoid);
-        }
-    }
-}
-
-void SynchronizeShapeTypes(
-    const std::vector<std::uint8_t>& originalSupportMask,
-    const std::vector<std::uint8_t>& optimizedSupportMask,
-    std::vector<SupportType>& typeMap)
-{
-    for (std::size_t index{0U}; index < optimizedSupportMask.size(); ++index)
-    {
-        if (optimizedSupportMask[index] == 0U)
-        {
-            typeMap[index] = SupportType::None;
-        }
-        else if (originalSupportMask[index] == 0U
-                 && typeMap[index] == SupportType::None)
-        {
-            typeMap[index] = SupportType::BottomProjection;
         }
     }
 }
@@ -1080,7 +1063,9 @@ void BoundedSupportShapeScanner::ConsumeLayerImpl(
         visitedScratch_,
         traversalStack_,
         componentPixels_)};
-    SynchronizeShapeTypes(
+    // 与主循环整栈路径共用同一份定义，避免两处生产代码各自漂移
+    // （此前是两份逐字副本，任何一处改了都不会有断言发现）。
+    SynchronizeSupportShapeTypesForLayer(
         originalSupportScratch_,
         supportScratch_,
         typeScratch_);

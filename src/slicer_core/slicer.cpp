@@ -1612,30 +1612,6 @@ SupportPlacementPolicy ResolveSupportPlacementPolicy(const SliceConfig& config)
     return policy;
 }
 
-void SynchronizeSupportShapeTypeMaps(
-    const std::vector<std::vector<std::uint8_t>>& originalSupportMasks,
-    const std::vector<std::vector<std::uint8_t>>& optimizedSupportMasks,
-    std::vector<std::vector<SupportType>>& supportTypeMaps)
-{
-    for (std::size_t layerIndex{0}; layerIndex < optimizedSupportMasks.size(); ++layerIndex)
-    {
-        const std::vector<std::uint8_t>& originalMask = originalSupportMasks.at(layerIndex);
-        const std::vector<std::uint8_t>& optimizedMask = optimizedSupportMasks.at(layerIndex);
-        std::vector<SupportType>& typeMap = supportTypeMaps.at(layerIndex);
-        for (std::size_t index{0}; index < optimizedMask.size(); ++index)
-        {
-            if (optimizedMask.at(index) == 0)
-            {
-                typeMap.at(index) = SupportType::None;
-            }
-            else if (originalMask.at(index) == 0 && typeMap.at(index) == SupportType::None)
-            {
-                typeMap.at(index) = SupportType::BottomProjection;
-            }
-        }
-    }
-}
-
 void AddUpperProjectionSupport(
     const GridSpec& grid,
     const std::vector<std::vector<std::uint8_t>>& modelMasks,
@@ -4600,6 +4576,18 @@ SliceRunResult run_slicer(const std::filesystem::path& config_path, const SliceR
     SupportShapeOptimizationResult support_shape_result;
     if (support_shape_policy.enabled)
     {
+        // 有界路径下 support_masks 整栈为空（generate_support_masks 根本没被调用），
+        // 于是下面的整栈形状优化会跑 0 层，却仍报 enabled=true、added/removed 全 0
+        // —— 不崩、不报错、结果静默错误。准入当前拒绝 shape 档（见
+        // EvaluateBoundedReliefSupportPath），故此处不可能触发；它存在是为了让
+        // 【将来放开那道准入】时立刻失败，而不是悄悄产出一份没做过形状优化的包。
+        if (boundedReliefSupport.eligible)
+        {
+            throw std::runtime_error(
+                "support shape optimization requires the retained support stack; "
+                "the bounded path must materialize shape per layer before the "
+                "support_shape_enabled admission is relaxed");
+        }
         const std::vector<std::vector<std::uint8_t>> originalSupportMasks = support_generation.support_masks;
         support_shape_result = ApplySupportShapePolicy(
             support_shape_policy,

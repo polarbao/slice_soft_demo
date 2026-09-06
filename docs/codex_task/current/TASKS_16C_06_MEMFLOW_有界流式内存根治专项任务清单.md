@@ -1,7 +1,7 @@
 # TASKS_16C-06-MEMFLOW 有界流式内存根治专项任务清单
 
 > 文档状态：**ACTIVE / 两项原始阻塞均已实测解除 / 余 MF-03X2b、MF-07、MF-08（均非阻塞）**
-> 版本：v3.8 ｜ 日期：2026-09-06
+> 版本：v3.9 ｜ 日期：2026-09-06
 > 定位：Stage 16C-06 的唯一原子任务状态真源；承接 12F-06 和 13B-05 流式化债务
 > 决策：`docs/slice/DOC/DOC_DECISION_16C_06_MEMFLOW_有界逐层流式内存根治.md`
 > 方案：`docs/slice/DEV/DEV_16C_06_MEMFLOW_有界逐层流式切片设计.md`
@@ -37,7 +37,8 @@
 | MF-03X1 | 主循环有界接线·表面光油容器（逐层独立） | COMPLETE | MF-03B4B 接口接线 | 2026-09-04 |
 | MF-03X2a | 主循环有界接线·**用户阻塞配置**（bottom_projection，无岛/无形状/无光油） | COMPLETE `6787930` | MF-03X1、MF-03B1、MF-03A | 2026-09-04 |
 | MF-03X2b①| 准入放开·full vertical projection | COMPLETE（四判据逐字节全等） | MF-03X2a | 2026-09-06 |
-| MF-03X2b②| 准入放开·shape 档 | **BLOCKED / 已定责**：R-8 成立，需先定剪枝策略 | MF-03X2b① | - |
+| MF-03X2b②| 准入放开·shape 档 | **DEFERRED / 已定责**：见 9.6，收益只剩一半且需求面窄 | MF-03X2b① | - |
+| MF-03X2b②-0 | shape 档前置：堵静默空转 + 消除逐字副本 + 补对拍盲区 | COMPLETE（不改行为） | MF-03X2b① | 2026-09-06 |
 | MF-03X2b | 主循环有界接线·支撑耦合簇全模式（岛发现 + 形状 + 光油） | PREPARED / 范围待估算 | MF-03X2a、B2/B3/B4A | - |
 | MF-03X3 | 稀疏列剪枝·compose 与内部空腔（用户 2026-09-05 提出耗时优化） | COMPLETE（第一批） | MF-03X2a | 2026-09-05 |
 | MF-03X4 | 按幅面固定开销清理·relief_columns 归还与 compose 缓冲稀疏重置 | COMPLETE `5c6b8b7` | MF-03X3 | 2026-09-05 |
@@ -792,6 +793,88 @@ instanceStatistics   min/max 与通道统计改为逐层累积，收尾部分移
 单模型路径已可用：`0.2.obj` 与 `0.3.obj` **分两次作业**各自切片，
 每次峰值 1.18 GiB、耗时 10.7 分钟，合计约 21 分钟即可拿到两份包。
 这不是修复，只是在 MF-05 落地前的可行替代。
+
+### 9.6 shape 档：三步前置已做完，准入放开延后（2026-09-06）
+
+上一轮把 shape 档标为「需先定剪枝策略」。这一轮做完了精确调研，结论是
+**先做三步前置、准入放开延后**，理由与证据如下。
+
+#### 9.6.1 为什么延后
+
+| 理由 | 依据 |
+|---|---|
+| **收益只剩一半** | 形状优化的四项加法运算会把 activeColumns 之外的列写成非空，而 `ResetBoundedSupportLayer` 只清表内列 —— 那些像素**没有任何一层会清回 0**，会被下一层当作 pre-shape support 读进去再膨胀一圈，单调累积。故形状必须全幅面跑，等于交还 97.47% 的列剪枝（时间收益），只保住内存收益 |
+| **需求面窄** | `shape_enabled` 默认 `false`；全仓只有三个样例开它，其中只有 `three_mf_real_01_support_shape.json` 同时是 relief + 有界可准入。目前没有证据表明有真实用户在 10um 大幅面 relief 场景下开 shape |
+| **现状是安全的** | 当前 `Reject("support_shape_enabled")` 让这类配置走 retained 全栈 —— 慢、吃内存，但**结果正确**。放开后一旦踩中上面那条缓冲残留，失败模式是「输出少一圈 + 统计逐层放大」的静默漂移，比「内存不够跑不动」难查得多 |
+
+**放开的正确前提**：先有具体用户场景要求，且按既有规矩先出授权文档留痕。
+
+#### 9.6.2 已做完的三步（都不改行为，各自有独立价值）
+
+**一、堵死一个静默陷阱。** 有界路径下 `support_generation.support_masks` 整栈为空
+（`generate_support_masks` 根本没被调用）。若只把那条 `Reject` 删掉，
+`OptimizeSupportShape` 的层循环会跑 **0 次**，却仍报 `enabled = true`、
+added/removed 全 0 —— **不崩、不报错，产出一份没做过形状优化的包**。
+已在主循环加守卫：`shape_enabled && boundedReliefSupport.eligible` 直接抛。
+准入当前仍拒绝该档，故它不可能触发；它存在是为了让**将来放开那道准入**时立刻失败。
+
+**二、消除两份逐字副本。** 形状优化后的类型图同步逻辑此前有三份逐字副本：
+主循环的整栈版、`BoundedSupportShapeScan` 的逐层版、以及测试里的参考实现。
+前两份都是生产代码，各自漂移不会被任何断言发现。已提为共享定义
+`SynchronizeSupportShapeTypesForLayer`（做法与 `set_support_pixel` 一致），
+整栈版逐层调用它。**测试那一份有意保留** —— 对拍的 oracle 必须独立于被测实现，
+复用同一份定义会让比对退化成自反。
+
+**三、补对拍盲区 —— 这一步的发现比预期严重得多。**
+
+#### 9.6.3 「已有 CI 级哨兵」这个判断是错的
+
+调研时认为 `BoundedSupportShapeScanTests` 的 retained-oracle 对拍已经把两份实现
+钉住了，是「本次放开最重要的既有资产」。**补齐比对后发现它几乎什么都没测。**
+
+逐条查证的结果：
+
+```text
+夹具是 7x7、模型为 5x5 方框，BuildPlan 只在 0 号像素设需求
+  -> pre-shape support 只有一个孤立像素
+  -> 被 min_component_area_px = 2 剔除干净
+  -> 膨胀无源；唯一另一个支撑分量是被模型【四面围住】的 3x3 空腔，
+     其邻域全是模型，CanWriteSupportPixel 一律挡住
+  => added 恒为 0：膨胀、闭运算、水平桥接、垂直桥接【四项加法全部空转】
+  => max_added_support_ratio = 20.0 又使超比例回滚永不触发
+  => 实际只验到了「最小面积剔除」一步
+```
+
+同时 `CompactReportMatches` 对 `post.components` / `filteredComponents` /
+`bridgedGaps` **只比 size 不比内容** —— 两份实现只要条目数相同，内容与顺序
+全错也照样通过。桥接记录尤其危险：它的顺序由「水平全扫完再走垂直」这条同序
+约定决定，而那正是两份实现最容易分家的地方。
+
+**已补齐：**
+
+| 补的东西 | 效果 |
+|---|---|
+| `post.components` / `filteredComponents` / `bridgedGaps` 的内容与顺序比对 | 三处「只比 size」的盲区消除 |
+| `BuildPlan` 支持指定需求像素 | 可以把支撑放在模型**外侧**，让膨胀有处可写 |
+| 档二：需求像素在外侧 + ratio 20.0 | **四项加法真正生效**，且断言 `anyAdditions == true` 钉住 |
+| 档三：同夹具 + ratio 0.0 | **回滚分支必然触发**，且断言 `anyRollback == true` 钉住 |
+| 档一：保留原夹具 | 原有覆盖不丢，并显式断言它**不**触发加法 |
+
+后两条断言是关键：少了它们，把 ratio 改小、把需求像素挪个位置都只是换数字 ——
+被测路径依旧没被走到，而测试照样全绿。这正是原用例的失效方式。
+
+**结果：三档全过。** 即两份实现在四项加法与回滚分支上确实逐字节一致 ——
+调研的静态比对结论至此得到机器验证，而在此之前它只是静态结论。
+
+#### 9.6.4 一处顺带钉住的 oracle 缺陷
+
+补齐 `filteredComponents` 比对时先红了一次：scanner 报层号 1、oracle 报 0，
+面积与 bbox 完全一致。**不是实现漂移**，是 oracle `OptimizeSupportShapeForLayer`
+的已知缺陷 —— 它把单层包成一元 vector 再走整栈实现，故报告里的 `layer_index`
+恒为 0。已改为分别断言两侧各自的正确值并注明缘由：一旦哪天 oracle 改成报真实
+层号，这里会立刻红，提醒把断言改回直接相等。
+
+---
 
 ## 10. MF-06 Sparse Tile/Span 候选
 

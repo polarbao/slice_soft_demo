@@ -68,20 +68,34 @@ bool ExpectThrows(
     return false;
 }
 
+/**
+ * @param demandPixels 哪些列有支撑需求。默认只有 0 号 —— 那正是原用例的形状，
+ *        而它导致 pre-shape support 只有一个孤立像素，随即被
+ *        `min_component_area_px = 2` 剔除干净，于是形状优化的四项加法运算
+ *        （膨胀、闭运算、水平/垂直桥接）**全部空转**，added 恒为 0。
+ *        换句话说，这条「retained oracle 对拍」此前只验到了最小面积剔除一步。
+ *        要激活加法，需求像素必须落在模型【外侧】且彼此连通到不被剔除
+ *        —— 模型是个 5x5 方框，被它围住的空腔四面都是模型，膨胀无处可写。
+ */
 BoundedSupportDemandPlan BuildPlan(
     const int layerCount,
     const std::size_t pixelCount,
-    const bool lowerEnabled = true)
+    const bool lowerEnabled = true,
+    const std::vector<std::size_t>& demandPixels = {0U})
 {
     std::vector<int> lower(pixelCount, -1);
     std::vector<int> last(pixelCount, -1);
     std::vector<int> upper(pixelCount, -1);
     std::vector<int> unsupported(pixelCount, 0);
-    if (pixelCount > 0U)
+    for (const std::size_t pixel : demandPixels)
     {
-        lower[0] = layerCount - 1;
-        last[0] = layerCount - 1;
-        upper[0] = layerCount - 1;
+        if (pixel >= pixelCount)
+        {
+            continue;
+        }
+        lower[pixel] = layerCount - 1;
+        last[pixel] = layerCount - 1;
+        upper[pixel] = layerCount - 1;
     }
     BoundedSupportDemandRequest request;
     request.layerCount = layerCount;
@@ -285,16 +299,94 @@ bool CompactReportMatches(
             && left.minX == right.min_x && left.minY == right.min_y
             && left.maxX == right.max_x && left.maxY == right.max_y;
     }
+    // 以下三处此前【只比 size 不比内容】—— 那意味着两份实现只要产出的条目数
+    // 相同，内容与顺序全错也照样通过。桥接记录尤其危险：它的顺序由「水平全扫完
+    // 再走垂直」这条同序约定决定，而那正是两份实现最容易分家的地方。
+    for (std::size_t index{0U}; matches && index < actual.post.components.size(); ++index)
+    {
+        const auto& left{actual.post.components[index]};
+        const auto& right{expected.post.components[index]};
+        matches = left.areaPx == right.area_px
+            && left.minX == right.min_x && left.minY == right.min_y
+            && left.maxX == right.max_x && left.maxY == right.max_y;
+    }
+    if (!matches)
+    {
+        std::cout << "  [diag] post.components 内容不一致\n";
+        return false;
+    }
+    for (std::size_t index{0U};
+         matches && index < actual.filteredComponents.size();
+         ++index)
+    {
+        const auto& left{actual.filteredComponents[index]};
+        const auto& right{expected.filtered_components[index]};
+        // ⚠ layer_index 不能直接对比：oracle `OptimizeSupportShapeForLayer` 是
+        //   「假单层」—— 它把单层包成一元 vector 再走整栈实现，故其报告里的
+        //   layer_index 【恒为 0】，而 scanner 报的是真实层号。补齐本比对时正是
+        //   在这里先红的（scanner 报 1、oracle 报 0，面积与 bbox 完全一致）。
+        //   故分别断言两侧各自的正确值，把这个 oracle 缺陷钉住：一旦哪天 oracle
+        //   改成报真实层号，这里会立刻红，提醒把断言改回直接相等。
+        matches = left.layerIndex == layerIndex && right.layer_index == 0
+            && left.areaPx == right.area_px
+            && left.minX == right.min_x && left.minY == right.min_y
+            && left.maxX == right.max_x && left.maxY == right.max_y;
+        if (!matches)
+        {
+            std::cout << "  [diag] filteredComponents[" << index
+                      << "] layer " << left.layerIndex << " vs "
+                      << right.layer_index << ", area " << left.areaPx
+                      << " vs " << right.area_px << ", bbox ("
+                      << left.minX << "," << left.minY << ")-(" << left.maxX
+                      << "," << left.maxY << ") vs (" << right.min_x << ","
+                      << right.min_y << ")-(" << right.max_x << ","
+                      << right.max_y << ")\n";
+        }
+    }
+    for (std::size_t index{0U}; matches && index < actual.bridgedGaps.size(); ++index)
+    {
+        const auto& left{actual.bridgedGaps[index]};
+        const auto& right{expected.bridged_gaps[index]};
+        // 同上：oracle 的 layer_index 恒为 0。
+        matches = left.layerIndex == layerIndex && right.layer_index == 0
+            && left.x0 == right.x0 && left.y0 == right.y0
+            && left.x1 == right.x1 && left.y1 == right.y1
+            && left.gapPx == right.gap_px
+            && left.direction == right.direction;
+        if (!matches)
+        {
+            std::cout << "  [diag] bridgedGaps[" << index << "] layer "
+                      << left.layerIndex << " vs " << right.layer_index
+                      << ", (" << left.x0 << "," << left.y0 << ")-("
+                      << left.x1 << "," << left.y1 << ") gap " << left.gapPx
+                      << " " << left.direction << "  vs  (" << right.x0 << ","
+                      << right.y0 << ")-(" << right.x1 << "," << right.y1
+                      << ") gap " << right.gap_px << " " << right.direction
+                      << "\n";
+        }
+    }
     return matches;
 }
 
-bool RetainedOracleAndFootprint()
+/**
+ * @param maxAddedSupportRatio 超比例回滚的阈值。
+ *
+ * 原用例只跑 20.0 —— 那个值大到**回滚永不触发**，于是形状优化的第八步
+ * （added 超限则把本层新增全部撤销）从来没有被对拍覆盖过。它恰恰是两份实现
+ * 里判据最多的一步（分母、floor、守卫、回滚循环、两条告警字符串），
+ * 也是唯一会写 warnings 的一步。故改为参数化，两个档各跑一遍。
+ */
+bool RetainedOracleAndFootprintWithRatio(
+    const double maxAddedSupportRatio,
+    const bool expectRollback,
+    const bool expectAdditions,
+    const std::vector<std::size_t>& demandPixels)
 {
     constexpr int width{7};
     constexpr int height{7};
     constexpr int layers{3};
     const std::size_t count{static_cast<std::size_t>(width * height)};
-    auto plan{BuildPlan(layers, count)};
+    auto plan{BuildPlan(layers, count, true, demandPixels)};
     BoundedSupportShapeScanRequest request;
     request.widthPx = width;
     request.heightPx = height;
@@ -308,7 +400,7 @@ bool RetainedOracleAndFootprint()
     request.shape.xy_dilation_px = 1;
     request.shape.closing_radius_px = 1;
     request.shape.bridge_gap_px = 1;
-    request.shape.max_added_support_ratio = 20.0;
+    request.shape.max_added_support_ratio = maxAddedSupportRatio;
 
     std::vector<std::vector<std::uint8_t>> models(
         layers, std::vector<std::uint8_t>(count, 0U));
@@ -386,6 +478,58 @@ bool RetainedOracleAndFootprint()
             !sink.reports.front().pre.components.empty(),
             "compact report retains component summaries") && passed;
     }
+    // 证明这个参数不是摆设：小 ratio 档必须真的触发回滚，大 ratio 档必须不触发。
+    // 少了这一条，把 ratio 改成 0.05 只是换了个数字 —— 第八步依旧没被覆盖，
+    // 而测试照样绿。回滚是唯一会写 warnings 的一步，故用它作判据。
+    const bool anyRollback = std::any_of(
+        sink.reports.begin(),
+        sink.reports.end(),
+        [](const BoundedSupportShapeLayerReport& report)
+        { return !report.warnings.empty(); });
+    passed = Expect(
+        anyRollback == expectRollback,
+        expectRollback
+            ? "small maxAddedSupportRatio actually triggers the rollback branch"
+            : "large maxAddedSupportRatio leaves the rollback branch untaken")
+        && passed;
+    // 证明四项加法运算真的写入了像素。少了这一条，夹具只要几何稍变成
+    // 「加法无处可写」，对拍就退化成只验最小面积剔除 —— 而它照样全绿。
+    // 注意只能在【未回滚】的档上判：回滚会把 added 清零。
+    const bool anyAdditions = std::any_of(
+        sink.reports.begin(),
+        sink.reports.end(),
+        [](const BoundedSupportShapeLayerReport& report)
+        { return report.addedSupportPixels > 0; });
+    passed = Expect(
+        anyAdditions == expectAdditions,
+        expectAdditions
+            ? "shape additions (dilation/closing/bridging) actually fire"
+            : "enclosed-cavity fixture leaves shape additions untaken")
+        && passed;
+    return passed;
+}
+
+bool RetainedOracleAndFootprint()
+{
+    // 20.0：回滚不触发，覆盖正常路径。
+    // 0.05：回滚必然触发（本夹具每层新增远超 pre 支撑像素数的 5%），
+    //       覆盖第八步及其两条告警字符串 —— 告警内容也在 CompactReportMatches
+    //       的 `actual.warnings == expected.warnings` 里逐字比对。
+    // 7x7 网格。0 号是 (0,0)、7 号是 (0,1)：都在 5x5 模型方框【外侧】的左列，
+    // 两者 4-连通故面积 2、不被 min_component_area_px=2 剔除，且其邻域
+    // (0,2)/(1,0) 是空的 —— 膨胀有处可写。
+    const std::vector<std::size_t> enclosedOnly{0U};
+    const std::vector<std::size_t> outsideEdge{0U, 7U};
+
+    // 档一：保留原夹具。加法空转（空腔四面是模型），只验最小面积剔除。
+    bool passed{RetainedOracleAndFootprintWithRatio(
+        20.0, false, false, enclosedOnly)};
+    // 档二：加法真正生效，且 ratio 大到不回滚 —— 这一档才验到膨胀/闭运算/桥接。
+    passed = RetainedOracleAndFootprintWithRatio(
+        20.0, false, true, outsideEdge) && passed;
+    // 档三：同一夹具配 ratio=0，maxAdded 恒为 0，回滚必然触发。
+    passed = RetainedOracleAndFootprintWithRatio(
+        0.0, true, false, outsideEdge) && passed;
     return passed;
 }
 
