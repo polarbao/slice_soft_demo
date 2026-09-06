@@ -1,8 +1,36 @@
 # REPORT_16C-06-MEMFLOW 有界流式内存根治当前状态
 
-> 状态：**ACTIVE / MF-00..03B4A COMPLETE / MF-03B4B PREPARED**
-> 日期：2026-08-21
-> 任务真源：`TASKS_16C_06_MEMFLOW_有界流式内存根治专项任务清单.md`
+> 状态：**ACTIVE / 用户两项原始阻塞均已实测解除 / 生产已切到 Bounded + 逐层流式**
+> 日期：2026-09-06 ｜ 版本：v1.8
+> 任务真源：`TASKS_16C_06_MEMFLOW_有界流式内存根治专项任务清单.md`（v4.0）
+> ⚠ **本文档 v1.7 及更早的正文停留在 2026-08-21 的「生产仍为 Retained Dense」，
+> 与实际状态相差三周。下方 §0 是现状摘要；§1~§7 的历史正文保留不删，
+> 但阅读时须先看 §0。**
+
+## 0. 现状摘要（2026-09-06）
+
+**本专项由用户的两项真实生产阻塞发起，两项均已实测解除：**
+
+| 阻塞 | 改前 | 现在 |
+|---|---|---|
+| `a-2/0.2.obj` @10um 耗时约 20 分钟 | 18.9 分钟 / 22~34 GB | **9.44 分钟 / 0.84 GiB** |
+| `0.2.obj`+`0.3.obj` @10um 内存不足失败 | 外推 270 GB，**必然失败** | **`valid=1` / 1.91 GB / 31.3 分钟** |
+
+**生产路径已切换**，不再是「Retained Dense 为主」：
+
+```text
+单模型 CLI  relief + bottom_projection / full_vertical_projection 档走 Bounded
+            三个整栈（model/support/support_type）不再物化，按列区间逐层重建
+场景路径    实例侧、合成侧、写入侧三处均已逐层流式，峰值与层数【彻底脱钩】
+            单实例 15/29/58 层同为 1.019 GB；三实例 58 层 2.98 GB
+```
+
+仍走 Retained 的档位（由 `EvaluateBoundedReliefSupportPath` 判定并记明 reason）：
+`shape_enabled`、`base_projection`、`outer_varnish`、`unsupported_only`、
+显式 `placement` 为 upper/both、非 `legacy_center_sample` 采样。
+
+**详细结论与验收口径见** `REPORT_16C_06_MEMFLOW_主循环接线可行性探查_2026_09_04.md`
+（v1.15）与任务卡 v4.0，此处不重复。
 
 ## 1. 当前状态
 
@@ -25,6 +53,12 @@ MF-03B2 现已提供 bounded outer-boundary 与 unsupported discovery 顺序扫�
 B4B 仅解除依赖等待，尚未开工。生产仍为 Retained Dense。
 
 ## 2. 当前数据事实
+
+> ⚠ **`123.stl` 这项资产已不可用**（2026-09-03 查证：仓库内无 STL、
+> `E:\项目资料` 下亦未找到，且要求保存的可复现快照从未形成）。
+> **以下数字仅可作容量规划参考，不可再引用为实测基线。**
+> 替代基线见 `REPORT_16C_06_MEMFLOW_替代基线资产与调查结论_2026_09_03.md`，
+> 8 个替代资产已入库并脱敏（`model/stl/suoguo-baseline/`）。
 
 `123.stl` 的容量压力来自约 10.39～11.00 亿 pixel-layer 样本，而不是约 4.1 万三角形。六通道
 Dense 输出本身约 5.8～6.1 GiB；历史非空占比约 3.06%。因此：
@@ -134,16 +168,19 @@ final support/type totals 与 4/8 connectivity component area/bbox 通过同步 
 | 既有 support shape / `slicer_cli` 链接 | 11/11 PASS / PASS |
 | Router / Global 兼容定向测试 | 2/2 PASS |
 | Scene Adapter 现有套件 | 11/12 PASS；修改前已存在的平移断言仍失败 |
-| Dense Streaming 逐层 hash | NOT STARTED |
-| 单实例 Package/RIP | NOT STARTED |
-| 多实例 Barrier | NOT STARTED |
-| Sparse candidate | NOT STARTED |
-| `123.stl` 同请求 A/B | INPUT SNAPSHOT PENDING |
+| Dense Streaming 逐层 hash | **PASS**（四判据逐字节全等，digest 与长期基线一致） |
+| 单实例 Package/RIP | **范围已重定义**：CLI 本就逐层写 TIFF，原子发布由 writer session 化覆盖 |
+| 多实例 Barrier | **PASS**（MF-05 COMPLETE，峰值与层数脱钩） |
+| Sparse candidate | **已跳过**（用户 2026-09-04 同意；MF-03X3 的稀疏列剪枝已取走其核心收益） |
+| ~~`123.stl` 同请求 A/B~~ | **资产已不可用，该 Gate 作废**；替代基线 8/8 已采齐并入库 |
+| 峰值预估器对实测点禁止低估 | **PASS**（四点全覆盖，大作业裕度 1.26~1.38x） |
+| 全量回归 | 11 失败 / 229，全部为既有失败；其中 1 项是 MAX_PATH 边界抖动 |
 
 ## 8. 修订记录
 
 | 日期 | 版本 | 变更 |
 |---|---|---|
+| 2026-09-06 | v1.8 | **信息同步**：本文档正文自 2026-08-21 起未随开发更新，与实际状态相差三周。新增 §0 现状摘要（两项原始阻塞均已实测解除、生产已切到 Bounded + 逐层流式），并明确历史正文保留不删但须先读 §0。按替代基线报告 §6.2 的建议，给 §2 的 `123.stl` 数字加上「资产已不可用、仅作容量参考」标注 —— 该建议自 2026-09-03 提出后一直未执行。Gate 表更新四项过时状态：多实例 Barrier 由 NOT STARTED 改为 PASS、Dense Streaming 逐层 hash 改为 PASS、Sparse candidate 标为已跳过、`123.stl` 同请求 A/B 因资产不可用而作废；并补入峰值预估器与全量回归两行。 |
 | 2026-08-21 | v1.7 | MF-03B4A 完成：plan-bound verified support replay、Base/outer-varnish 最终化、compact connectivity 与错误/生命周期 Gate 通过；生产仍为 Retained Dense，B4B 未开工。 |
 | 2026-08-21 | v1.6 | MF-03B4 准备完成并拆为 B4A/B4B；冻结支撑最终化与材料闭合边界。B4A 可开工，B4B 等待；生产仍为 Retained Dense。 |
 | 2026-08-21 | v1.5 | MF-03B3 完成：非生产 InternalVoid/Shape/footprint/compact report/replay digest Gate 通过；生产仍为 Retained Dense。 |
