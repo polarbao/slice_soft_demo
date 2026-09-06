@@ -96,6 +96,9 @@ S3 为仅限 `relief_heightfield` 的显式候选，P3 为只读姿态诊断；�
 | `REPORT/REPORT_HOSTFLOW_H_F_08_五模型切片耗时分析与优化.md` | H-F-08 五模型参数差异、报告统计与严格 TIFF 校验耗时分析及优化证据 |
 | `REPORT/REPORT_HOSTFLOW_H_F_09_宿主连续计时与Worker快照分离.md` | H-F-09 宿主连续计时、Worker 快照分离与第二次作业计时重置 |
 | `REPORT/REPORT_HOSTFLOW_H_F_10_Reality批量导入碰撞加速.md` | H-F-10 Reality 十模型批量导入碰撞准入热点与 BVH 宽相位加速证据 |
+| `REPORT/REPORT_HOSTFLOW_H_F_14_导入自动排版开关与源坐标审计.md` | H-F-14 导入后自动排版开关、算法缩裹 OBJ 原点/画幅坐标审计与严格源姿态后续边界 |
+| `DOC/DOC_DECISION_HOSTFLOW_H_F_15_导入姿态与批次原点受控修订.md` | H-F-15 DTO v1.14 自动定向可选字段及批次 XY 原点/Z 触底边界 |
+| `REPORT/REPORT_HOSTFLOW_H_F_15_自动定向开关与批次原点偏移.md` | H-F-15 自动定向开关、严格源姿态、整批 XY 偏移与兼容验证结果 |
 | `REPORT/REPORT_16C_05_LayerCompose扫描融合与Buffer复用当前状态.md` | 16C-05 逐层/逐实例统计扫描融合、validated evidence 与 Buffer 复用 |
 | `DOC/DOC_PREP_HOSTFLOW_H_D_02_06_视图后续任务准备审查.md` | H-D-02 完成证据、H-D-03..06 准备、刷新矩阵和人工验收边界 |
 | `REPORT/REPORT_HOSTFLOW_H_D_02_三维画布与RB_P1当前状态.md` | H-D-02 真实纹理 3D 画布、UI-M7 零 DLL 调用、RB-P1 与 36 资产矩阵结果 |
