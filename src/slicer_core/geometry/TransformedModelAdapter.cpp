@@ -8,7 +8,6 @@
 #include <limits>
 #include <numbers>
 #include <string_view>
-#include <unordered_map>
 #include <utility>
 #include <vector>
 
@@ -97,18 +96,17 @@ struct VertexKey
     std::uint64_t z{0U};
 
     bool operator==(const VertexKey&) const = default;
-};
-
-struct VertexKeyHash
-{
-    std::size_t operator()(const VertexKey& key) const noexcept
+    bool operator<(const VertexKey& other) const noexcept
     {
-        std::size_t seed = static_cast<std::size_t>(key.x);
-        seed ^= static_cast<std::size_t>(key.y)
-            + 0x9e3779b9U + (seed << 6U) + (seed >> 2U);
-        seed ^= static_cast<std::size_t>(key.z)
-            + 0x9e3779b9U + (seed << 6U) + (seed >> 2U);
-        return seed;
+        if (x != other.x)
+        {
+            return x < other.x;
+        }
+        if (y != other.y)
+        {
+            return y < other.y;
+        }
+        return z < other.z;
     }
 };
 
@@ -200,20 +198,44 @@ LandingReference ResolveLandingReference(
     }
 
     DisjointSet components(triangles.size());
-    std::unordered_map<VertexKey, std::size_t, VertexKeyHash> owners;
-    owners.reserve(triangles.size() * 2U);
+    struct VertexOccurrence
+    {
+        VertexKey key;
+        std::size_t triangleindex{0U};
+    };
+    std::vector<VertexOccurrence> occurrences;
+    occurrences.reserve(triangles.size() * 3U);
     for (std::size_t index = 0U; index < triangles.size(); ++index)
     {
         const Triangle& triangle = triangles[index];
         for (const Vec3& point : {triangle.a, triangle.b, triangle.c})
         {
-            const auto [owner, inserted] = owners.emplace(
-                MakeVertexKey(point), index);
-            if (!inserted)
-            {
-                components.Unite(index, owner->second);
-            }
+            occurrences.push_back({MakeVertexKey(point), index});
         }
+    }
+    std::sort(
+        occurrences.begin(),
+        occurrences.end(),
+        [](const VertexOccurrence& left, const VertexOccurrence& right)
+        {
+            if (left.key == right.key)
+            {
+                return left.triangleindex < right.triangleindex;
+            }
+            return left.key < right.key;
+        });
+    for (std::size_t begin = 0U; begin < occurrences.size();)
+    {
+        std::size_t end = begin + 1U;
+        while (end < occurrences.size()
+               && occurrences[end].key == occurrences[begin].key)
+        {
+            components.Unite(
+                occurrences[begin].triangleindex,
+                occurrences[end].triangleindex);
+            ++end;
+        }
+        begin = end;
     }
 
     struct ComponentStats
@@ -222,12 +244,11 @@ LandingReference ResolveLandingReference(
         double area{0.0};
         double minimumzmm{std::numeric_limits<double>::max()};
     };
-    std::unordered_map<std::size_t, ComponentStats> statistics;
-    statistics.reserve(triangles.size());
+    std::vector<ComponentStats> statistics(triangles.size());
     for (std::size_t index = 0U; index < triangles.size(); ++index)
     {
         const Triangle& triangle = triangles[index];
-        ComponentStats& stats = statistics[components.Find(index)];
+        ComponentStats& stats = statistics.at(components.Find(index));
         ++stats.trianglecount;
         stats.area += TriangleArea(triangle);
         stats.minimumzmm = std::min(
@@ -237,9 +258,12 @@ LandingReference ResolveLandingReference(
 
     std::size_t maximumTriangleCount{0U};
     double maximumArea{0.0};
-    for (const auto& [unusedRoot, stats] : statistics)
+    for (const ComponentStats& stats : statistics)
     {
-        static_cast<void>(unusedRoot);
+        if (stats.trianglecount == 0U)
+        {
+            continue;
+        }
         maximumTriangleCount = std::max(
             maximumTriangleCount, stats.trianglecount);
         maximumArea = std::max(maximumArea, stats.area);
@@ -249,9 +273,12 @@ LandingReference ResolveLandingReference(
     constexpr double kAreaShare{0.001};
     double referenceMinimumZ = std::numeric_limits<double>::max();
     std::size_t ignoredCount{0U};
-    for (const auto& [unusedRoot, stats] : statistics)
+    for (const ComponentStats& stats : statistics)
     {
-        static_cast<void>(unusedRoot);
+        if (stats.trianglecount == 0U)
+        {
+            continue;
+        }
         const bool significant =
             static_cast<double>(stats.trianglecount)
                     >= static_cast<double>(maximumTriangleCount)

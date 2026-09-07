@@ -1,9 +1,9 @@
 #include "slicer_core/geometry/MeshTopologyDiagnostics.h"
 
 #include <algorithm>
-#include <map>
 #include <stdexcept>
 #include <utility>
+#include <vector>
 
 namespace slicer_core
 {
@@ -15,17 +15,18 @@ MeshTopologyReport AnalyzeMeshTopology(const TriangleMeshData& mesh)
     report.accepted_triangles = mesh.triangles.size();
     report.unique_vertices = mesh.vertices.size();
 
-    std::map<std::pair<int, int>, int> edgeIncidence;
+    std::vector<std::pair<int, int>> edges;
+    edges.reserve(mesh.triangles.size() * 3U);
     for (const std::array<int, 3>& triangle : mesh.triangles)
     {
-        const std::array<std::pair<int, int>, 3> edges{
+        const std::array<std::pair<int, int>, 3> triangleEdges{
             std::minmax(triangle.at(0), triangle.at(1)),
             std::minmax(triangle.at(1), triangle.at(2)),
             std::minmax(triangle.at(2), triangle.at(0)),
         };
-        for (const auto& edge : edges)
+        for (const auto& edge : triangleEdges)
         {
-            ++edgeIncidence[edge];
+            edges.push_back(edge);
         }
 
         const Vec3& a = mesh.vertices.at(static_cast<std::size_t>(triangle.at(0)));
@@ -38,9 +39,15 @@ MeshTopologyReport AnalyzeMeshTopology(const TriangleMeshData& mesh)
             / 6.0;
     }
 
-    for (const auto& [edge, incidence] : edgeIncidence)
+    std::sort(edges.begin(), edges.end());
+    for (std::size_t begin = 0U; begin < edges.size();)
     {
-        (void)edge;
+        std::size_t end = begin + 1U;
+        while (end < edges.size() && edges[end] == edges[begin])
+        {
+            ++end;
+        }
+        const std::size_t incidence = end - begin;
         if (incidence == 1)
         {
             ++report.boundary_edges;
@@ -49,6 +56,7 @@ MeshTopologyReport AnalyzeMeshTopology(const TriangleMeshData& mesh)
         {
             ++report.non_manifold_edges;
         }
+        begin = end;
     }
     return report;
 }
