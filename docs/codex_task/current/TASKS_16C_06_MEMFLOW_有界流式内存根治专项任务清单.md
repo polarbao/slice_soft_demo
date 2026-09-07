@@ -1,7 +1,7 @@
 # TASKS_16C-06-MEMFLOW 有界流式内存根治专项任务清单
 
 > 文档状态：**ACTIVE / 两项原始阻塞均已实测解除 / 余 MF-03X2b、MF-07、MF-08（均非阻塞）**
-> 版本：v4.16 ｜ 日期：2026-09-07
+> 版本：v4.17 ｜ 日期：2026-09-07
 > 定位：Stage 16C-06 的唯一原子任务状态真源；承接 12F-06 和 13B-05 流式化债务
 > 决策：`docs/slice/DOC/DOC_DECISION_16C_06_MEMFLOW_有界逐层流式内存根治.md`
 > 方案：`docs/slice/DEV/DEV_16C_06_MEMFLOW_有界逐层流式切片设计.md`
@@ -57,7 +57,7 @@
 | MF-11 | 层循环并行化 | **DEFERRED / 已定责**：产品路径被屏障锁步，见 §14.3 | MF-09 实测曲线 | - |
 | MF-12 | 生产路径耗时构成测量 | **COMPLETE**：见 §14.4.1 —— 层计算只占 14%，包发布占 48% 且其中 99.9% 是读回校验 | MF-09 | - |
 | MF-13 | 包发布的读回全量校验 | **a+b 档 COMPLETE**：生产口径端到端 `publish −52.9%`、`total −29.8%`（见 §14.5.4）；已定性为 **CPU 界限** | MF-12 | - |
-| MF-14 | compose 窗口的整幅面开销 | **a 档已改**（去 210 亿次边界检查，compose 窗口 −19.0%，**耗时数字待空窗复测**）；b/c 档未做，见 §14.6.4~14.6.7 | MF-13 | - |
+| MF-14 | compose 窗口的整幅面开销 | **a 档已改**（compose 窗口 −19.0%，耗时待空窗复测）；**b 档已撤回（实测不等价）**、c 档余量仅 1~2 s，见 §14.6.8 | MF-13 | - |
 
 ## 2.1 当前可继续的任务（2026-09-06 盘点）
 
@@ -2173,6 +2173,66 @@ bench 的产物写完即删，没有任何钩子。
 **b / c 档仍未做**（流式单实例直接移交源层通道、ownership 两趟 fill），
 收益上限仍按 §14.6.5 界定的口径：compose 窗口约 58 s → 约 30~36 s。
 
+#### 14.6.8 【撤回 b 档】直接移交源层通道**不等价**，且 c 档余量只有 1~2 s
+
+§14.6.5 的 b 档写的是「流式单实例直接移交源层通道 —— exact grid + 单实例下
+`dst == src` 且不可能有跨实例冲突，那层字节已在正确位置」。
+**实现前读了 `WriteOwnedPixel`，发现这个前提是错的。**
+
+合成**不是**把源像素逐字节搬过去，而是**按归属重新推导每个像素**：
+
+```cpp
+// WriteOwnedPixel：先把六个通道全填 empty_value，再按归属只写回该归属有权的通道
+std::fill_n(destination.begin() + destinationBase, kChannelCount, protocol.empty_value);
+if (ownership == Model) {
+    for (channel : 0..5) if (channel != kSupportChannel) {        // <- 支撑通道被丢掉
+        if (channel == kVarnishChannel
+            && source.modelvarnishownership.at(sourcePixel) == 0U) continue;  // <- 光油也可能被丢
+        destination.at(destinationBase + channel) = source.output.channels.at(sourceBase + channel);
+    }
+} else if (ownership == OuterVarnish) { 只写 V }
+  else if (ownership == Support)      { 只写 S }
+```
+
+**反例是现成的：** 一个 `modelownership == 1` 且 `supportownership == 1` 的像素 ——
+闭合判据要求它在**源层**里 `S == print_value`
+（`SourcePixelHasClosure` 的 model 分支：`expected = supportownership != 0 ?
+print_value : empty_value`），而 `WriteOwnedPixel` 走 Model 分支时**跳过支撑通道**，
+composed 输出里该像素的 `S` 是 `empty_value`。
+
+**即直接拷贝源通道会让模型像素底下多打一层支撑 —— 真实的输出改变，不是等价优化。**
+b 档就此**撤回**，不实施。
+
+**顺带修正 b 档的收益估算：** 即便改成「按归属重新推导但跳过跨实例簿记」，
+`output.channels.assign(globalByteCount, empty_value)` 那一趟**也省不掉** ——
+`WriteOwnedPixel` 只管它写到的像素，Empty 归属的像素（本场景占绝大多数）
+正是靠这一趟前置填充才拿到 `empty_value`；而那块缓冲每层都被 `std::move`
+交给 sink，故也无法跨层复用。
+
+**c 档（ownership / ownerindices 的两趟 fill）余量重新界定：**
+两个数组合计每层约 37 MB（`ownerindices` 是 737 万 × 4 B = 29.5 MB，
+`ownership` 737 万 × 1 B），143 层约 5.3 GB 的写。按本机实测的内存写入吞吐
+折算**约 1~2 s**，占改后总时长的 2% 上下。**收益小且需先查清下游读者，
+故降级为「有空再做」，不作为下一步。**
+
+#### 14.6.9 MF-14 收口：compose 窗口剩下的都是不易再压的
+
+a 档之后，compose 窗口的构成（按 §14.6.1 的口径推算）：
+
+| 段 | 量级 | 还能不能压 |
+|---|---|---|
+| `awaitMs`（等生产者算完本层） | 约 15 s | **不能** —— 这是生产者的真实算力，屏障锁步下只能靠 MF-11 并行化，而那条已判 DEFERRED（可并行部分仅占 14.5%） |
+| `appendMs`（逐层 TIFF 写盘） | 约 7 s | 受盘速界限 |
+| `ValidateLayer` 残余 | 约 7 s | 判据本身要求的一趟逐像素闭合检查 |
+| 逐像素拷贝循环 | 约 4 s | 按归属重新推导，见 §14.6.8，不可绕过 |
+| 逐层缓冲填充 | 约 1~2 s（c 档） | 小 |
+
+**故 MF-14 到 a 档为止收口。** 要再往下压 compose 窗口，需要的不是又一处
+整幅面剪枝，而是**改协议**：让 sink 把用完的层缓冲还回来（省掉每层 44 MB 的
+分配与填充），或重启 MF-11 把生产者并行化（那 15 s 的 `awaitMs`）。
+两者都是接口/架构层面的改动，**不属于本专项「有界流式内存根治」的范围**，
+应另立专项并由用户裁定。
+
 ### 14.2 MF-10：MATVOL 逐列求交
 
 多材质大栅格实测 `gridSetupMs` 占 **92%**（gubao04 XY 放大 4 倍，639 秒 / 691 秒），
@@ -2228,6 +2288,7 @@ TIFF 直接写盘）。那条路径确实能并行，但**它不是产品路径*
 
 | 日期 | 版本 | 变更 |
 |---|---|---|
+| 2026-09-07 | v4.17 | 新增 §14.6.8（**撤回 b 档**）与 §14.6.9（MF-14 收口）。实现前读 `WriteOwnedPixel` 发现 b 档的前提是错的：合成**不是**逐字节搬运源像素，而是按归属重新推导 —— 先把六通道填 `empty_value`，再只写回该归属有权的通道；Model 归属**跳过支撑通道**，且 `modelvarnishownership` 未置位时连光油通道也跳过。**现成反例**：`modelownership==1 && supportownership==1` 的像素，闭合判据要求源层 `S == print_value`，而 composed 输出里它是 `empty_value` —— 直接拷贝源通道会让模型像素底下多打一层支撑，**是真实的输出改变，不是等价优化**，故 b 档撤回不实施。并修正其收益估算：`output.channels.assign` 那一趟也省不掉（Empty 归属像素正靠它拿到 empty_value，且缓冲每层被 move 给 sink、无法复用）。c 档余量重新界定为约 1~2 s（两数组每层约 37 MB、143 层约 5.3 GB 写），降级为「有空再做」。据此 **MF-14 到 a 档为止收口**：compose 窗口剩下的是 `awaitMs` 约 15 s（生产者真实算力，只能靠已 DEFERRED 的 MF-11）、append 约 7 s（盘速）、ValidateLayer 残余约 7 s（判据要求的一趟）、逐像素推导约 4 s（不可绕过）。再往下压需要改协议（sink 归还层缓冲）或重启并行化，属接口/架构改动，**不在本专项范围内，应另立专项并由用户裁定**。 |
 | 2026-09-07 | v4.16 | 新增 §14.6.6（MF-14a 已改）与 §14.6.7（场景口径零漂移判据）。**动手前先算掉了 §14.6.5 自己排的 a 档靶子**：四条 `IsBinaryMask` 合计每层只读 29.5 MB、143 层约 4.2 GB，按 10 GB/s 也只有 0.4 s，不可能是那 18.3 s。真正的开销是逐像素循环自身的边界检查 —— 约 20 次 `.at()` / 像素 × 737 万 × 143 层 ≈ **210 亿次**。改为热路径用 `[]`，依据是调用方进入循环前已校验 `channels.size()` 与四个掩码各自的 `IsBinaryMask`（含 size 判定），故下标必然在界内；**那几条校验由此成为前提**，已在两处互相加注。G2 第一版只加注释就从 1592 涨到 1602 行当场 FAIL，未申请豁免，改为把三个谓词同步下沉到 `pipeline/SceneSourcePixelClosure.{h,cpp}`，`SceneLayerComposer.cpp` **1592 → 1467 行**、门禁 PASS。副产物：给 bench 加了 `BENCH_LAYERS digest=`，**本专项第一次有了场景口径的逐字节判据**（此前全是 CLI 口径，而 CLI 根本不走 SceneLayerComposer）。验收：六次跑 digest 全为 `143:579bf5b2db951cde`，**层字节逐字节一致**；耗时 compose 窗口 `60,107 -> 48,664`（−19.0%）、总时长 `88,374 -> 80,684`（−8.7%），⚠ 但全程有 4~5 个 MSBuild，**幅度标记为待空窗复测、只记方向**。 |
 | 2026-09-07 | v4.15 | 新增 §14.6.4（**更正**）与 §14.6.5（重排方案）。把 §14.6.1 的 36 s 再拆一层实测（两次高度一致）：`ValidateLayer 约 18,300 ms`（**不能省**，校验强度不得降级）、`逐像素拷贝循环约 4,100 ms`、`其余约 14,000 ms`。**即 §14.6.3 要动的那条逐像素循环只值 4.1 s，不是 36 s，「绝大部分可消掉」的说法是错的** —— 本卡第五次靠实测推翻自己的排序。「其余 14 s」已定位到层循环内的三笔：两次全幅面 `std::fill`（ownerindices 就是 29.5 MB/层）与 `output.channels.assign(44 MB)` —— `output` 声明在层循环内、缓冲又被 move 给 sink，故**提到循环外复用拿不到收益**。方案按实测重排为 a（ValidateLayer 五趟合一趟 + 去 `.at()`，约 18.3 s，判据一字不改，与 MF-13b 同型）、b（流式单实例直接移交源层通道，约 4.1 s 加那 44 MB assign 的大部分）、c（ownership 两趟 fill，须先查清下游读者）。收益上限先行界定：compose 窗口约 58 s -> 约 30~36 s、总时长约 68 s -> 约 45~50 s，因为 await 的 14.9 s 是生产者算力、不会消失。 |
 | 2026-09-07 | v4.14 | 新增 §14.6，立 MF-14。消费侧插探针把 compose 窗口拆三段：`composeTotal 58,343 = await 14,852（25.5%）+ append 7,053（12.1%）+ 合成本身 36,438（62.4%）`；`awaitMs` 与同次 `coreSliceMs 14,484` 几乎相等，正是屏障锁步的直接体现。合成本身 255 ms/层、折合 173 MB/s，与 MF-13b 之前那个逐字节统计循环同一气味。**根因已定**：`MultiModelSliceOrchestrator.cpp:398` 明写「流式下统一走 Borrowed 主路径」，故生产路径即便单实例也要走通用跨实例合成 —— 143 层 × 737 万像素 ≈ 10.5 亿次迭代，每次含取模的取消检查、`ResolveOwnership`，非空像素还要一次 12 参 `ResolveCrossInstancePixel`，而单实例不可能有跨实例冲突、且 exact grid 下 dst==src。这是本专项第四次遇到同一形状的问题（前三次：X2b 列剪枝、MF-09 owning 接口、MF-13b 逐字节统计）。方案是流式单实例快路径，并列出四条必须保住的事（ValidateLayer 不降级、逐层统计逐字段相同、查清 ownership 的其他读者、取消检查至少逐层一次）。**收益上限已先行界定**：那 36 s 大部分可消，但 await 的 14.9 s 是生产者算力、不会消失，故预期 compose 窗口 58 s -> 22~25 s，不是降到零。 |
