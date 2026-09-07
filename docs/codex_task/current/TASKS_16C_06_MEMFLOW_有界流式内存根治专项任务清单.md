@@ -1,7 +1,7 @@
 # TASKS_16C-06-MEMFLOW 有界流式内存根治专项任务清单
 
 > 文档状态：**ACTIVE / 两项原始阻塞均已实测解除 / 余 MF-03X2b、MF-07、MF-08（均非阻塞）**
-> 版本：v4.13 ｜ 日期：2026-09-07
+> 版本：v4.14 ｜ 日期：2026-09-07
 > 定位：Stage 16C-06 的唯一原子任务状态真源；承接 12F-06 和 13B-05 流式化债务
 > 决策：`docs/slice/DOC/DOC_DECISION_16C_06_MEMFLOW_有界逐层流式内存根治.md`
 > 方案：`docs/slice/DEV/DEV_16C_06_MEMFLOW_有界逐层流式切片设计.md`
@@ -57,6 +57,7 @@
 | MF-11 | 层循环并行化 | **DEFERRED / 已定责**：产品路径被屏障锁步，见 §14.3 | MF-09 实测曲线 | - |
 | MF-12 | 生产路径耗时构成测量 | **COMPLETE**：见 §14.4.1 —— 层计算只占 14%，包发布占 48% 且其中 99.9% 是读回校验 | MF-09 | - |
 | MF-13 | 包发布的读回全量校验 | **a+b 档 COMPLETE**：生产口径端到端 `publish −52.9%`、`total −29.8%`（见 §14.5.4）；已定性为 **CPU 界限** | MF-12 | - |
+| MF-14 | 流式单实例合成走通用跨实例逐像素路径 | **NEW / 现最大单项**：约 36 s，见 §14.6 | MF-13 | - |
 
 ## 2.1 当前可继续的任务（2026-09-06 盘点）
 
@@ -1948,6 +1949,99 @@ new   23,328 / 22,042 / 24,404 -> min 22,042    77,127 /  67,896 / 76,425 -> min
 候选 A 仍然可做、依据也更强了（已确认 CPU 界限、单线程），但它现在只针对
 剩下的 22 s，收益上限低于那 33 s。**排序按实测，不按先想到哪个。**
 
+### 14.6 MF-14：流式单实例合成被排除在快路径之外（NEW，现最大单项）
+
+#### 14.6.1 实测：compose 窗口的 62% 是合成本身
+
+在消费侧插临时探针把 compose 窗口拆三段（a-2/0.2.obj @0.1mm、143 层、单实例）：
+
+```text
+[CMP] composeTotalMs=58,343  awaitMs=14,852  appendMs=7,053
+                             (25.5%)         (12.1%)
+其余 = 36,438 ms（62.4%）= 场景合成本身
+同一次的 coreSliceMs=14,484 —— 与 awaitMs 14,852 几乎相等，
+即消费者等待的时间就是生产者算一层的时间（屏障锁步的直接体现）
+```
+
+**合成本身 36,438 ms / 143 层 = 255 ms/层**，而一层是 1418×5197×6 ≈ 44 MB，
+折合 **173 MB/s** —— 与 MF-13 之前那个逐字节统计循环（148 MB/s）几乎同一量级，
+是同一种气味：**每字节/每像素的标量循环**。
+
+> 说明：那一轮里另外两次跑总时长到 223 s / 248 s（机器上有 MSBuild），
+> 上表取的是三次里最干净的一次（总 87,858 ms，与无争用区间相符）。
+> 三次的**比例**基本一致，故结构性结论可用，绝对值待安静机器复测。
+
+#### 14.6.2 根因：流式模式【故意】绕开了单实例快路径
+
+`ComposeSingleInstanceConsuming`（`SceneLayerComposer.cpp:1394`）本来就是为
+单实例准备的快路径 —— 它逐层只做一次 `std::move(sourceLayer.output)`，
+**零逐像素工作**。但它在流式下不会被选中，且这是**明写在代码里的取舍**：
+
+```cpp
+// MultiModelSliceOrchestrator.cpp:398
+// MF-05：ComposeSceneLayersConsuming 实为单实例快路径的转发，
+// 它直接 move 每层的 output、不经 layerprovider。流式下 instances 的
+// layers 为空，走快路径必然报「层数不齐」，故此时统一走 Borrowed 主路径。
+if constexpr (Consume) {
+    if (!compose.layerprovider) { return internal::ComposeSceneLayersConsuming(...); }
+    return internal::ComposeSceneLayersBorrowed(compose, request.instances);
+}
+```
+
+于是**生产路径（恒为流式）即便只有一个实例，也要走通用跨实例合成**
+（`SceneLayerComposer.cpp:1183` 起）：
+
+```cpp
+for (int y{0}; y < localHeight; ++y) for (int x{0}; x < localWidth; ++x) {
+    if ((sourcePixel % kCancellationCheckStride) == 0U && StopIfCancellationRequested(...))
+    sourceOwnership = ResolveOwnership(sourceLayer, sourcePixel);
+    if (sourceOwnership == Empty) continue;
+    destinationPixel = (y + offsety) * globalWidth + (x + offsetx);
+    ResolveCrossInstancePixel(request, result, placement, sourceLayer,
+        sourcePixel, destinationPixel, sourceOwnership, ownership,
+        ownerindices, output.channels, placements, globalLayerIndex);   // 12 参
+}
+```
+
+**143 层 × 737 万像素 ≈ 10.5 亿次迭代**，每次一个取模的取消检查、一次
+`ResolveOwnership`，非空像素还要一次 12 参的跨实例冲突解析 ——
+**而单实例根本不可能发生跨实例冲突**，且 `IsExactSingleInstanceGrid` 成立时
+`destinationPixel == sourcePixel`，那层字节本来就已经在正确位置上。
+
+**这是本专项第四次遇到同一个形状的问题**：一条为「一般情形」写的整幅面循环，
+在「实际跑的那个情形」下做的全是无用功（前三次：MF-03X2b 的列剪枝、
+MF-09 的 owning 便利接口、MF-13b 的逐字节统计）。
+
+#### 14.6.3 方案（未实施）
+
+**流式单实例快路径**：当只有一个可见实例且 `IsExactSingleInstanceGrid` 成立时，
+provider 交回的那一层直接送 sink，跳过逐像素循环。
+
+**必须保住的四件事（实施前逐条落地，不得默认）：**
+
+```text
+1. ValidateLayer 仍要逐层跑 —— 现有注释明确要求「校验强度不降级」，
+   快路径不能顺手把它跳过
+2. RgbwsvProductionLayerStatistics 必须逐层产出且与通用路径【逐字段相同】，
+   manifest 与逐层校验都依赖它（MF-13 已经证明：逐层统计是写进 manifest、
+   又在读回校验时被逐项比对的）
+3. ownership / ownerindices 两个数组只服务跨实例冲突判定。单实例下无冲突，
+   但要先查清下游是否有别的读者，不能假设
+4. 取消检查现在是每 kCancellationCheckStride 个像素一次；快路径至少要保住
+   逐层一次，否则取消响应会退化
+```
+
+**验收：** 生产口径 `stage16c06_scene_memory_bench` 的 `sliceProcessingMs` 与
+`totalMs`，old/new 交错 min-of-3（**且基准前后查 `tasklist` 确认无 MSBuild**）；
+零漂移按四判据 + 用户指定资产逐字节；并要有一条**独立参照**的对拍证明
+快路径与通用路径的逐层统计逐字段相同（MF-13b 已有前例：既有对拍两侧共用同一
+实现时是验不出错的）。
+
+**收益上限：** 那 36 s 里绝大部分应可消掉，但 `awaitMs` 那 14.9 s 是屏障锁步的
+生产者算力，**不会**因此消失 —— 合成变快只会让消费者更早开始等。
+故预期是 compose 窗口从约 58 s 降到约 22~25 s（生产者 14.5 s + 写盘 7 s + 余量），
+**不是降到零**。这一条要写清楚，避免又出现一次「−45%」式的夸大。
+
 ### 14.2 MF-10：MATVOL 逐列求交
 
 多材质大栅格实测 `gridSetupMs` 占 **92%**（gubao04 XY 放大 4 倍，639 秒 / 691 秒），
@@ -2003,6 +2097,7 @@ TIFF 直接写盘）。那条路径确实能并行，但**它不是产品路径*
 
 | 日期 | 版本 | 变更 |
 |---|---|---|
+| 2026-09-07 | v4.14 | 新增 §14.6，立 MF-14。消费侧插探针把 compose 窗口拆三段：`composeTotal 58,343 = await 14,852（25.5%）+ append 7,053（12.1%）+ 合成本身 36,438（62.4%）`；`awaitMs` 与同次 `coreSliceMs 14,484` 几乎相等，正是屏障锁步的直接体现。合成本身 255 ms/层、折合 173 MB/s，与 MF-13b 之前那个逐字节统计循环同一气味。**根因已定**：`MultiModelSliceOrchestrator.cpp:398` 明写「流式下统一走 Borrowed 主路径」，故生产路径即便单实例也要走通用跨实例合成 —— 143 层 × 737 万像素 ≈ 10.5 亿次迭代，每次含取模的取消检查、`ResolveOwnership`，非空像素还要一次 12 参 `ResolveCrossInstancePixel`，而单实例不可能有跨实例冲突、且 exact grid 下 dst==src。这是本专项第四次遇到同一形状的问题（前三次：X2b 列剪枝、MF-09 owning 接口、MF-13b 逐字节统计）。方案是流式单实例快路径，并列出四条必须保住的事（ValidateLayer 不降级、逐层统计逐字段相同、查清 ownership 的其他读者、取消检查至少逐层一次）。**收益上限已先行界定**：那 36 s 大部分可消，但 await 的 14.9 s 是生产者算力、不会消失，故预期 compose 窗口 58 s -> 22~25 s，不是降到零。 |
 | 2026-09-07 | v4.13 | 新增 §14.5.4 端到端验收：生产口径 old/new 交错三对，`packagePublishMs 46,806 -> 22,042`（**−52.9%**）、`totalMs 96,754 -> 67,896`（**−29.8%**），两项区间都完全不重叠；publish 的 −52.9% 与隔离口径的 −54.1% 相符，互为印证。并据此重排下一步：**compose 窗口那约 46 s 现在是最大单项**（其中生产者实算仅约 13 s，其余约 33 s 是屏障等待与消费侧 compose，约占改后总时长一半），故先去量清那 33 s，而不是接着做 §14.5 的候选 A（并行化逐层校验）—— 后者只针对剩下的 22 s。 |
 | 2026-09-07 | v4.12 | 新增 §14.5.2（**更正**）与 §14.5.3（MF-13b COMPLETE）。§14.5.2：MF-13a 的「−1.2%、低于噪声」是 18 个 MSBuild 争用下的假结论，等机器空闲后用同一隔离口径并记录 CPU 时间重测，实为 `11,713 -> 7,675 ms`（**−34.5%**，区间不重叠、各自波动 <1%）；提交 `0c270e9` 说明里的「收益低于噪声」应以本节为准。§14.5.3：把 `AccumulateContiguousChannelStats` 的每字节约七件事（校验和 + min + max + 四个计数器，且按通道变址无法向量化）改为逐通道 256 桶直方图，每字节只做一次自增、收尾导出，判据逐项等价；实测 `7,744 -> 5,290 ms`（**−31.7%**），CPU 时间同幅下降，**确认校验是 CPU 界限、单线程**（CPU≈墙钟），§14.5 的前置问题就此解答。a+b 合计 `11,482 -> 5,272 ms`（**−54.1%**），两条独立测量相乘与合并实测互证。⚠ 关键：既有 `ResultsAreEquivalent` **验不出统计算错**（两侧共用同一实现，且 LibTIFF 缺失时整条跳过），故新增独立参照对拍 `channel_stats_match_independent_reference`（六字段 × 六通道 × 六种像素模式，置于 LibTIFF 早退之前），并**已用故意打断验证它非空转**。 |
 | 2026-09-07 | v4.11 | 新增 §14.5.1（MF-13a）。`read_rgbwsv_tiff` 原先读完整文件、解析 IFD 只为判断条带/瓦片，随后调用的单参版本【又把文件读一遍、IFD 再解析一遍】—— 每个被校验的层都被读两次。已改为传递已读缓冲与已解析 IFD（语义完全不变）。**但实测收益低于噪声**：用 `rip_reader_test` 对同一个已写好的包只跑校验、不写不删、四对交错，min 40,035 -> 39,542 ms（−1.2%）；量级上本来也只该有 3%，因为第二次读由文件缓存供给。按本专项既定做法（效果低于噪声则按算法依据取舍）**保留**该改动 —— 它是严格更少的工作量且未引入新复杂度，但**不宣称收益**。⚠ 并记下污染源：测量时机器上有 **18 个 MSBuild**（另一会话在同一工作树构建），同一二进制同一输入在 40,035~227,072 ms 间跳；**先前整作业口径测出的「publish −42%」即此污染的产物，不成立**。§14.5 的前置问题（I/O 界限还是 CPU 界限）此刻测不了，待机器空闲后重测。 |
