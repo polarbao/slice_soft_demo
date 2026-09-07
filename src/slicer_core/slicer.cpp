@@ -4225,8 +4225,8 @@ SliceRunResult run_slicer(const std::filesystem::path& config_path, const SliceR
                 "Legacy instance transform failed: "
                 + transformed.error->message);
         }
-        model_report.triangles =
-            std::move(transformed.geometry.triangles);
+        model_report.triangles = std::move(transformed.geometry.triangles);
+        model_report.frame_vertices = std::move(transformed.geometry.framevertices);
         model_report.triangle_textures =
             std::move(transformed.geometry.triangletextures);
         model_report.bbox_mm = transformed.geometry.bboxmm;

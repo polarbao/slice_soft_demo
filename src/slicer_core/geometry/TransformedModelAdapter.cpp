@@ -1,4 +1,5 @@
 #include "slicer_core/geometry/TransformedModelAdapter.h"
+#include "slicer_core/model/FrameGeometry.h"
 
 #include <algorithm>
 #include <bit>
@@ -448,6 +449,19 @@ TransformedModelResult AdaptTransformedModel(
             reference.minimumzmm + geometry.landingoffsetzmm;
     }
 
+    geometry.framevertices.reserve(source.frame_vertices.size());
+    for (const Vec3& point : source.frame_vertices)
+    {
+        Vec3 transformed = TransformPoint(point, geometry.pivotmm, transform);
+        transformed.z += geometry.landingoffsetzmm;
+        if (!IsFinite(point) || !IsFinite(transformed))
+        {
+            return {{}, MakeAdapterError(ModelTransformErrorCode::NonFinite,
+                instance, "source.frame_vertices", "frame coordinates must be finite")};
+        }
+        IncludeFramePointXY(geometry.bboxmm, transformed);
+        geometry.framevertices.push_back(transformed);
+    }
     return {std::move(geometry), std::nullopt};
 }
 

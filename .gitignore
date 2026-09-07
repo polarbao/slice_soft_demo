@@ -20,6 +20,10 @@ tests/*
 !tests/golden/**
 !tests/unit/
 !tests/unit/**
+!tests/fixtures/
+tests/fixtures/*
+!tests/fixtures/frame_geometry/
+!tests/fixtures/frame_geometry/**
 !tests/hostflow/
 !tests/hostflow/**
 !tests/ripflow/

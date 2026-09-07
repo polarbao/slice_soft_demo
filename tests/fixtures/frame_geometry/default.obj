@@ -1,0 +1,6 @@
+mtllib default.mtl
+v 0 0 0
+v 1 0 0
+v 0 1 0
+usemtl Default
+f 1 2 3

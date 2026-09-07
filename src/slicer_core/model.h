@@ -127,6 +127,9 @@ struct ModelReport {
     BoundingBox bbox_mm;
     std::vector<Triangle> triangles;
     std::vector<TriangleTextureInfo> triangle_textures;
+    // Non-printing locator points: transform with the model, contribute XY only.
+    std::vector<Vec3> frame_vertices;
+    std::size_t frame_triangle_count{0U};
 };
 
 /** @brief 描述模型外观资源是否足以支持彩色纹理工艺。 */

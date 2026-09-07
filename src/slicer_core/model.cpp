@@ -2,6 +2,7 @@
 
 #include "slicer_core/model/ObjFaceParser.h"
 #include "slicer_core/model/MtlMaterialParser.h"
+#include "slicer_core/model/FrameGeometry.h"
 
 #include "miniz.h"
 
@@ -1906,10 +1907,9 @@ ModelReport load_model_report(const ModelLoadConfig& config, const std::filesyst
         throw std::runtime_error("model contains no readable triangle faces: " + model_path.string());
     }
 
+    auto frame = ExtractFrameGeometry(mesh.vertices, mesh.faces, mesh.triangle_textures);
     const BoundingBox original_bbox = compute_bbox(mesh.vertices);
-    const OrientationCandidate orientation =
-        choose_auto_orientation(mesh.vertices, original_bbox, config.auto_orient);
-
+    const auto orientation = choose_auto_orientation(mesh.vertices, original_bbox, config.auto_orient);
     ModelReport report;
     report.model_path = model_path;
     report.format = format;
@@ -1935,7 +1935,7 @@ ModelReport load_model_report(const ModelLoadConfig& config, const std::filesyst
     report.bbox_mm = orientation.bbox;
     report.triangles = build_triangles(orientation.vertices, mesh.faces);
     report.triangle_textures = mesh.triangle_textures;
-    return report;
+    return AttachFrameGeometry(std::move(report), std::move(frame));
 }
 
 }  // namespace slicer_core

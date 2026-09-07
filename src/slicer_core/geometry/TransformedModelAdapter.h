@@ -18,6 +18,7 @@ struct TransformedModelGeometry
 {
     std::vector<Triangle> triangles;
     std::vector<TriangleTextureInfo> triangletextures;
+    std::vector<Vec3> framevertices;
     BoundingBox bboxmm;
     Vec3 pivotmm;
     double landingoffsetzmm{0.0};

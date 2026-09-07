@@ -305,6 +305,8 @@ set(SLICESOFT_CORE_SOURCES
     src/slicer_core/materials/varnish_geometry/VarnishGeometryPolicy.cpp
     src/slicer_core/materials/varnish_geometry/VarnishGeometryPolicy.h
     src/slicer_core/model.cpp
+    src/slicer_core/model/FrameGeometry.cpp
+    src/slicer_core/model/FrameGeometry.h
     src/slicer_core/model.h
     src/slicer_core/model/ModelLoadConfig.h
     src/slicer_core/model/ModelLoadConfigAdapter.cpp
@@ -2124,6 +2126,35 @@ add_executable(model_transform_unit_tests
 
 target_link_libraries(model_transform_unit_tests PRIVATE slicer_core)
 
+add_executable(frame_geometry_unit_tests tests/unit/frame_geometry/Main.cpp)
+add_executable(frame_scene_tests tests/unit/frame_geometry/Scene.cpp)
+target_link_libraries(frame_scene_tests PRIVATE slicer_core)
+target_compile_definitions(frame_scene_tests PRIVATE
+    SLICESOFT_SOURCE_DIR="${CMAKE_CURRENT_SOURCE_DIR}")
+target_link_libraries(frame_geometry_unit_tests PRIVATE slicer_core)
+target_compile_definitions(frame_geometry_unit_tests PRIVATE
+    SLICESOFT_SOURCE_DIR="${CMAKE_CURRENT_SOURCE_DIR}")
+
+add_executable(frame_production_tests
+    tests/unit/frame_geometry/Production.cpp
+    apps/slicer_host_sim/HostRequestBuilder.c
+    apps/slicer_host_sim/HostMaterialProfile.c
+    apps/slicer_host_sim/HostVolumetricProfile.c
+    apps/slicer_host_sim/HostTextureProfile.c
+    apps/slicer_host_sim/HostPath.c
+    apps/slicer_host_sim/JsonText.c)
+target_include_directories(frame_production_tests PRIVATE apps/slicer_host_sim)
+target_link_libraries(frame_production_tests PRIVATE slicer_core bcrypt)
+target_compile_definitions(frame_production_tests PRIVATE
+    SLICESOFT_SOURCE_DIR="${CMAKE_CURRENT_SOURCE_DIR}")
+if(MSVC)
+    target_compile_options(frame_geometry_unit_tests PRIVATE /W4 /WX)
+    target_compile_options(frame_scene_tests PRIVATE /W4 /WX)
+    target_compile_options(frame_production_tests PRIVATE /W4 /WX)
+    set_source_files_properties(src/slicer_core/model/FrameGeometry.cpp
+        PROPERTIES COMPILE_OPTIONS "/W4;/WX")
+endif()
+
 add_executable(mtl_material_parser_unit_tests
     tests/unit/mtl_material_parser/Main.cpp
 )
@@ -3011,6 +3042,9 @@ add_test(NAME material_channel_composer_unit_tests COMMAND material_channel_comp
 add_test(NAME mesh_repair_contract_unit_tests COMMAND mesh_repair_contract_unit_tests)
 add_test(NAME model_preflight_contract_unit_tests COMMAND model_preflight_contract_unit_tests)
 add_test(NAME model_transform_unit_tests COMMAND model_transform_unit_tests)
+add_test(NAME frame_geometry_unit_tests COMMAND frame_geometry_unit_tests)
+add_test(NAME frame_production_tests COMMAND frame_production_tests)
+add_test(NAME frame_scene_tests COMMAND frame_scene_tests)
 add_test(NAME mtl_material_parser_unit_tests COMMAND mtl_material_parser_unit_tests)
 add_test(NAME material_opacity_varnish_unit_tests COMMAND material_opacity_varnish_unit_tests)
 add_test(NAME material_layer_naming_unit_tests COMMAND material_layer_naming_unit_tests)

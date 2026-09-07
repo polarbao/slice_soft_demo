@@ -1,4 +1,5 @@
 #include "slicer_core/geometry/ContactLevelingAnalyzer.h"
+#include "slicer_core/model/FrameGeometry.h"
 
 #include <algorithm>
 #include <cmath>
@@ -69,6 +70,12 @@ ModelReport RollAndGround(
     }
     result.bbox_mm.max.z += groundOffset;
     result.bbox_mm.min.z = 0.0;
+    for (Vec3& point : result.frame_vertices)
+    {
+        rotatePoint(point);
+        point.z += groundOffset;
+        IncludeFramePointXY(result.bbox_mm, point);
+    }
     return result;
 }
 

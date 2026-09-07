@@ -1,0 +1,7 @@
+newmtl nail-L1
+Kd 0.25 0.5 0.75
+d 1
+
+newmtl nail-Default
+Kd 0.98 0.98 0.98
+d 1

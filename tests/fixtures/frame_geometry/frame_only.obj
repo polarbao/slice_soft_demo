@@ -1,0 +1,6 @@
+mtllib materials.mtl
+v -110 -30 -1000
+v 110 -30 -1000
+v 110 30 1000
+usemtl nail-Default
+f 1 2 3

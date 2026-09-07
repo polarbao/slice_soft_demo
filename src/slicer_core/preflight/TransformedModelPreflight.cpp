@@ -225,6 +225,7 @@ SceneModel BuildDiagnosticModel(
     SceneModel transformed = source;
     transformed.triangles = geometry.triangles;
     transformed.triangle_textures = geometry.triangletextures;
+    transformed.frame_vertices = geometry.framevertices;
     transformed.bbox_mm = geometry.bboxmm;
     transformed.triangle_count = transformed.triangles.size();
     return transformed;
