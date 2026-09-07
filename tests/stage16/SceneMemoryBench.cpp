@@ -28,6 +28,7 @@
 #include <iostream>
 #include <iterator>
 #include <string>
+#include <string_view>
 #include <vector>
 
 #if defined(_WIN32)
@@ -373,9 +374,17 @@ int main(const int argc, char** argv)
             std::cerr << "BENCH_ARTIFACTS_KEPT " << root.string() << "\n";
             return 1;
         }
-        std::cout << "BENCH_LAYERS digest="
-                  << ComputeLayerDigest(effectiveRequest.outputpackagedir)
-                  << "\n";
+        // 默认【不】算哈希：它要顺序读完整包（本场景 5.9 GB），会把进程墙钟
+        // 抬高约 40 s，使 bench 的进程耗时不再等于作业耗时 —— 第一版就是这么
+        // 踩到的，A/B 时误把这笔读盘算进了两侧。需要零漂移判定时置
+        // SLICESOFT_BENCH_DIGEST=1 单独开。
+        if (const char* const digestFlag{std::getenv("SLICESOFT_BENCH_DIGEST")};
+            digestFlag != nullptr && std::string_view{digestFlag} == "1")
+        {
+            std::cout << "BENCH_LAYERS digest="
+                      << ComputeLayerDigest(effectiveRequest.outputpackagedir)
+                      << "\n";
+        }
         // 成功时清掉输出包。本 bench 的产物只有上面那行 BENCH 统计，
         // 层文件是过程数据 —— 而它们能到 120 GB：此前一次 a-2@10um 的跑留在
         // 系统 temp 里，直到把 C 盘从 133 GB 可用压到 12 GB 才被发现。
