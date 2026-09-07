@@ -1,7 +1,7 @@
 # TASKS_16C-06-MEMFLOW 有界流式内存根治专项任务清单
 
 > 文档状态：**ACTIVE / 两项原始阻塞均已实测解除 / 余 MF-03X2b、MF-07、MF-08（均非阻塞）**
-> 版本：v4.5 ｜ 日期：2026-09-07
+> 版本：v4.6 ｜ 日期：2026-09-07
 > 定位：Stage 16C-06 的唯一原子任务状态真源；承接 12F-06 和 13B-05 流式化债务
 > 决策：`docs/slice/DOC/DOC_DECISION_16C_06_MEMFLOW_有界逐层流式内存根治.md`
 > 方案：`docs/slice/DEV/DEV_16C_06_MEMFLOW_有界逐层流式切片设计.md`
@@ -1375,6 +1375,68 @@ config.h 里 MaterialClosureConfig::enabled 默认 = true   <- 配置文件里�
 7.37M 次/层）各占多少，尚未分开测。剪枝方案要同时覆盖两者才有意义，
 故下一步应先把这两段拆开量。
 
+### 14.1.3 再拆一层：初始化也不是大头，真正的开销在分析函数
+
+上一节把矛头指向「每层新建 11 个 mask」。**继续拆分之后，那个判断也要修正。**
+
+在 `InitializeSemantic` 内部分别计时（同一快速档）：
+
+```text
+closureAssignMs   6,202 ms    11 个 assign 合计，占 closure 段的 16%
+closureLoopMs     1,935 ms    末尾逐像素循环，占 5%
+合计              8,137 ms
+closure 段总计   38,723 ms    -> 还差 30,586 ms
+```
+
+**即：整个初始化只占 21%。** 就算把 assign 全部省掉，上限也只有 16% ——
+这从另一个角度印证了 14.1.2 那次回退是对的（复用对象连这 16% 都拿不到，
+因为字节照样要写）。
+
+**那 30 秒在 `AnalyzeMaterialClosureSemanticLayer`**，它有三笔整幅面开销：
+
+| 开销 | 规模（10um，736 万列） |
+|---|---|
+| 四次 `std::fill` 重置 workspace 的四个 gap mask | 29.5 MB/层 |
+| 从边界洪泛算 `externalBackgroundMask` | 整幅面 |
+| `for (y) for (x)` 主判定循环 | 736 万次/层 |
+
+### 14.1.4 等价性论证（剪枝的前置，已完成）
+
+主循环的判据是：
+
+```cpp
+candidateGap = layerEmptyMask[i] != 0
+            && expectedOccupiedDomainMask[i] != 0
+            && workspace.externalBackgroundMask[i] == 0
+```
+
+活动列表外的列，按 `BuildBoundedActiveColumns` 的定义是
+**「所有层都无模型，且能经其他无模型列连到幅面边界」**。于是：
+
+- `expectedOccupiedDomainMask` = `modelEnvelope || supportRequired || outerVarnishShell`
+  三者对表外列**全为 0** → **第二个条件不成立**；
+- 且这类列按定义就是外部空白，`externalBackgroundMask` 必为 1
+  → **第三个条件也不成立**。
+
+**故表外列恒不是候选间隙，剪枝是精确等价的**，且两条判据互为旁证。
+这一条与 X3 的判据同源，但**是独立论证的**，不是沿用。
+
+### 14.1.5 下一步的方案（未实施）
+
+按收益排序：
+
+1. **主判定循环改为只扫活动列** —— 直接省掉 97.47% 的迭代，等价性已由 14.1.4 论证；
+2. **四次 `std::fill` 改为只重置活动列** —— 前提是 workspace 跨层复用
+   （表外列从不被写，故恒为 0）。注意 14.1.2 的教训：**这一条单独做收益有限**
+   （fill 只是那 30 秒里的一部分），要与第 1 条一起做；
+3. **洪泛不能简单剪枝** —— 它恰恰要遍历外部空白来确定边界连通性。
+   但表外列的结果是**解析可知的**（恒为外部背景），故可跳过实际洪泛、直接置位。
+   这一条最需要小心，建议最后做并单独验证。
+
+**实施前必须先加 `activeColumns` 参数贯通到
+`MaterialClosureSemanticDetector`**，那是本方案的主要改动面。
+验收沿用本专项硬要求：零漂移四判据逐字节全等 + 快速档 min-of-3 的 A/B。
+
 ### 14.2 MF-10：MATVOL 逐列求交
 
 多材质大栅格实测 `gridSetupMs` 占 **92%**（gubao04 XY 放大 4 倍，639 秒 / 691 秒），
@@ -1430,6 +1492,7 @@ TIFF 直接写盘）。那条路径确实能并行，但**它不是产品路径*
 
 | 日期 | 版本 | 变更 |
 |---|---|---|
+| 2026-09-07 | v4.6 | 新增 §14.1.3~14.1.5：继续拆分后**修正了上一节的判断** —— 初始化（11 个 assign + 逐像素循环）合计只占 closure 段的 21%，真正的 30 秒在 `AnalyzeMaterialClosureSemanticLayer`（四次整幅面 fill 共 29.5 MB/层、边界洪泛、736 万次/层的主判定循环）。这从另一角度印证 14.1.2 的回退是对的：复用对象连那 16% 都拿不到。并**完成剪枝的等价性论证**：表外列的 `expectedOccupiedDomainMask` 三个分量全为 0，且必为外部背景，故 `candidateGap` 恒 false，两条判据互为旁证 —— 该论证独立完成，未沿用 X3。给出按收益排序的三步方案（主循环剪枝 > fill 剪枝 > 洪泛解析化），并标注洪泛那条最需小心、应最后做。本次仍无代码改动。 |
 | 2026-09-07 | v4.5 | 新增 §14.1.1/14.1.2：MF-09 按「先量后改」插桩实测，**结果推翻原计划** —— 瓶颈不是那六处整幅面 pass（已剪过的三处合计仅占 3%），而是**材料闭合语义分析占 86%**；根因是 `MaterialClosureConfig::enabled` 默认为 true 而配置文件从不写它，导致每层新建 11 个整幅面 mask（81 MB/层、1429 层约 116 GB）。并**如实记录一次失败的尝试**：把该对象提到循环外跨层复用，公平 A/B（各三次取最小）显示 61,579 -> 68,940 ms，无任何收益证据，已回退。它证伪的假设是「开销在 malloc/free」—— 实际在 `assign` 的写入本身，那些字节无论复不复用都要写。故正确方向只剩活动列剪枝，且需独立做等价性验证；另标注 38.7 秒里 `assign` 写入与逐像素循环尚未分开量。 |
 | 2026-09-07 | v4.4 | 新增 §14：应用户「不改硬件、大画幅耗时还有多少空间」的提问立三张卡。**并更正我自己的初次判断** —— 当时看到「18 核、层循环串行、layerCompute 占 91.2%」就断言并行可拿 3~5 倍，只读核查后收回：产品路径上该循环被 `SceneLayerBarrier` 锁步（生产者写完一层即阻塞等消费），并行 18 路只会全堵在 `DepositAndWait`，吞吐不变而内存 ×18；那个 91.2% 来自 `slicer_cli` 直写路径，不是产品路径。据此 MF-11（并行化）DEFERRED 并记下重启时必须处理的清单。改为先做 MF-09：层循环里还有至少六处整幅面 pass 是 MEMFLOW 剪枝的漏网之鱼（其中 `analyze_support_connectivity` 每层新建清零 7.37 MB 且调用点在 support.enabled 守卫之外），等价性论证与 X2b 同一套、不增内存不碰屏障。MF-09 第一步是**加细粒度计时先把 516 秒拆开**，不是直接改。另立 MF-10：多材质大栅格的瓶颈在 MATVOL 逐列求交（gridSetup 占 92%），与层循环无关。 |
 | 2026-08-21 | v2.2 | MF-03B4B 专项准备补齐：冻结 public DTO、facts identity、retained 精确顺序、Stage 15 eligible branch、caller output/sink 强异常边界、closure 固定 workspace、独立 oracle 与实施拆分；结论 PREPARED / IMPLEMENTATION GO，生产仍未接线。 |
