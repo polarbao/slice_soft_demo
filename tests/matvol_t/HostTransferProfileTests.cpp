@@ -230,6 +230,41 @@ hostslicesettings MakeSettings(
     return settings;
 }
 
+bool VerifyMaterialVolumeRequiresLegacySampling(
+    const QString& modelPath,
+    const QString& outputDirectory,
+    QTextStream& errors)
+{
+    for (const hostprocesspreset& preset : HostProcessPresetCatalog::Presets())
+    {
+        if (!preset.materialvolume.enabled
+            || !preset.materialvolume.overlapautobyname)
+        {
+            continue;
+        }
+
+        hostslicesettings settings = MakeSettings(modelPath, outputDirectory);
+        settings.materialstrategy = preset.materialstrategy;
+        settings.materialprocess = preset.materialprocess;
+        settings.texture = preset.texture;
+        settings.support = preset.support;
+        settings.materialvolume = preset.materialvolume;
+        settings.geometrysamplingstrategy = HostGeometrySamplingStrategy::
+            LayerSlabSupersample2x2AtLeastTwoCandidate;
+        QString error;
+        return Check(
+            !HostEffectiveProfileBuilder::Validate(settings, &error)
+                && error.contains(QStringLiteral("仅支持 S0")),
+            QStringLiteral(
+                "MATVOL 自动材质模式与 S3 组合必须在宿主提交前 fail-closed。"),
+            errors);
+    }
+    return Check(
+        false,
+        QStringLiteral("未找到 MATVOL 自动材质工艺预设。"),
+        errors);
+}
+
 bool VerifyTransferProfileProductionSafety(QTextStream& errors)
 {
     const QList<hostprofiledescriptor> profiles =
@@ -269,6 +304,11 @@ int main(int argc, char* argv[])
                QStringLiteral("MATVOL-T Host 模型 fixture 不存在。"), errors)
         || !Check(outputRoot.isValid(),
                   QStringLiteral("MATVOL-T Host 临时目录不可用。"), errors))
+    {
+        return 2;
+    }
+    if (!VerifyMaterialVolumeRequiresLegacySampling(
+            modelPath, outputRoot.path(), errors))
     {
         return 2;
     }

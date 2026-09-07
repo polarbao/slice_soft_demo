@@ -1,7 +1,7 @@
 # TASKS_HOSTFLOW 宿主业务流程与场景生命周期补齐任务清单
 
-> 文档状态：**ACTIVE — H-D/H-E 与 H-F-01..15 完成**
-> 版本：v5.9 ｜ 日期：2026-09-04 ｜ 激活日期：2026-08-07
+> 文档状态：**ACTIVE — H-D/H-E 与 H-F-01..16 完成**
+> 版本：v6.0 ｜ 日期：2026-09-07 ｜ 激活日期：2026-08-07
 > **定位：独立补充专项，不属于 Stage 14 任何任务组，不占阶段编号。**
 > 起因：14E 交付的 `slicer_ui_host_sim` 是「技术验证壳」，未实现原设想的完整业务流程
 > 上游：`DOC_DECISION_14_UI_宿主模拟改造专项.md`、`contracts/slicer_capability_dtos.json`
@@ -370,6 +370,7 @@ E3 完成 → 回填 REPORT_HOSTFLOW_H_C_03 的 known_trim 条目
 | **H-F-13** | 增加 VS Code Release Runtime 无编译快速启动入口 | H-F-12 完成；用户确认需要避免每次启动重复 CMake 构建和约 300 MB 资源部署 | Tasks 与 Run/Debug 各提供 `Quick Run Packaged Host UI (Release, No Build)`；直接从 `runtime/slicesoft/Release` 启动，不带 `preLaunchTask`，不执行 configure/build/deploy/windeployqt；原 Build Runtime 与正式发布入口保持不变；JSON、入口语义和 Runtime self-test 通过 | **COMPLETE（2026-08-18）** |
 | **H-F-14** | 为导入后的规则排版增加操作员开关，并审计算法缩裹模型源坐标 | H-F-03 完成；用户要求由勾选状态决定自动排版是否生效 | “变换与排版”新增默认勾选的“导入后自动排版”；关闭时不调用 `applyGridLayout`，手动排版不受影响；目标 10 个 OBJ 的原始/导入定向包围盒与 230×100 mm 左下原点画幅完成审计；Debug 定向构建与 3 项 CTest 通过 | **COMPLETE（2026-09-04）** |
 | **H-F-15** | 增加自动定向开关、严格源姿态导入和批次 XY 原点偏移 | H-F-14 审计完成；用户明确授权自动定向开关及整体 XY 偏移 | DTO v1.14 为 `model.import.options` 增加可选 `autoOrient`，缺省 true；宿主增加默认勾选的“导入时自动定向”和仅在关闭自动排版时生效的批次原点 X/Y；同一批新增实例使用相同 `initialTransform.translateX/YMm`，相对位置不变且 `landOnBuildPlate=true`；姿态随场景传给完整预检与生产 Worker，metadata/retained SceneModel/预检/视图/切片一致，默认场景字节不变；Debug 定向构建与 8 项 CTest PASS | **COMPLETE（2026-09-04）** |
+| **H-F-16** | 修复高面数多材质模型导入假死及 MATVOL/S3 非法组合延迟失败 | H-F-12/H-F-15 完成；用户提供 `gubao05` 真实资产与 `PM-SLICER-PROFILE-0030` | 将拓扑边计数由逐边 `std::map` 分配改为连续数组排序归并；将触底连通分量识别由顶点哈希和根节点哈希改为确定性排序与连续统计，显著组件判定、精确顶点连接和触底语义不变。`gubao05` 126,170 三角面 Release 导入/排版/双视图总耗时由 53.464 s 降至 2.701-2.716 s，规则排版由 32.541 s 降至 0.055-0.058 s。修复 MATVOL 自动材质校验提前返回：宿主对 MATVOL 强制 S0、禁用 S3 控件并在提交前 fail-closed，Worker 核心验证不放宽。Release 目标构建、5 项定向 CTest、真实资产 3 次性能复测、Runtime 部署和 self-test PASS | **COMPLETE（2026-09-07）** |
 | **H-G-01** | 建立生产 TIFF 三维层栈预览专项 | H-D-05 完成；用户提出三维切片结果检查需求 | 明确二维生产层仍为像素权威；冻结 2.5D 稀疏层栈、通道伪彩、LOD、缓存、取消和内存 Gate；不新增生产 IO 文件、不修改协议 | **PREPARED / DEFERRED（2026-08-10）** |
 
 边界：本卡不修改 SPI v1、11 个导出、15 项能力、生产 TIFF、Profile 身份或主干 `slicer_debug_ui`。
@@ -684,6 +685,7 @@ RIP / 通道化 / Qt 类型                       → RIP 模块 / ChannelSplitt
 
 | 日期 | 版本 | 变更 |
 |---|---|---|
+| 2026-09-07 | v6.0 | 完成 H-F-16：真实 `gubao05-dingwei.obj` 为 18.04 MiB、导入后 126,170 个三角面；Release 分阶段基线确认导入 19.933 s、规则排版 32.541 s，而双视图刷新不足 1 s。拓扑诊断改用连续边数组排序归并，触底显著连通分量改用精确顶点键排序、并查集和连续根统计，删除大规模 `std::map`/`unordered_map` 节点分配且不改变边界/非流形计数、显著组件阈值或触底结果。三次优化后实测总时长 2.701/2.701/2.716 s，导入 1.975-1.997 s、排版 0.055-0.058 s。另修复 MATVOL `overlap.auto_by_material_name` 分支提前 `return true` 绕过几何采样校验：MATVOL 开启时 UI 将几何采样固定为 S0 并禁用采样控件，宿主 Builder 对任意 MATVOL+S3 在 Worker 启动前拒绝，核心 `materialVolumePolicy requires geometrySampling.strategy=legacy_center_sample` 规则保持不变。Release `model_transform`、`hostflow_hb05_slice_settings`、`matvol_t_host_profile`、`openvdb_sdf_utility_report`、`mesh_repair_cleanup` 5 项 CTest PASS；Release 宿主构建、Runtime 就地部署、三件核心产物 SHA-256 一致及 `--self-test` PASS。 |
 | 2026-09-04 | v5.9 | 完成 H-F-15：DTO v1.14 在 `model.import.options` 增加可选 `autoOrient`，省略时保持 true；Facade 元数据、模块 retained SceneModel 及场景 ModelSource 使用同一选项。默认 true 不写场景，旧场景缺字段按 true 读取，canonical JSON/hash 不漂移；显式 false 传给完整预检和生产 Worker，内部重载按场景值覆盖 Profile 默认值。变换与排版面板新增默认勾选的“导入时自动定向”及批次原点 X/Y；原点值只在关闭自动排版时启用，并作为本次新增实例共同的 XY 初始平移，模型间相对位置不变。`landOnBuildPlate=true` 独立保留。合成高模型验证默认定向后高度低于 9 mm、关闭后保持源高 10 mm，偏移后有效 bbox 最小点为 `(1,1,0)`；Debug 六目标构建及 DTO、旧请求、场景、生产服务、导入/UI/Grid/宿主 smoke 共 8 项 CTest PASS。Release `slicesoft_runtime` 聚合构建、运行目录部署与离屏 self-test PASS，构建/运行宿主版本一致为 `0.2.323-dev`；就地部署保留 `output`。SPI v1、11 个导出、15 项能力、RGBWSV、TIFF、Worker 对外合同和 Profile 均不变。 |
 | 2026-09-04 | v5.8 | 完成 H-F-14：规则排版面板新增默认勾选的“导入后自动排版”，导入路径以该宿主本地状态决定是否调用 `applyGridLayout`；关闭后保留导入定向后的当前 XY，手动排版仍可用。审计 `黄晨晨-算法缩裹` 10 个 OBJ：源坐标按 mm 与 230×100 mm `lower_left` 画幅共用数值原点，但无模型顶点位于 `(0,0)`；9 个源包围盒完全在画幅内，`segment_205` 最小 X=-0.5002 mm。默认 `model.import` 自动定向又使 5 个模型发生 180° 旋转，因此关闭排版不等于严格保留 OBJ 源姿态；新增 H-F-15 作为冻结 DTO 受控修订候选，未获授权前不开工。Debug 三目标构建与 3 项定向 CTest PASS；未修改 SPI、TIFF、RGBWSV 或生产切片语义。 |
 | 2026-08-18 | v5.7 | 完成 H-F-13：补齐文档曾声明但 VS Code 实际缺失的 Release Quick Run。新增同名 Tasks 和 Run/Debug 入口，均直接启动既有 `runtime/slicesoft/Release/slicer_ui_host_sim.exe`，不含 `dependsOn`/`preLaunchTask`，因此不会触发 CMake、MSBuild、约 300 MB 模型资源复制或 windeployqt；保留原增量构建、部署和正式发布入口。JSON 解析、入口静态合同与 Runtime self-test 通过。 |

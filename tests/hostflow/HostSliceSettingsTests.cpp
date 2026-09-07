@@ -63,7 +63,6 @@ bool AllPseudoColourItemsExplainThemselves(const QComboBox* combo)
     return true;
 }
 
-
 bool Check(const bool condition, const QString& message, QTextStream& errors)
 {
     if (!condition)
@@ -269,6 +268,7 @@ bool VerifyMaterialVolumeConditionalEmission(
             {
                 return false;
             }
+
         }
         else if (!Check(
                 overlap.value(QStringLiteral("mode")).toString()
@@ -1230,7 +1230,7 @@ bool VerifyPanelIsLocal(
         if (!Check(
                 matvolEnabled != nullptr && matvolPrimaryName != nullptr
                     && matvolHint != nullptr
-                    && beforeRestriction.materialvolume.enabled
+                    && beforeRestriction.materialvolume.enabled && beforeRestriction.geometrysamplingstrategy == HostGeometrySamplingStrategy::LegacyCenterSample && !geometrySampling->isEnabled()
                     && processPreset->currentData().toString()
                         == QStringLiteral(
                             "volumetric_nail_rgb_white_ondemand_lower_support")
@@ -1264,7 +1264,7 @@ bool VerifyPanelIsLocal(
     }
     panel.SetSingleMaterialRestriction(false, QString{});
     if (!Check(
-            processModel->item(rgbPresetIndex)->isEnabled()
+            geometrySampling->isEnabled() && processModel->item(rgbPresetIndex)->isEnabled()
                 && materialModel->item(rgbMaterialIndex)->isEnabled(),
             QStringLiteral("清除单材料限制后 RGB 工艺未恢复可选。"),
             errors))

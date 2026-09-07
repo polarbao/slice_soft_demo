@@ -527,6 +527,7 @@ void HostSliceSettingsPanel::SetPersistentSettings(
     m_buildZSpin->setValue(settings.buildvolume.zlimitmm);
     m_supportPanel->SetSettings(settings.support);
     m_matvolPanel->SetSettings(settings.materialvolume);
+    SyncGeometrySamplingControl();
     m_packageProtocol = settings.packageprotocol; m_transferChannel = settings.transferchannel;
     SyncTransferTopologyControl();
     RefreshPreview();
@@ -699,6 +700,7 @@ void HostSliceSettingsPanel::SetSingleMaterialRestriction(
             m_texturePanel->SetSettings(selectedPreset.texture);
             m_supportPanel->SetSettings(selectedPreset.support);
             m_matvolPanel->SetSettings(selectedPreset.materialvolume);
+            SyncGeometrySamplingControl();
             m_packageProtocol = selectedPreset.packageprotocol; m_transferChannel = selectedPreset.transferchannel;
             SyncTransferTopologyControl();
         }
@@ -757,6 +759,7 @@ void HostSliceSettingsPanel::OnProcessPresetChanged(const int index)
     m_texturePanel->SetSettings(preset.texture);
     m_supportPanel->SetSettings(preset.support);
     m_matvolPanel->SetSettings(preset.materialvolume);
+    SyncGeometrySamplingControl();
     m_packageProtocol = preset.packageprotocol; m_transferChannel = preset.transferchannel;
     SyncTransferTopologyControl();
     m_applyingProcessPreset = false;
@@ -765,12 +768,36 @@ void HostSliceSettingsPanel::OnProcessPresetChanged(const int index)
 
 void HostSliceSettingsPanel::OnProcessSettingsEdited()
 {
+    SyncGeometrySamplingControl();
     if (!m_applyingProcessPreset)
     {
         const QSignalBlocker presetBlocker(m_processPresetCombo);
         m_processPresetCombo->setCurrentIndex(0);
     }
     OnSettingsEdited();
+}
+
+void HostSliceSettingsPanel::SyncGeometrySamplingControl()
+{
+    const bool materialVolumeEnabled =
+        m_matvolPanel != nullptr && m_matvolPanel->Settings().enabled;
+    if (materialVolumeEnabled)
+    {
+        const int legacyIndex = GeometrySamplingIndex(
+            m_geometrySamplingCombo,
+            HostGeometrySamplingStrategy::LegacyCenterSample);
+        const QSignalBlocker blocker(m_geometrySamplingCombo);
+        m_geometrySamplingCombo->setCurrentIndex(
+            legacyIndex >= 0 ? legacyIndex : 0);
+        m_geometrySamplingCombo->setEnabled(false);
+        m_geometrySamplingCombo->setToolTip(QStringLiteral(
+            "多材质纵深 RGB 依赖 S0 Legacy 中心采样，启用该工艺时"
+            "几何采样会固定为 S0。"));
+        return;
+    }
+
+    m_geometrySamplingCombo->setEnabled(true);
+    m_geometrySamplingCombo->setToolTip(QString{});
 }
 
 void HostSliceSettingsPanel::OnSettingsEdited()

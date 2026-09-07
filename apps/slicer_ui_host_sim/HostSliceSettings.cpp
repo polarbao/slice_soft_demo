@@ -332,8 +332,18 @@ bool HostEffectiveProfileBuilder::Validate(
             }
             return false;
         }
-// 自动模式由材质命名推导优先级，primary/secondary 不再参与，故跳过其校验；
-// 材质数量因此不受这两个名字槽限制，这正是多图层资产需要的。
+        if (settings.geometrysamplingstrategy
+            != HostGeometrySamplingStrategy::LegacyCenterSample)
+        {
+            if (error != nullptr)
+            {
+                *error = QStringLiteral(
+                    "多材质纵深 RGB 候选仅支持 S0 Legacy 中心采样；"
+                    "请关闭 S3 几何采样候选。");
+            }
+            return false;
+        }
+        // 自动模式由材质命名推导优先级，primary/secondary 不再参与。
         if (settings.materialvolume.overlapautobyname)
         {
             if (settings.materialvolume.opacityvarnishenabled
@@ -347,24 +357,26 @@ bool HostEffectiveProfileBuilder::Validate(
                 }
                 return false;
             }
-            return true;
         }
-        const QString primary =
-            settings.materialvolume.primarymaterialname.trimmed();
-        const QString secondary =
-            settings.materialvolume.secondarymaterialname.trimmed();
-        if (primary.isEmpty()
-            || (!secondary.isEmpty() && secondary == primary)
-            || (!secondary.isEmpty()
-                && settings.materialvolume.primarypriority
-                    == settings.materialvolume.secondarypriority))
+        else
         {
-            if (error != nullptr)
+            const QString primary =
+                settings.materialvolume.primarymaterialname.trimmed();
+            const QString secondary =
+                settings.materialvolume.secondarymaterialname.trimmed();
+            if (primary.isEmpty()
+                || (!secondary.isEmpty() && secondary == primary)
+                || (!secondary.isEmpty()
+                    && settings.materialvolume.primarypriority
+                        == settings.materialvolume.secondarypriority))
             {
-                *error = QStringLiteral(
-                    "多材质纵深 RGB 候选要求材质名非空且不重复，优先级不得同级。");
+                if (error != nullptr)
+                {
+                    *error = QStringLiteral(
+                        "多材质纵深 RGB 候选要求材质名非空且不重复，优先级不得同级。");
+                }
+                return false;
             }
-            return false;
         }
     }
     const bool singleMaterialRelief =

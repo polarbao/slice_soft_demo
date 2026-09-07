@@ -127,6 +127,7 @@ private:
     void OnProcessPresetChanged(int index);
     void OnProcessSettingsEdited();
     void OnSettingsEdited();
+    void SyncGeometrySamplingControl();
     void RefreshPreview();
     bool ValidateSceneBinding(QString* error) const;
 
