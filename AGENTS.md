@@ -41,6 +41,8 @@
 
 各专项状态（均不占阶段编号，状态以各任务卡内的状态列为准）
 
+FRAME     COMPLETE：2026-09-07 nail-Default 非打印定位素材专项 FRAME-00..04 完成；gubao05 多图层透明核心工艺 600 DPI/0.033 mm、148 层真实包与空区/RIP strict PASS，Release 部署/自检通过；GUI 人工交互和物理打印未验证；卡 docs/codex_task/current/TASKS_FRAME_非打印定位素材与输出画幅专项任务清单.md
+
 RENDER    ✅ R-A / R-B / R-F 收口（含 meshoptimizer 1.1、平滑法线与真实资产预算重测）
           ⏸ R-C / R-D 判定【不进入下一步】；低成本入口是 R-C-00（纯测量）
           卡 docs/codex_task/current/TASKS_RENDER_模型显示与LOD修复补充任务清单.md
