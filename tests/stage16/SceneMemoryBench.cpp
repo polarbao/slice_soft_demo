@@ -288,6 +288,51 @@ int main(const int argc, char** argv)
                   << " elapsedMs=" << elapsedMs
                   << " peakWorkingSetBytes=" << PeakWorkingSetBytes()
                   << "\n";
+        // MF-12：把生产口径的分段耗时打出来。
+        //
+        // 本 bench 走的是 RunMultiModelProductionService —— 与 DLL/Worker 生产
+        // 路径同一条，而 CLI 那条并不同路（LegacySceneLayerAdapter 把
+        // write_reports 写死为 false，故闭合精确分析在生产路径上从不执行）。
+        // result.profile 一直带着这些字段，只是从未打印，导致本专项此前所有
+        // 耗时数字都只有 CLI 口径。详见任务卡 §14.1.9 与 §14.4。
+        const slicer_core::SliceRunProfile& profile = result.profile;
+        std::cout << "BENCH_PROFILE available=" << (profile.available ? 1 : 0)
+                  << " level=" << profile.profile_level
+                  << " modelLoadMs=" << profile.model_load_ms
+                  << " gridSetupMs=" << profile.grid_setup_ms
+                  << " maskSamplingMs=" << profile.mask_sampling_ms
+                  << " texturePrepareMs=" << profile.texture_prepare_ms
+                  << " supportGenerationMs=" << profile.support_generation_ms
+                  << " layerComputeMs=" << profile.layer_compute_ms
+                  << " layerComposeMs=" << profile.layer_compose_ms
+                  << " tiffWriteMs=" << profile.tiff_write_ms
+                  << " outputWriteMs=" << profile.output_write_ms
+                  << " packagePublishMs=" << profile.package_publish_ms
+                  << " sliceProcessingMs=" << profile.slice_processing_ms
+                  << " totalMs=" << profile.total_ms
+                  << " instances=" << profile.instances.size()
+                  << "\n";
+        // 逐实例：生产者侧（run_slicer）的核心切片与合成耗时。这两笔与上面的
+        // 场景级 layerCompose 是【并发】的 —— 生产者写完第 L 层即被
+        // SceneLayerBarrier 阻塞等消费，故两者不可相加。
+        for (const slicer_core::SliceRunInstanceProfile& instance :
+             profile.instances)
+        {
+            std::cout << "BENCH_INSTANCE id=" << instance.instanceid
+                      << " widthPx=" << instance.widthpx
+                      << " heightPx=" << instance.heightpx
+                      << " layerCount=" << instance.layercount
+                      << " coreSliceMs="
+                      << (instance.coreslicems.has_value()
+                              ? instance.coreslicems.value() : -1.0)
+                      << " composeMs="
+                      << (instance.composems.has_value()
+                              ? instance.composems.value() : -1.0)
+                      << " totalMs="
+                      << (instance.totalms.has_value()
+                              ? instance.totalms.value() : -1.0)
+                      << "\n";
+        }
         if (!result.IsValid() && result.error.has_value())
         {
             // 失败时【保留】现场并把路径打出来 —— 那时输出包是诊断材料。
