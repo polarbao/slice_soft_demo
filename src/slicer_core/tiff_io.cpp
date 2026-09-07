@@ -279,10 +279,11 @@ TiffCompressionMode ParseTiffCompressionMode(const std::string_view name)
         "TIFF compression must be none or packbits: " + std::string{name});
 }
 
-TiffReadResult read_rgbwsv_tiled_tiff(const std::filesystem::path& path)
+TiffReadResult ReadTiledFromBuffer(
+    const std::filesystem::path& path,
+    const std::vector<std::uint8_t>& data,
+    const ParsedTiffEntries& entries)
 {
-    const std::vector<std::uint8_t> data = ReadFile(path);
-    const ParsedTiffEntries entries = ParseIfdEntries(data, path);
     TiffReadResult result;
     result.spec.storage_mode = TiffStorageMode::Tiled;
     result.spec.width =
@@ -360,10 +361,11 @@ TiffReadResult read_rgbwsv_tiled_tiff(const std::filesystem::path& path)
     return result;
 }
 
-TiffReadResult read_rgbwsv_stripped_tiff(const std::filesystem::path& path)
+TiffReadResult ReadStrippedFromBuffer(
+    const std::filesystem::path& path,
+    const std::vector<std::uint8_t>& data,
+    const ParsedTiffEntries& entries)
 {
-    const std::vector<std::uint8_t> data = ReadFile(path);
-    const ParsedTiffEntries entries = ParseIfdEntries(data, path);
     TiffReadResult result;
     result.spec.storage_mode = TiffStorageMode::Stripped;
     result.spec.width =
@@ -440,8 +442,25 @@ TiffReadResult read_rgbwsv_stripped_tiff(const std::filesystem::path& path)
     return result;
 }
 
+TiffReadResult read_rgbwsv_tiled_tiff(const std::filesystem::path& path)
+{
+    const std::vector<std::uint8_t> data = ReadFile(path);
+    return ReadTiledFromBuffer(path, data, ParseIfdEntries(data, path));
+}
+
+TiffReadResult read_rgbwsv_stripped_tiff(const std::filesystem::path& path)
+{
+    const std::vector<std::uint8_t> data = ReadFile(path);
+    return ReadStrippedFromBuffer(path, data, ParseIfdEntries(data, path));
+}
+
 TiffReadResult read_rgbwsv_tiff(const std::filesystem::path& path)
 {
+    // MF-13a：此处原先读完整文件、解析 IFD 只为判断条带/瓦片，随后调用
+    // 单参版本，而那两个版本各自【再读一遍文件、再解析一遍 IFD】。
+    // 即每个被校验的层都被读两次、解析两次 —— 包发布的读回全量校验
+    // （生产口径 43.4 s，占整个作业 48%）里有一半是这么来的。
+    // 复用已有缓冲后语义完全不变：同一批字节、同一套判据。
     const std::vector<std::uint8_t> data = ReadFile(path);
     const ParsedTiffEntries entries = ParseIfdEntries(data, path);
     const bool hasTiles = FindOptionalEntry(entries, 324U).has_value()
@@ -450,11 +469,11 @@ TiffReadResult read_rgbwsv_tiff(const std::filesystem::path& path)
         || FindOptionalEntry(entries, 279U).has_value();
     if (hasTiles && !hasStrips)
     {
-        return read_rgbwsv_tiled_tiff(path);
+        return ReadTiledFromBuffer(path, data, entries);
     }
     if (hasStrips && !hasTiles)
     {
-        return read_rgbwsv_stripped_tiff(path);
+        return ReadStrippedFromBuffer(path, data, entries);
     }
     throw std::runtime_error(
         "TIFF storage structure is ambiguous or missing: " + path.string());
