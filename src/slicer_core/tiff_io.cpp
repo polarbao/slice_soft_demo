@@ -4,6 +4,7 @@
 #include "slicer_core/TiffReadStructureInternal.h"
 
 #include <algorithm>
+#include <array>
 #include <fstream>
 #include <limits>
 #include <span>
@@ -86,6 +87,22 @@ void AccumulateContiguousChannelStats(
         throw std::runtime_error(
             "TIFF contiguous RGBWSV payload is not pixel aligned");
     }
+    // MF-13b：逐通道直方图。
+    //
+    // 原实现每个字节要做约七件事（校验和累加、min、max、四个计数器各一次比较），
+    // 且每次都要重新解析 `result.channel_stats[channel]`。包发布的读回全量校验
+    // 要走完整包的每个字节 —— 5.9 GB 的包合计约 44 GB 标量运算，实测单线程
+    // 吞吐 148 MB/s，界限就在这里（生产口径下该校验占整个作业的 48%）。
+    //
+    // 改为每字节只做一次直方图自增，收尾时从 6x256 个计数导出全部统计。
+    // 判据逐项等价：
+    //   校验和   原为逐次 += value，等于 sum(value * count)
+    //   min/max  按值升序遍历非空桶取 min/max，与逐字节取 min/max 同值
+    //   四个计数 分别是 count(255)、count(!=255)、count(0)、count(0<v<255)
+    // 跨条带累加语义不变 —— 直方图是本次调用的局部量，导出时仍按原样合并进
+    // `result`（min/max 取 min/max，计数与校验和累加）。
+    std::array<std::array<std::uint32_t, 256U>, rgbwsv_channel_count>
+        histogram{};
     for (std::size_t offset{0U};
          offset < pixels.size();
          offset += rgbwsv_channel_count)
@@ -94,19 +111,40 @@ void AccumulateContiguousChannelStats(
              channel < rgbwsv_channel_count;
              ++channel)
         {
-            const std::uint8_t value = pixels[offset + channel];
-            result.channel_checksums[channel] += value;
-            TiffChannelStats& stats = result.channel_stats[channel];
-            stats.min_value = std::min(
-                stats.min_value,
-                static_cast<int>(value));
-            stats.max_value = std::max(
-                stats.max_value,
-                static_cast<int>(value));
-            stats.empty_pixels += value == 255U;
-            stats.print_pixels += value != 255U;
-            stats.full_print_pixels += value == 0U;
-            stats.partial_print_pixels += value != 0U && value != 255U;
+            ++histogram[channel][pixels[offset + channel]];
+        }
+    }
+    for (std::size_t channel{0U};
+         channel < rgbwsv_channel_count;
+         ++channel)
+    {
+        TiffChannelStats& stats = result.channel_stats[channel];
+        for (std::size_t value{0U}; value < 256U; ++value)
+        {
+            const std::uint64_t count{histogram[channel][value]};
+            if (count == 0U)
+            {
+                continue;
+            }
+            result.channel_checksums[channel] += value * count;
+            stats.min_value = std::min(stats.min_value, static_cast<int>(value));
+            stats.max_value = std::max(stats.max_value, static_cast<int>(value));
+            if (value == 255U)
+            {
+                stats.empty_pixels += count;
+            }
+            else
+            {
+                stats.print_pixels += count;
+                if (value == 0U)
+                {
+                    stats.full_print_pixels += count;
+                }
+                else
+                {
+                    stats.partial_print_pixels += count;
+                }
+            }
         }
     }
 }
