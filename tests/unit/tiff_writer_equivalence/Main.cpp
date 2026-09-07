@@ -257,6 +257,76 @@ bool ResultsAreEquivalent(
     return true;
 }
 
+/**
+ * @brief MF-13c 的等价性网：不物化像素的读法必须给出【完全相同】的统计。
+ *
+ * `read_rgbwsv_tiff_stats` 跳过整幅面像素的分配与拷贝，只为读回校验服务。
+ * 它与完整读法共用同一个 `AccumulateContiguousChannelStats`，故理论上等价 ——
+ * 但越界判据从 `result.pixels.size()` 改成了解析出的整幅面字节数，
+ * 这一处必须钉住，否则畸形 TIFF 可能不再被拒。
+ */
+bool StatsOnlyReadMatchesFullRead(const std::filesystem::path& directory)
+{
+    slicer_core::TiffImageSpec spec;
+    spec.width = 17U;
+    spec.height = 7U;
+    spec.rows_per_strip = 3U;
+    spec.tile_width = 16U;
+    spec.tile_height = 16U;
+    spec.storage_mode = slicer_core::TiffStorageMode::Stripped;
+    spec.compression_mode = slicer_core::TiffCompressionMode::None;
+
+    const std::unique_ptr<slicer_core::ITiffWriter> writer =
+        slicer_core::CreateTiffWriter(
+            slicer_core::TiffWriterBackend::Handwritten);
+    for (std::size_t caseIndex{0U}; caseIndex < 6U; ++caseIndex)
+    {
+        const std::vector<std::uint8_t> pixels = MakePixels(spec, caseIndex);
+        const std::filesystem::path path =
+            directory / ("stats_only_" + std::to_string(caseIndex) + ".tiff");
+        writer->Write(path, spec, pixels);
+        const slicer_core::TiffReadResult full =
+            slicer_core::read_rgbwsv_tiff(path);
+        const slicer_core::TiffReadResult statsOnly =
+            slicer_core::read_rgbwsv_tiff_stats(path);
+
+        if (full.channel_checksums != statsOnly.channel_checksums)
+        {
+            std::cerr << "FAIL stats-only: checksum mismatch case "
+                      << caseIndex << '\n';
+            return false;
+        }
+        for (std::size_t channel{0U}; channel < 6U; ++channel)
+        {
+            if (!StatsAreEqual(full.channel_stats.at(channel),
+                               statsOnly.channel_stats.at(channel)))
+            {
+                std::cerr << "FAIL stats-only: stats mismatch case "
+                          << caseIndex << " channel " << channel << '\n';
+                return false;
+            }
+        }
+        if (full.spec.width != statsOnly.spec.width
+            || full.spec.height != statsOnly.spec.height
+            || full.spec.samples_per_pixel != statsOnly.spec.samples_per_pixel
+            || full.spec.storage_mode != statsOnly.spec.storage_mode
+            || full.spec.compression_mode != statsOnly.spec.compression_mode)
+        {
+            std::cerr << "FAIL stats-only: spec mismatch case "
+                      << caseIndex << '\n';
+            return false;
+        }
+        // 完整读法仍必须给出像素；stats 版本按契约不给。
+        if (full.pixels != pixels || !statsOnly.pixels.empty())
+        {
+            std::cerr << "FAIL stats-only: pixel retention contract case "
+                      << caseIndex << '\n';
+            return false;
+        }
+    }
+    return true;
+}
+
 bool ChannelStatsMatchIndependentReference(
     const std::filesystem::path& directory)
 {
@@ -435,6 +505,31 @@ int main()
         return 1;
     }
     std::cout << "PASS channel_stats_match_independent_reference\n";
+
+    bool statsOnlyPassed{false};
+    const std::filesystem::path statsOnlyDirectory =
+        std::filesystem::temp_directory_path()
+        / ("slicesoft_13c_stats_only_"
+           + std::to_string(
+               std::chrono::steady_clock::now().time_since_epoch().count()));
+    std::filesystem::create_directories(statsOnlyDirectory);
+    try
+    {
+        statsOnlyPassed = StatsOnlyReadMatchesFullRead(statsOnlyDirectory);
+    }
+    catch (const std::exception& error)
+    {
+        std::cerr << "FAIL stats-only: " << error.what() << '\n';
+    }
+    std::error_code statsOnlyCleanup;
+    std::filesystem::remove_all(statsOnlyDirectory, statsOnlyCleanup);
+    if (!statsOnlyPassed)
+    {
+        std::cout << "tiff_writer_equivalence_unit_tests: FAIL"
+                     " (stats-only read)\n";
+        return 1;
+    }
+    std::cout << "PASS stats_only_read_matches_full_read\n";
 
     const slicer_core::TiffBackendBuildInfo buildInfo =
         slicer_core::GetTiffBackendBuildInfo();

@@ -7,16 +7,28 @@
 #include "slicer_core/TiffReadApi.h"
 
 #include <algorithm>
+#include <atomic>
 #include <cmath>
+#include <exception>
 #include <fstream>
 #include <limits>
 #include <sstream>
+#include <thread>
 
 namespace slicer_core {
 namespace {
 
 constexpr const char* legacy_schema = "p0.rgbwsv.1";
 constexpr const char* current_schema = "p0.rgbwsv.2";
+
+// MF-13d：逐层读回校验的并发上限。
+//
+// 每个工作线程在读一层时持有一份整文件缓冲（本场景 44 MB/层）。MF-13c 之后
+// 不再额外物化解码后的整幅面，故单线程驻留从约 88 MB 降到约 44 MB ——
+// 这才使并发在【本专项以内存为主指标】的前提下可接受：4 线程约 176 MB。
+// 不取 hardware_concurrency 的全部（本机 18）是刻意的：那会是约 800 MB，
+// 与本专项把生产峰值压到 1 GB 量级的目标相抵。
+constexpr unsigned kLayerValidationMaxWorkers{4U};
 
 Json read_json_file(const std::filesystem::path& path) {
     std::ifstream input{path};
@@ -773,7 +785,72 @@ RipValidationResult ValidateSlicePackageImpl(
             manifest_path);
     }
 
+    // MF-13d：把「读盘 + 解码 + 统计」这段逐层独立的重活并行化。
+    //
+    // 生产口径下读回全量校验占整个作业的三分之一，且已实测为 CPU 界限、
+    // 单线程（隔离测量 cpu/wall = 98%）。143 层彼此不相关，归并侧
+    // `merge_channel_stats` 全是 min/max/求和，`layer_checksums` 末尾还会
+    // 按 index 排序 —— 都可结合可交换，故结果与线程数无关。
+    //
+    // 【判定顺序必须一字不变】，这是本改动唯一的风险面。做法是三段式：
+    //   1. 预扫：只取候选路径，**不做任何判定**（连 path 缺失都不在这里报）
+    //   2. 并行：只读、只记结果或异常，**不抛**
+    //   3. 顺扫：完全照原来的顺序做全部判定，用第 2 段的结果替代原地读盘
+    // 于是「同时有多处畸形时报哪一个」与改前完全相同。代价是失败包会多读
+    // 几层（那几层的结果被丢弃），只多花 I/O，不改结论。
+    struct LayerReadJob {
+        std::filesystem::path path;
+        TiffReadResult read;
+        std::exception_ptr failure;
+        bool attempted{false};
+    };
+    std::vector<LayerReadJob> jobs(layers->as_array().size());
+    {
+        std::size_t slot{0U};
+        for (const auto& layer : layers->as_array()) {
+            if (layer.contains("path") && layer.at("path").is_string()) {
+                jobs.at(slot).path =
+                    package_dir / layer.at("path").as_string();
+            }
+            ++slot;
+        }
+        std::atomic<std::size_t> cursor{0U};
+        const unsigned hardware =
+            std::max(1U, std::thread::hardware_concurrency());
+        const unsigned workerCount =
+            std::min(hardware, kLayerValidationMaxWorkers);
+        std::vector<std::thread> pool;
+        pool.reserve(workerCount);
+        for (unsigned worker{0U}; worker < workerCount; ++worker) {
+            pool.emplace_back([&jobs, &cursor]() {
+                for (;;) {
+                    const std::size_t next = cursor.fetch_add(1U);
+                    if (next >= jobs.size()) {
+                        return;
+                    }
+                    LayerReadJob& job = jobs.at(next);
+                    if (job.path.empty()
+                        || !std::filesystem::exists(job.path)) {
+                        continue;  // 交给第 3 段按原顺序报错
+                    }
+                    job.attempted = true;
+                    try {
+                        job.read = read_rgbwsv_tiff_stats(job.path);
+                    } catch (...) {
+                        job.failure = std::current_exception();
+                    }
+                }
+            });
+        }
+        for (std::thread& worker : pool) {
+            worker.join();
+        }
+    }
+
+    std::size_t jobSlot{0U};
     for (const auto& layer : layers->as_array()) {
+        LayerReadJob& job = jobs.at(jobSlot);
+        ++jobSlot;
         const int index{layer.at("index").as_int()};
         if (index < 0 || index >= result.layer_count) {
             fail(
@@ -809,7 +886,16 @@ RipValidationResult ValidateSlicePackageImpl(
 
         TiffReadResult tiff_result;
         try {
-            tiff_result = read_rgbwsv_tiff(layer_path);
+            // MF-13c：本函数只用 spec / channel_stats / channel_checksums，
+            // 故用不物化像素的版本，省掉每层整幅面的分配与拷贝。
+            // MF-13d：正常情况下这一层已由并行段读好，此处只取结果；
+            // 未读到（路径当时不存在等）才就地补读，保证语义不变。
+            if (job.failure) {
+                std::rethrow_exception(job.failure);
+            }
+            tiff_result = job.attempted
+                ? std::move(job.read)
+                : read_rgbwsv_tiff_stats(layer_path);
         } catch (const ValidationError&) {
             throw;
         } catch (const std::exception& error) {
