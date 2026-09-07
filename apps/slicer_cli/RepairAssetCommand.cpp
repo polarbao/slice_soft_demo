@@ -112,6 +112,11 @@ int RunRepairAsset(const RepairAssetRequest& request)
 
     const slicer_core::ModelReport report =
         slicer_core::load_model_report(loadConfig, std::filesystem::current_path());
+    if (!report.frame_vertices.empty())
+    {
+        std::cerr << "E_FRAME_REPAIR_UNSUPPORTED: repair export cannot preserve non-printing frame geometry\n";
+        return 2;
+    }
 
     slicer_core::SceneModelTriangleMeshAdapterOptions adapterOptions;
 // 诊断用：允许显式收紧退化面阈值。默认阈值会把面积 < 1e-6 mm^2 的

@@ -279,6 +279,11 @@ public:
             validate_slice_config(profile);
             const ModelReport sourceModel = load_model_report(
                 profile, request.profile_config_path.parent_path());
+            if (!sourceModel.frame_vertices.empty())
+            {
+                throw std::invalid_argument(
+                    "E_FRAME_REPAIR_UNSUPPORTED: repair export cannot preserve non-printing frame geometry");
+            }
             for (const MaterialInfo& material : sourceModel.material_infos)
             {
                 if (material.has_texture && !material.texture_exists)
