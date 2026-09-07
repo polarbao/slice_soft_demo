@@ -243,19 +243,9 @@ MaterialVolumePlan BuildMaterialVolumePlan(const MaterialVolumeBuildRequest& req
         trianglesByMaterial.at(found->second).push_back(index);
     }
 
-    /*
-     * MATVOL-PERF P1：逐三角的 XY 包围盒，用于在逐列求交前剔除必然落空的三角。
-     *
-     * 逐列求交是本函数的绝对热点：它对【每一个 XY 列】遍历【全部三角面】，
-     * 复杂度 O(列数 x 三角数)，中间没有任何空间剔除。实测三角平均只覆盖
-     * 19~29 个列（占栅格约 0.01%），即 99.99% 的 PointInTriangleXy 调用
-     * 必然落空——gubao04 为 104,170 三角 x 192,960 列 = 2.01e10 次比较。
-     *
-     * 本剔除【不改变任何判定结果】：点落在三角形内必然落在其 XY 包围盒内，
-     * 故以闭区间包围盒做保守剔除不会漏掉命中。包围盒 min/max 直接取自
-     * PointInTriangleXy 所用的同一组顶点坐标，不引入 epsilon 收缩，
-     * 因此边界点（恰压在像素中心线上的三角）仍会进入原判定。
-     */
+    // P1 keeps the existing closed triangle bounds. FRAME additionally unions
+    // these same bounds per material, so blank canvas columns skip the whole
+    // triangle list without changing boundary tests or intersection ordering.
     struct TriangleXyBounds
     {
         double minX{0.0};
@@ -278,6 +268,23 @@ MaterialVolumePlan BuildMaterialVolumePlan(const MaterialVolumeBuildRequest& req
         bounds.maxX = std::max({a.x, b.x, c.x});
         bounds.minY = std::min({a.y, b.y, c.y});
         bounds.maxY = std::max({a.y, b.y, c.y});
+    }
+
+    const double highest = std::numeric_limits<double>::max();
+    const double lowest = std::numeric_limits<double>::lowest();
+    std::vector<TriangleXyBounds> materialXyBounds(materialNames.size(),
+        {highest, lowest, highest, lowest});
+    for (std::size_t material = 0U; material < materialNames.size(); ++material)
+    {
+        auto& bounds = materialXyBounds[material];
+        for (const auto triangle : trianglesByMaterial[material])
+        {
+            const auto& item = triangleXyBounds[triangle];
+            bounds.minX = std::min(bounds.minX, item.minX);
+            bounds.maxX = std::max(bounds.maxX, item.maxX);
+            bounds.minY = std::min(bounds.minY, item.minY);
+            bounds.maxY = std::max(bounds.maxY, item.maxY);
+        }
     }
 
     MaterialVolumePlan plan;
@@ -307,6 +314,12 @@ MaterialVolumePlan BuildMaterialVolumePlan(const MaterialVolumeBuildRequest& req
 
             for (std::size_t material{0}; material < plan.materialNames_.size(); ++material)
             {
+                const auto& materialBounds = materialXyBounds[material];
+                if (px < materialBounds.minX || px > materialBounds.maxX
+                    || py < materialBounds.minY || py > materialBounds.maxY)
+                {
+                    continue;
+                }
                 hits.clear();
                 for (const std::size_t triangleIndex : trianglesByMaterial.at(material))
                 {
