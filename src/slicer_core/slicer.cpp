@@ -8,6 +8,7 @@
 #include "slicer_core/geometry/ReliefColumnInfo.h"
 #include "slicer_core/geometry/TransformedModelAdapter.h"
 #include "slicer_core/json_value.h"
+#include "slicer_core/material/MaterialClosureExactLayerPass.h"
 #include "slicer_core/material/MaterialClosureRepair.h"
 #include "slicer_core/materials/volume/MaterialLayerRgbComposer.h"
 #include "slicer_core/materials/volume/MaterialLayerNameResolver.h"
@@ -4635,6 +4636,13 @@ SliceRunResult run_slicer(const std::filesystem::path& config_path, const SliceR
         && config.material_closure.repair.enabled;
     const bool collectMaterialClosureExact = config.material_closure.enabled
         && (options.write_reports || repairMaterialClosure);
+    // MF-09：闭合分析的 workspace 与入参都与层无关，持有在循环外跨层复用。
+    MaterialClosureExactLayerWorkspace materialClosureWorkspace;
+    const MaterialClosureExactLayerRequest materialClosureRequest{
+        .connectivity = config.material_closure.connectivity,
+        .maxGapPx = config.material_closure.max_gap_px,
+        .repair = repairMaterialClosure,
+        .repairValues = ResolveMaterialClosureRepairValues(config)};
     const bool collectMaterialClosureSemantic =
         collectMaterialClosureExact
         || static_cast<bool>(options.layercallback)
@@ -5003,53 +5011,20 @@ SliceRunResult run_slicer(const std::filesystem::path& config_path, const SliceR
         }
         if (collectMaterialClosureExact)
         {
-            const MaterialClosureSemanticLayerAnalysis analysis =
-                AnalyzeMaterialClosureSemanticLayer(
-                    materialClosureInput,
-                    config.material_closure.connectivity,
-                    config.material_closure.max_gap_px);
-            MaterialClosureSemanticLayerResult result = analysis.summary;
-            if (repairMaterialClosure)
-            {
-                const MaterialClosureRepairPlan repairPlan = BuildMaterialClosureRepairPlan(
-                    materialClosureInput,
-                    analysis,
-                    config.material_closure.connectivity);
-                const MaterialClosureRepairApplicationResult repairResult =
-                    ApplyMaterialClosureRepair(
-                        repairPlan,
-                        ResolveMaterialClosureRepairValues(config),
-                        layer,
-                        materialClosureInput);
-                const MaterialClosureSemanticLayerResult remaining =
-                    DetectMaterialClosureSemanticLayer(
-                        materialClosureInput,
-                        config.material_closure.connectivity,
-                        config.material_closure.max_gap_px);
-                result.repairAttempted = true;
-                result.repairedPixels = repairResult.repairedPixels;
-                result.repairedColorFillPixels = repairResult.repairedColorFillPixels;
-                result.repairedModelSupportPixels = repairResult.repairedModelSupportPixels;
-                result.repairedInternalVoidPixels = repairResult.repairedInternalVoidPixels;
-                result.repairedVarnishSupportPixels = repairResult.repairedVarnishSupportPixels;
-                result.remainingGapPixels = remaining.gapPixels;
-                result.remainingColorFillGapPixels = remaining.colorFillGapPixels;
-                result.remainingModelSupportGapPixels = remaining.modelSupportGapPixels;
-                result.remainingColorSupportGapPixels = remaining.colorSupportGapPixels;
-                result.remainingInternalVoidGapPixels = remaining.internalVoidGapPixels;
-                result.remainingVarnishSupportGapPixels = remaining.varnishSupportGapPixels;
-                result.repairRejectedTooWidePixels = repairPlan.rejectedTooWidePixels;
-
-                layer_model_pixels += repairResult.repairedModelFillPixels;
-                layer_support_pixels += repairResult.repairedSupportPixels;
-                diagnostics.model_pixels = layer_model_pixels;
-                diagnostics.support_pixels = layer_support_pixels;
-                diagnostics.semantic.model_fill_pixels += repairResult.repairedModelFillPixels;
-                diagnostics.semantic.support_pixels += repairResult.repairedSupportPixels;
-                diagnostics.semantic.internal_void_support_pixels +=
-                    repairResult.repairedInternalVoidPixels;
-            }
-            materialClosureExactLayers.push_back(std::move(result));
+            // 未修复时三个 repaired 计数恒为 0，故不必再按 repairMaterialClosure 分支。
+            MaterialClosureExactLayerOutcome closureOutcome =
+                RunMaterialClosureExactLayerPass(
+                    materialClosureInput, materialClosureRequest, layer,
+                    materialClosureWorkspace);
+            layer_model_pixels += closureOutcome.repairedModelFillPixels;
+            layer_support_pixels += closureOutcome.repairedSupportPixels;
+            diagnostics.model_pixels = layer_model_pixels;
+            diagnostics.support_pixels = layer_support_pixels;
+            diagnostics.semantic.model_fill_pixels += closureOutcome.repairedModelFillPixels;
+            diagnostics.semantic.support_pixels += closureOutcome.repairedSupportPixels;
+            diagnostics.semantic.internal_void_support_pixels +=
+                closureOutcome.repairedInternalVoidPixels;
+            materialClosureExactLayers.push_back(std::move(closureOutcome.result));
         }
         std::optional<RgbwsvtProductionLayer> transferLayer;
         if (transferSession.has_value())

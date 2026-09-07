@@ -1,4 +1,5 @@
 #include "slicer_core/diagnostics/MaterialClosureSemanticDetector.h"
+#include "slicer_core/material/MaterialClosureExactLayerPass.h"
 #include "slicer_core/material/MaterialClosureRepair.h"
 
 #include <array>
@@ -517,6 +518,122 @@ bool RejectsMaskSizeMismatch()
 
 }  // namespace
 
+slicer_core::MaterialClosureSemanticLayerInput MakeColorFillGapInput()
+{
+    slicer_core::MaterialClosureSemanticLayerInput input = MakeInput();
+    MarkGapPixel(input);
+    input.textureSurfaceMask.at(PixelIndex(1, 2)) = 1U;
+    input.modelMaterialMask.at(PixelIndex(1, 2)) = 1U;
+    input.modelFillMask.at(PixelIndex(3, 2)) = 1U;
+    input.modelMaterialMask.at(PixelIndex(3, 2)) = 1U;
+    input.modelEnvelopeMask.at(PixelIndex(2, 2)) = 1U;
+    return input;
+}
+
+slicer_core::MaterialClosureRepairValues MakeWhiteRepairValues()
+{
+    slicer_core::MaterialClosureRepairValues values;
+    values.modelFillMaterial = slicer_core::MaterialClosureModelFillMaterial::White;
+    values.modelFillValue = 0U;
+    values.supportValue = 0U;
+    return values;
+}
+
+/**
+ * @brief MF-09 的等价性网：下沉后的层通道必须与旧 owning 组合逐字节一致。
+ *
+ * 旧组合是 slicer.cpp 下沉前的原写法（owning 分析 + owning 计划 + 应用 +
+ * 复检）。新入口改用 View 版本并跨层复用 workspace，故必须证明两者在
+ * 【修复路径】上也完全一致 —— 生产资产上 gapPixels 恒为 0，跑不到这条分支，
+ * 所以这条只能由单测覆盖。断言里包含「修复确实发生」，避免整条空转。
+ */
+bool ExactLayerPassMatchesOwningRepairComposition()
+{
+    slicer_core::MaterialClosureSemanticLayerInput expectedInput = MakeColorFillGapInput();
+    const slicer_core::MaterialClosureRepairValues values = MakeWhiteRepairValues();
+    std::vector<std::uint8_t> expectedLayer = MakeEmptyRgbwsvLayer();
+    const slicer_core::MaterialClosureSemanticLayerAnalysis analysis =
+        slicer_core::AnalyzeMaterialClosureSemanticLayer(expectedInput, 8, 1);
+    const slicer_core::MaterialClosureRepairPlan plan =
+        slicer_core::BuildMaterialClosureRepairPlan(expectedInput, analysis, 8);
+    const slicer_core::MaterialClosureRepairApplicationResult expectedApplied =
+        slicer_core::ApplyMaterialClosureRepair(plan, values, expectedLayer, expectedInput);
+    const slicer_core::MaterialClosureSemanticLayerResult expectedRemaining =
+        slicer_core::DetectMaterialClosureSemanticLayer(expectedInput, 8, 1);
+
+    slicer_core::MaterialClosureSemanticLayerInput actualInput = MakeColorFillGapInput();
+    std::vector<std::uint8_t> actualLayer = MakeEmptyRgbwsvLayer();
+    slicer_core::MaterialClosureExactLayerWorkspace workspace;
+    slicer_core::MaterialClosureExactLayerRequest request;
+    request.connectivity = 8;
+    request.maxGapPx = 1;
+    request.repair = true;
+    request.repairValues = values;
+    const slicer_core::MaterialClosureExactLayerOutcome outcome =
+        slicer_core::RunMaterialClosureExactLayerPass(
+            actualInput, request, actualLayer, workspace);
+
+    return ExpectTrue(expectedApplied.repairedPixels == 1, "oracle actually repaired a pixel")
+        && ExpectTrue(outcome.result.repairAttempted, "pass reports repair attempted")
+        && ExpectTrue(outcome.result.repairedPixels == expectedApplied.repairedPixels, "repaired pixels match")
+        && ExpectTrue(outcome.result.repairedColorFillPixels == 1, "color-fill repair classified")
+        && ExpectTrue(outcome.repairedModelFillPixels == expectedApplied.repairedModelFillPixels, "model-fill tally matches")
+        && ExpectTrue(outcome.repairedSupportPixels == expectedApplied.repairedSupportPixels, "support tally matches")
+        && ExpectTrue(outcome.repairedInternalVoidPixels == expectedApplied.repairedInternalVoidPixels, "internal-void tally matches")
+        && ExpectTrue(outcome.result.remainingGapPixels == expectedRemaining.gapPixels, "remaining gaps match")
+        && ExpectTrue(outcome.result.repairRejectedTooWidePixels == plan.rejectedTooWidePixels, "rejected-too-wide matches")
+        && ExpectTrue(outcome.result.externalBackgroundProtectedPixels
+                == analysis.summary.externalBackgroundProtectedPixels,
+            "external background protection matches")
+        && ExpectTrue(actualLayer == expectedLayer, "repaired layer bytes match owning composition")
+        && ExpectTrue(actualInput.modelFillMask == expectedInput.modelFillMask, "semantic model fill mask matches")
+        && ExpectTrue(actualInput.layerEmptyMask == expectedInput.layerEmptyMask, "semantic empty mask matches");
+}
+
+/**
+ * @brief 跨层复用不得串味：第二次使用同一 workspace 必须与首次全等。
+ *
+ * 这是 MF-09 收益的来源（Prepare 对已有容量是 no-op），也是它唯一的新风险 ——
+ * View 版本借出的 mask 若有任一处未在入口重置，第二层就会读到上一层的残留。
+ */
+bool ExactLayerPassIsStableAcrossWorkspaceReuse()
+{
+    const slicer_core::MaterialClosureRepairValues values = MakeWhiteRepairValues();
+    slicer_core::MaterialClosureExactLayerRequest request;
+    request.connectivity = 8;
+    request.maxGapPx = 1;
+    request.repair = true;
+    request.repairValues = values;
+
+    // 先用一个【有间隙】的层把 workspace 写满，再用同一 workspace 跑一个
+    // 【无间隙】的层，与全新 workspace 的结果对照。
+    slicer_core::MaterialClosureExactLayerWorkspace reused;
+    slicer_core::MaterialClosureSemanticLayerInput dirtyInput = MakeColorFillGapInput();
+    std::vector<std::uint8_t> dirtyLayer = MakeEmptyRgbwsvLayer();
+    const slicer_core::MaterialClosureExactLayerOutcome dirty =
+        slicer_core::RunMaterialClosureExactLayerPass(dirtyInput, request, dirtyLayer, reused);
+
+    slicer_core::MaterialClosureSemanticLayerInput reusedInput = MakeInput();
+    std::vector<std::uint8_t> reusedLayer = MakeEmptyRgbwsvLayer();
+    const slicer_core::MaterialClosureExactLayerOutcome second =
+        slicer_core::RunMaterialClosureExactLayerPass(reusedInput, request, reusedLayer, reused);
+
+    slicer_core::MaterialClosureExactLayerWorkspace fresh;
+    slicer_core::MaterialClosureSemanticLayerInput freshInput = MakeInput();
+    std::vector<std::uint8_t> freshLayer = MakeEmptyRgbwsvLayer();
+    const slicer_core::MaterialClosureExactLayerOutcome first =
+        slicer_core::RunMaterialClosureExactLayerPass(freshInput, request, freshLayer, fresh);
+
+    return ExpectTrue(dirty.result.repairedPixels == 1, "first layer actually dirtied the workspace")
+        && ExpectTrue(second.result.gapPixels == first.result.gapPixels, "reused gap count matches fresh")
+        && ExpectTrue(second.result.externalBackgroundProtectedPixels
+                == first.result.externalBackgroundProtectedPixels,
+            "reused external background count matches fresh")
+        && ExpectTrue(second.result.repairedPixels == first.result.repairedPixels, "reused repair count matches fresh")
+        && ExpectTrue(reusedLayer == freshLayer, "reused layer bytes match fresh")
+        && ExpectTrue(reusedInput.layerEmptyMask == freshInput.layerEmptyMask, "reused empty mask matches fresh");
+}
+
 int main()
 {
     const std::vector<std::pair<std::string, bool (*)()>> tests{
@@ -538,6 +655,8 @@ int main()
         {"rejects_two_pixel_color_fill_thickness", RejectsTwoPixelColorFillThickness},
         {"leaves_color_support_only_gap_unrepaired", LeavesColorSupportOnlyGapUnrepaired},
         {"rejects_mask_size_mismatch", RejectsMaskSizeMismatch},
+        {"exact_layer_pass_matches_owning_repair_composition", ExactLayerPassMatchesOwningRepairComposition},
+        {"exact_layer_pass_is_stable_across_workspace_reuse", ExactLayerPassIsStableAcrossWorkspaceReuse},
     };
 
     for (const auto& test : tests)

@@ -240,6 +240,7 @@ set(SLICESOFT_CORE_SOURCES
     src/slicer_core/json_value.h
     src/slicer_core/material/MaterialChannelComposer.cpp
     src/slicer_core/material/MaterialChannelComposer.h
+    src/slicer_core/material/MaterialClosureExactLayerPass.cpp
     src/slicer_core/material/MaterialClosureRepair.cpp
     src/slicer_core/material/MaterialClosureRepair.h
     src/slicer_core/material/RetainedMaterialLayerComposer.cpp

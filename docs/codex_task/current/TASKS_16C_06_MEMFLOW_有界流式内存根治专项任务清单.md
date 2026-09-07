@@ -1,7 +1,7 @@
 # TASKS_16C-06-MEMFLOW 有界流式内存根治专项任务清单
 
 > 文档状态：**ACTIVE / 两项原始阻塞均已实测解除 / 余 MF-03X2b、MF-07、MF-08（均非阻塞）**
-> 版本：v4.6 ｜ 日期：2026-09-07
+> 版本：v4.7 ｜ 日期：2026-09-07
 > 定位：Stage 16C-06 的唯一原子任务状态真源；承接 12F-06 和 13B-05 流式化债务
 > 决策：`docs/slice/DOC/DOC_DECISION_16C_06_MEMFLOW_有界逐层流式内存根治.md`
 > 方案：`docs/slice/DEV/DEV_16C_06_MEMFLOW_有界逐层流式切片设计.md`
@@ -52,7 +52,7 @@
 | MF-07d | 预算字段与开始前路由 | TODO —— 接生产前须先有多材质大幅面实测点 | MF-07c | - |
 | MF-07e | 消除场景路径中途回退 | **CLOSED**：验收已实质满足，见 11.4 | MF-05 | 2026-09-06 |
 | MF-08 | 真实模型、RIP、恢复与性能收口 | PENDING / INPUT OPEN | MF-07、设备输入 | - |
-| MF-09 | 层循环耗时优化 | **已测量定位；一次尝试失败已记录** | MF-03X3 | - |
+| MF-09 | 层循环耗时优化 | **第一档 COMPLETE（View + workspace 复用，−11.6%）；§14.1.5 三步剪枝未实施** | MF-03X3 | - |
 | MF-10 | MATVOL 逐列求交优化（多材质大栅格 gridSetup 占 92%） | **NEW / 待估** | - | - |
 | MF-11 | 层循环并行化 | **DEFERRED / 已定责**：产品路径被屏障锁步，见 §14.3 | MF-09 实测曲线 | - |
 
@@ -1437,6 +1437,113 @@ candidateGap = layerEmptyMask[i] != 0
 `MaterialClosureSemanticDetector`**，那是本方案的主要改动面。
 验收沿用本专项硬要求：零漂移四判据逐字节全等 + 快速档 min-of-3 的 A/B。
 
+### 14.1.6 MF-09 第一档落地：改走 View 版本 + workspace 跨层复用（COMPLETE）
+
+§14.1.5 把「主判定循环剪枝」排在收益第一位。**但在动剪枝之前，先发现了一笔
+更简单、且无需任何等价性假设的开销**：主循环调的是 owning 便利版本
+
+```cpp
+AnalyzeMaterialClosureSemanticLayer(input, connectivity, maxGapPx)   // owning
+```
+
+它在库内部做了两件按幅面计价的事，**与算法本身无关**：
+
+| 开销 | 规模（10um，736 万列） |
+|---|---|
+| 每层新建 workspace，`Prepare` 里 7 次 `resize` + `traversalQueue.reserve` | 约 110 MB/层 |
+| 返回前 7 次 `assign(view.begin(), view.end())` 把 mask 拷进 owning 结构 | 约 51.6 MB/层 |
+
+而 **View 版本两者都没有**，且与 owning 版本是同一实现 —— owning 版本本身就是
+「Prepare 一个临时 workspace、调 View 版本、把结果拷出来」。所以改走 View 版本
+**不需要任何等价性论证**，只需保证 workspace 跨层复用不串味（见下）。
+
+**为什么这次复用有收益，而 §14.1.2 那次没有：**
+
+```text
+14.1.2 复用的是输入缓冲，其填充是 assign(n, 0)  -> 复用后 n 字节照样要写
+14.1.6 复用的是 workspace，其准备是 resize(n)   -> 对已有容量是 no-op（不写）
+```
+
+同一个「跨层复用」的做法，收益取决于被复用者是用 `resize` 还是 `assign` 准备的。
+这一条值得记住。
+
+**串味风险已排除（这是本卡唯一的新风险）：** View 版本借出的 7 个 mask 在入口
+处全部被重置 —— 分析侧 6 次 `std::fill` 加 `BuildExternalBackgroundMask` 自身的
+`fill`；修复侧 2 次 `std::copy` 加 7 次 `std::fill`。逐一核对过，没有遗漏项。
+并补了一条单测直接钉住它（见下）。
+
+**同步下沉（G2）：** 整段 exact 闭合逐层处理（分析 + 可选修复 + 复检 + 计数回填）
+从 `slicer.cpp` 下沉为 `material/MaterialClosureExactLayerPass.{h,cpp}` 的
+`RunMaterialClosureExactLayerPass`，**`slicer.cpp` 净减 25 行**（+22/−47），
+本专项继续不依赖 MATOPQ 那条豁免。副产物：`repairValues` 原先每层重算一次
+（`ResolveMaterialClosureRepairValues(config)` 在层循环内），现在随
+`MaterialClosureExactLayerRequest` 在循环外解析一次。
+
+#### 实测（交错 A/B，同一时间窗，a-2/0.2.obj 143 层快速档）
+
+```text
+                layerComputeMs
+base   44,318 / 47,637 / 42,014   -> min 42,014
+mf09   39,154 / 37,132 / 37,286   -> min 37,132   -11.6%
+两组区间不重叠（mf09 最差 39,154 < base 最好 42,014）
+peakWorkingSetBytes 两侧同为 905 MB 量级，无内存回退
+```
+
+**方法上的一条教训（比数字更重要）：** 第一次测量拿改后结果去比
+§14.1.2 留下的旧基线（min 61,579 ms），算出 **−45%**。那是错的 ——
+当天 02:49 的机器负载远高于此刻，同一份 base 二进制现在只跑 42,014 ms。
+**跨时间窗比较在本机没有意义**（§短基准波动达 47%）。故重新编出 base 二进制
+与 mf09 交错跑三对，取上表。`−45%` 不成立，真实收益是 `−11.6%`。
+
+#### 零漂移（用户指定资产，逐字节）
+
+同一配置分别用 base / mf09 二进制跑，比对全部层 TIFF 的拼接 sha256 与
+`material_closure_report.json`：
+
+| 用例 | 层数 | layers sha256 | closure 报告 |
+|---|---|---|---|
+| `finger_suoguo/a-3/0.2.obj` @0.1mm | 143 | `647ec538…` 一致 | `2d0a8740…` 一致 |
+| `suoguo-baseline/qiegejiapian-zxl.stl` | 45 | `43ae7994…` 一致 | `51d26e51…` 一致 |
+| `suoguo-baseline/suoguo-hcc.stl` | 48 | `6eb44fea…` 一致 | `7467180c…` 一致 |
+
+**三个用例的 `gapPixels` 全为 0**，即真实资产跑不到修复分支。故修复路径**不能**
+由这三条对拍覆盖 —— 它由单测覆盖，且断言里先钉住「参照实现确实修了一个像素」
+再比对，避免整条空转（见 `oracle-tests-can-be-entirely-vacuous` 那类坑）。
+
+新增两条单测（`material_closure_semantic_detector_unit_tests`，已确认实际执行）：
+
+```text
+exact_layer_pass_matches_owning_repair_composition
+    修复路径下与旧 owning 组合逐字节比对：层通道 + 语义 mask + 全部计数
+exact_layer_pass_is_stable_across_workspace_reuse
+    先用有间隙的层把 workspace 写脏，再用同一 workspace 跑无间隙的层，
+    与全新 workspace 的结果全等 —— 直接钉住「跨层复用不串味」
+```
+
+#### 全量回归与门禁
+
+```text
+构建     BUILD_EXIT=0（含新增 material/MaterialClosureExactLayerPass.cpp）
+回归     10 失败 / 230，落在本工作树既有的 10~11 失败区间内（MAX_PATH 抖动）
+门禁     ValidateSourceSizeGuard.py PASS；slicer.cpp 净减 25 行
+```
+
+失败项里唯一需要单独定责的是 `scene_layer_adapters_unit_tests`
+（`legacy_adapter_applies_admitted_instance_transform` 的
+「translation preserves local layer bytes and dimensions」）。**已实测定责为既有失败**：
+把本卡改动 stash 掉、重编该 target 再跑，**同一用例、同一条断言照样红**。
+另有 `production_mode_catalog_unit_tests` 为 Not Run（找不到可执行文件），与本卡无关。
+
+判据上它本来也不可能由本卡引起：该用例比较的是**同一份代码**的 baseline 与
+translated 两次输出，任何一致的行为改变都会在两侧同时出现而相互抵消。
+
+#### 结论与下一步
+
+第一档收益 **−11.6%**，比 §14.1.5 预期的量级小，因为它只拿掉了「用便利接口的
+代价」（约 160 MB/层的分配、归零与拷贝），**没有触及那 736 万次/层的主判定循环**。
+§14.1.5 的三步方案仍然成立且未实施，其中第 1 条（主循环只扫活动列）依然是剩余
+收益里最大的一块，等价性论证已在 §14.1.4 完成。
+
 ### 14.2 MF-10：MATVOL 逐列求交
 
 多材质大栅格实测 `gridSetupMs` 占 **92%**（gubao04 XY 放大 4 倍，639 秒 / 691 秒），
@@ -1492,6 +1599,7 @@ TIFF 直接写盘）。那条路径确实能并行，但**它不是产品路径*
 
 | 日期 | 版本 | 变更 |
 |---|---|---|
+| 2026-09-07 | v4.7 | 新增 §14.1.6：MF-09 **第一档落地并验收**。在动剪枝之前先拿掉「用 owning 便利接口的代价」——每层新建 workspace（约 110 MB/层）+ 返回前 7 次 mask 拷贝（约 51.6 MB/层），改走同一实现的 View 版本并把 workspace 跨层复用，**无需任何等价性假设**。交错 A/B（同一时间窗、各三次取最小）`42,014 -> 37,132 ms`，**−11.6%**，两组区间不重叠；峰值内存无回退。**并修正一次自己的测量错误**：首次拿改后结果去比 §14.1.2 的旧基线得出 −45%，实为跨时间窗比较 —— 同一份 base 二进制此刻只跑 42,014 ms，故 −45% 不成立。零漂移在用户指定资产（a-3/0.2.obj、qiegejiapian-zxl、suoguo-hcc）上层 TIFF 与闭合报告逐字节一致；三者 `gapPixels` 全为 0，修复路径改由两条新单测覆盖（含「参照实现确实修了一个像素」的非空转断言，与「跨层复用不串味」的对照）。同步下沉 `MaterialClosureExactLayerPass`，`slicer.cpp` 净减 25 行，不依赖 MATOPQ 豁免。§14.1.5 三步方案仍未实施。 |
 | 2026-09-07 | v4.6 | 新增 §14.1.3~14.1.5：继续拆分后**修正了上一节的判断** —— 初始化（11 个 assign + 逐像素循环）合计只占 closure 段的 21%，真正的 30 秒在 `AnalyzeMaterialClosureSemanticLayer`（四次整幅面 fill 共 29.5 MB/层、边界洪泛、736 万次/层的主判定循环）。这从另一角度印证 14.1.2 的回退是对的：复用对象连那 16% 都拿不到。并**完成剪枝的等价性论证**：表外列的 `expectedOccupiedDomainMask` 三个分量全为 0，且必为外部背景，故 `candidateGap` 恒 false，两条判据互为旁证 —— 该论证独立完成，未沿用 X3。给出按收益排序的三步方案（主循环剪枝 > fill 剪枝 > 洪泛解析化），并标注洪泛那条最需小心、应最后做。本次仍无代码改动。 |
 | 2026-09-07 | v4.5 | 新增 §14.1.1/14.1.2：MF-09 按「先量后改」插桩实测，**结果推翻原计划** —— 瓶颈不是那六处整幅面 pass（已剪过的三处合计仅占 3%），而是**材料闭合语义分析占 86%**；根因是 `MaterialClosureConfig::enabled` 默认为 true 而配置文件从不写它，导致每层新建 11 个整幅面 mask（81 MB/层、1429 层约 116 GB）。并**如实记录一次失败的尝试**：把该对象提到循环外跨层复用，公平 A/B（各三次取最小）显示 61,579 -> 68,940 ms，无任何收益证据，已回退。它证伪的假设是「开销在 malloc/free」—— 实际在 `assign` 的写入本身，那些字节无论复不复用都要写。故正确方向只剩活动列剪枝，且需独立做等价性验证；另标注 38.7 秒里 `assign` 写入与逐像素循环尚未分开量。 |
 | 2026-09-07 | v4.4 | 新增 §14：应用户「不改硬件、大画幅耗时还有多少空间」的提问立三张卡。**并更正我自己的初次判断** —— 当时看到「18 核、层循环串行、layerCompute 占 91.2%」就断言并行可拿 3~5 倍，只读核查后收回：产品路径上该循环被 `SceneLayerBarrier` 锁步（生产者写完一层即阻塞等消费），并行 18 路只会全堵在 `DepositAndWait`，吞吐不变而内存 ×18；那个 91.2% 来自 `slicer_cli` 直写路径，不是产品路径。据此 MF-11（并行化）DEFERRED 并记下重启时必须处理的清单。改为先做 MF-09：层循环里还有至少六处整幅面 pass 是 MEMFLOW 剪枝的漏网之鱼（其中 `analyze_support_connectivity` 每层新建清零 7.37 MB 且调用点在 support.enabled 守卫之外），等价性论证与 X2b 同一套、不增内存不碰屏障。MF-09 第一步是**加细粒度计时先把 516 秒拆开**，不是直接改。另立 MF-10：多材质大栅格的瓶颈在 MATVOL 逐列求交（gridSetup 占 92%），与层循环无关。 |
