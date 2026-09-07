@@ -1,5 +1,7 @@
 #include "slicer_core/pipeline/SceneLayerComposer.h"
 
+#include "slicer_core/pipeline/SceneSourcePixelClosure.h"
+
 #include <algorithm>
 #include <array>
 #include <chrono>
@@ -16,9 +18,9 @@ namespace slicer_core
 namespace
 {
 
-constexpr std::size_t kChannelCount{6U};
-constexpr std::size_t kSupportChannel{4U};
-constexpr std::size_t kVarnishChannel{5U};
+constexpr std::size_t kChannelCount{kSceneChannelCount};
+constexpr std::size_t kSupportChannel{kSceneSupportChannel};
+constexpr std::size_t kVarnishChannel{kSceneVarnishChannel};
 constexpr std::size_t kCancellationCheckStride{4096U};
 
 struct InstancePlacement
@@ -159,137 +161,6 @@ bool IsBinaryMask(
             {
                 return value == 0U || value == 1U;
             });
-}
-
-std::size_t ChannelIndex(
-    const std::size_t pixelIndex,
-    const std::size_t channel)
-{
-    return pixelIndex * kChannelCount + channel;
-}
-
-bool IsEmptySourcePixel(
-    const SceneInstanceRasterLayer& layer,
-    const std::size_t pixelIndex,
-    const std::uint8_t emptyValue)
-{
-    for (std::size_t channel{0U}; channel < kChannelCount; ++channel)
-    {
-        if (layer.output.channels.at(ChannelIndex(pixelIndex, channel))
-            != emptyValue)
-        {
-            return false;
-        }
-    }
-    return true;
-}
-
-SceneRasterOwnership ResolveOwnership(
-    const SceneInstanceRasterLayer& layer,
-    const std::size_t pixelIndex)
-{
-    if (layer.modelownership.at(pixelIndex) != 0U)
-    {
-        return SceneRasterOwnership::Model;
-    }
-    if (layer.outervarnishownership.at(pixelIndex) != 0U)
-    {
-        return SceneRasterOwnership::OuterVarnish;
-    }
-    if (layer.supportownership.at(pixelIndex) != 0U)
-    {
-        return SceneRasterOwnership::Support;
-    }
-    return SceneRasterOwnership::Empty;
-}
-
-bool SourcePixelHasClosure(
-    const SceneInstanceRasterLayer& layer,
-    const std::size_t pixelIndex,
-    const SceneRasterOwnership ownership,
-    const RgbwsvProtocol& protocol)
-{
-    const std::size_t base = pixelIndex * kChannelCount;
-    if (ownership == SceneRasterOwnership::Empty)
-    {
-        return IsEmptySourcePixel(layer, pixelIndex, protocol.empty_value);
-    }
-    if (ownership == SceneRasterOwnership::Support)
-    {
-        for (std::size_t channel{0U}; channel < kChannelCount; ++channel)
-        {
-            const std::uint8_t expected =
-                channel == kSupportChannel
-                    ? protocol.print_value
-                    : protocol.empty_value;
-            if (layer.output.channels.at(base + channel) != expected)
-            {
-                return false;
-            }
-        }
-        return true;
-    }
-    if (ownership == SceneRasterOwnership::OuterVarnish)
-    {
-        for (std::size_t channel{0U}; channel < kChannelCount; ++channel)
-        {
-            std::uint8_t expected = protocol.empty_value;
-            if (channel == kVarnishChannel
-                || (channel == kSupportChannel
-                    && layer.supportownership.at(pixelIndex) != 0U))
-            {
-                expected = protocol.print_value;
-            }
-            if (layer.output.channels.at(base + channel) != expected)
-            {
-                return false;
-            }
-        }
-        return true;
-    }
-
-    bool modelMaterialPresent{false};
-    for (std::size_t channel{0U}; channel < kChannelCount; ++channel)
-    {
-        const std::uint8_t value = layer.output.channels.at(base + channel);
-        if (channel == kSupportChannel)
-        {
-            const std::uint8_t expected =
-                layer.supportownership.at(pixelIndex) != 0U
-                    ? protocol.print_value
-                    : protocol.empty_value;
-            if (value != expected)
-            {
-                return false;
-            }
-            continue;
-        }
-        if (channel == kVarnishChannel)
-        {
-            const bool modelVarnish =
-                layer.modelvarnishownership.at(pixelIndex) != 0U;
-            if (modelVarnish)
-            {
-                if (value == protocol.empty_value)
-                {
-                    return false;
-                }
-                modelMaterialPresent = true;
-            }
-            else if (
-                value != protocol.empty_value
-                && layer.outervarnishownership.at(pixelIndex) == 0U)
-            {
-                return false;
-            }
-            continue;
-        }
-        if (channel < kSupportChannel && value != protocol.empty_value)
-        {
-            modelMaterialPresent = true;
-        }
-    }
-    return modelMaterialPresent;
 }
 
 void Block(
@@ -444,6 +315,10 @@ bool ValidateLayer(
     if (layer.output.widthPx != instance.localgrid.widthpx
         || layer.output.heightPx != instance.localgrid.heightpx
         || layer.output.channels.size() != byteCount
+        // MF-14a：这四条 IsBinaryMask 各含一次 size 判定，与上面的
+        // channels.size() 一起构成「逐像素循环里可以用 []」的前提。
+        // 删改这里之前先看 IsEmptySourcePixel / ResolveOwnership /
+        // SourcePixelHasClosure 的注释。
         || !IsBinaryMask(layer.modelownership, pixelCount)
         || !IsBinaryMask(
             layer.modelvarnishownership,

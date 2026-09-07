@@ -201,6 +201,39 @@ slicer_core::MultiModelScene BuildScene(
 
 }  // namespace
 
+// MF-14 需要的场景口径零漂移判据。
+//
+// 本专项此前只有 CLI 口径的逐字节对比 —— 而 CLI 与生产路径**不同路**
+// （见任务卡 §14.1.9）。场景路径的产物由本 bench 写出后随即删除，
+// 于是「改了 SceneLayerComposer 之后输出是否逐字节不变」一直无从检验。
+// 这里在清理之前把全部层 TIFF 按文件名排序拼接后取一次 sha256 并打印，
+// 成本是一次顺序读，换来一条真正的场景口径判据。
+std::string ComputeLayerDigest(const std::filesystem::path& packageDir)
+{
+    const std::filesystem::path layersDir = packageDir / "layers";
+    if (!std::filesystem::exists(layersDir))
+    {
+        return "missing";
+    }
+    std::vector<std::filesystem::path> layerPaths;
+    for (const std::filesystem::directory_entry& entry :
+         std::filesystem::directory_iterator(layersDir))
+    {
+        if (entry.is_regular_file())
+        {
+            layerPaths.push_back(entry.path());
+        }
+    }
+    std::sort(layerPaths.begin(), layerPaths.end());
+    std::string concatenated;
+    for (const std::filesystem::path& layerPath : layerPaths)
+    {
+        concatenated.append(ReadFile(layerPath));
+    }
+    return std::to_string(layerPaths.size()) + ":"
+        + slicer_core::ComputeSha256(concatenated);
+}
+
 int main(const int argc, char** argv)
 {
     if (argc < 3)
@@ -340,6 +373,9 @@ int main(const int argc, char** argv)
             std::cerr << "BENCH_ARTIFACTS_KEPT " << root.string() << "\n";
             return 1;
         }
+        std::cout << "BENCH_LAYERS digest="
+                  << ComputeLayerDigest(effectiveRequest.outputpackagedir)
+                  << "\n";
         // 成功时清掉输出包。本 bench 的产物只有上面那行 BENCH 统计，
         // 层文件是过程数据 —— 而它们能到 120 GB：此前一次 a-2@10um 的跑留在
         // 系统 temp 里，直到把 C 盘从 133 GB 可用压到 12 GB 才被发现。
