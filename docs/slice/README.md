@@ -20,6 +20,12 @@ Barrier、Sparse Candidate 依次通过零漂移 Gate 后才可接入。
 16C-04/07..09 保留后续排期，16C-10 正式设备 SLA 保持 `INPUT_OPEN`，16B-04/16D-05 仍需
 用户独立授权。
 
+## XPAD 独立开发入口（2026-09-08）
+
+[X 原点输出画幅补白](DOC/DOC_DESIGN_XPAD_X原点输出画幅补白.md)。默认关闭，仅扩展 Scene 空白画幅，不移动模型；任务状态见 Codex XPAD 清单。
+
+软件实现及独立测试版已交付，实际验证与限制见 [XPAD 收口总结](REPORT/REPORT_XPAD_X原点输出画幅补白收口总结.md)。未合入生产分支。
+
 ## UNIPATH 收口入口（2026-09-08）
 
 [中文路径跨代码页兼容修复总结](REPORT/REPORT_UNIPATH_中文路径跨代码页兼容修复总结.md)：导入/场景/Worker/预览的 UTF-8 与 native path 边界、三代码页端到端证据、已更新的 Release 及未覆盖项。
