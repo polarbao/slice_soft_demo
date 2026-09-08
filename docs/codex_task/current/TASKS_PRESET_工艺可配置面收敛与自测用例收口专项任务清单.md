@@ -4,7 +4,7 @@
 > / PC-11 定责完成（其中 `stage14f05` 已修，Debug 失败集 6→5）
 > / PC-05 方向已定待产品输入 / PC-06 已拆出 `TASKS_ADMISSION_*` 独立专项
 > / PC-07..PC-10、PC-12 PROPOSED**
-> 版本：v1.6 ｜ 日期：2026-09-06
+> 版本：v1.7 ｜ 日期：2026-09-08
 > ⚠ PC-04 只解决了「可复现 + 转绿」，**没有解决耗时**：它仍占全量 992.5 s 中的 555.5 s（56%）。
 > TIMEOUT 已按 §6.7 选项 a 抬至 1800 s（原 900 s 对实测 555/628 s 仅 1.43~1.62 倍余量）
 > 定位：不占 Stage 编号的独立专项；本清单为该专项任务状态唯一真源
@@ -56,6 +56,37 @@
          且该用例在 Debug 下 PASS 而非以 rendered=93 失败。
 ```
 
+**2026-09-08 复算：②③ 的风险已基本消失，只剩 ①。**
+
+上述三点是按 2026-09-06 时 memflow 的 incoming 改动集（85 个文件）写的。
+该分支尖端此后前移到 `35f7a38`，incoming 收缩到 **15 个文件**：
+
+```text
+CMakeLists.txt                                      ← 与本专项唯一的共同改动文件
+docs/codex_task/.../TASKS_16C_06_MEMFLOW_*.md
+docs/slice/REPORT/REPORT_16C_06_MEMFLOW_*.md
+src/slicer_core/TiffReadApi.h
+src/slicer_core/material/MaterialClosureExactLayerPass.{cpp,h}
+src/slicer_core/pipeline/SceneLayerComposer.cpp
+src/slicer_core/pipeline/SceneSourcePixelClosure.{cpp,h}
+src/slicer_core/rip_reader.cpp
+src/slicer_core/slicer.cpp
+src/slicer_core/tiff_io.cpp
+tests/stage16/SceneMemoryBench.cpp
+tests/unit/material_closure_semantic_detector/main.cpp
+tests/unit/tiff_writer_equivalence/Main.cpp
+```
+
+```text
+② 已不适用  incoming 不含 scripts/Run14F05StageClosureGate.ps1，
+            两处数值不可能只来一处。
+③ 已不适用  incoming 不含 tests/hostflow/HostThreeDCanvasTests.cpp，
+            也不含 render_ra02_asset_manifest.txt，PC-04 不会被回退。
+① 仍需复验  但范围收窄：memflow 只新增 tests/stage16/SceneMemoryBench.cpp 一个测试源，
+            并改 CMakeLists。判据不变 —— Debug 全量条目数的上升量应能被
+            memflow 新增目标解释完，且 §3 那 9 个别名条目不得重新出现。
+```
+
 ### 0.4 本次「无法合并」的事实记录
 
 用户 2026-09-06 报告无法合并其他分支数据，并归因于本专项的改动。**实测不成立**：
@@ -73,6 +104,34 @@ git merge-tree --write-tree HEAD codex/memflow-bounded-streaming
 ```
 
 留此记录是为了避免后来人在同类情形下先去回退 PRESET 的提交 —— 那不会解除阻塞。
+
+**2026-09-08 后续：同类误判又发生了一次，且阻塞同样已自行解除。**
+
+MEMFLOW 会话当日询问主工作树的未提交改动是否属于本专项，并指出
+`CMakeLists.txt` 与 `src/slicer_core/slicer.cpp` 两个文件与其 incoming 重叠。
+复算结果：
+
+```text
+那批改动属于 FRAME「非打印定位素材与输出画幅」专项，不是本专项；
+且它已于 176bcb7 docs(frame): 【规则收口】… 提交，阻塞随之解除。
+当前工作树只剩 2 个已修改资产文件（gubao05-dingwei.mtl/.obj）与 3 个未跟踪条目，
+逐项核对【均不在】memflow 的 15 个 incoming 文件内，也不与其新增路径撞名。
+git merge-tree --write-tree HEAD codex/memflow-bounded-streaming
+  → 单一 tree OID + 退出码 0，零文本冲突。
+结论：memflow 可以直接合并，无需任何一方回退或 stash。
+```
+
+⚠ 两天内两次把主工作树的未提交改动归因到本专项，说明**共享工作树下「谁的脏文件」
+不容易看清**。判定方法固定为两步，不要凭印象：
+
+```text
+1) git merge-tree --write-tree <HEAD> <要合并的分支>
+   —— 退出码 0 且只输出一个 tree OID，就说明【文本冲突不存在】，
+      此时任何「某人的提交挡住了合并」的说法都不成立。
+2) comm -12 <(未提交文件排序) <(git diff --name-only <merge-base> <分支> 排序)
+   —— 交集才是真正会让 git merge 拒绝的文件；空集则根本没有阻塞。
+   未跟踪文件另算：只在对方【新增】同名路径时才挡。
+```
 
 ### 0.5 恢复后的下一步
 
@@ -855,6 +914,7 @@ Require(callThatWrites(&error), QStringLiteral("...: %1").arg(error));
 | 日期 | 版本 | 变更 |
 |---|---|---|
 | 2026-09-03 | v1.0 | 首版。固化 PC-01/PC-02 已完成事实与 18:00 回归证据；记录 PC-03 已落地内容与恢复回归后的确认清单；PC-04 给出「冻结基线无法从仓库复现」的完整证据链与 A/B/C 三个待裁定选项；PC-05..PC-11 列明各自的实测事实、完成标准与开工前置（含 PC-07 必须先扫 25 个文件测出既有不一致、PC-08 受 15 个 SHA256 冻结约束、PC-09 待 MATVOL 裁定）。 |
+| 2026-09-08 | v1.7 | 按 memflow 尖端前移到 `35f7a38` 复算：incoming 由 85 个文件收缩到 15 个，§0.3 的复验点 ②③ 已不适用（incoming 不含 `Run14F05StageClosureGate.ps1`、`HostThreeDCanvasTests.cpp` 与清单文件），只剩 ① 且范围收窄。§0.4 追记同类误判第二次发生：MEMFLOW 会话询问的那批未提交改动属 FRAME 专项、已由 `176bcb7` 提交，阻塞自行解除；当前 2 个脏资产文件与 3 个未跟踪条目均不在 incoming 内，merge-tree 零冲突，memflow 可直接合并。并把「谁的脏文件挡住合并」的判定固化为两步法（merge-tree 判文本冲突 + 脏文件与 incoming 求交集），避免再凭印象归因。 |
 | 2026-09-06 | v1.6 | 新增 §0 恢复点：本专项已在 cc04b2a 收口、工作树零残留；记明唯一未做的验证是 14F05 修复后未跑全量回归（应与合并复验合并进行）；列出合并后必须复验的三点（CTest 条目数上升量、14F05 仍 Skipped、PC-04 清单驱动未被回退），因为 `CMakeLists.txt` 是本专项与 memflow 唯一的共同改动文件；并记录 2026-09-06「无法合并」的实测归因 —— merge-tree 判定零冲突，真实阻塞是 2 个未提交的 HOSTFLOW 文件与 incoming 改动集重叠，回退 PRESET 提交不会解除阻塞。 |
 | 2026-09-04 | v1.5 | 三项后续落地：①`stage14f05_local_closure_gate` 已修 —— 改由脚本在非 Release 时以 `SKIP_RETURN_CODE 111` 跳过，CTest 报 Skipped 而非 Failed，Debug 失败集 6→5；不用 CTest 的 `CONFIGURATIONS` 属性是因为 CTest 4.3.1 下实测它已解析到该属性却仍执行，滤不掉，且「显式跳过」优于「静默缺席」。②PC-06 按建议拆出独立专项 `TASKS_ADMISSION_组合准入规则单一真源收敛专项任务清单.md`，规则条数更正 24→29 并逐条列出。③PC-05 取值分布实测（30 个文件：23 lower、3 both、2 upper、各 1 full_vertical/unsupported_only）**排除了「删掉 placement 一路」**，且非 lower 用例中 3 个与外侧光油壳层语义配套；同时纠正「placementExplicit 未写故 placement 未生效」的误判 —— `config.cpp:486-488` 依 JSON 键是否出现自动置该标志。剩下的是范围问题（宿主是否现在就暴露 upper/both），已写成 A/B 两个明确出口而非搁置的二择一。 |
 | 2026-09-04 | v1.4 | PC-11 定责完成：6 项既有失败逐条实跑读输出。关键发现 —— `stage14f05_local_closure_gate` 的脚本给 `-Config` 加了 `ValidateSet("Release")` 而 CTest 传的是 `$<CONFIG>`，在任何 Debug 回归里【结构上永远不可能通过】，是一条零信号红灯，应最先修；`slicer_stage14e02_qt_host_boundary_test` 验证了「门禁首个失败即中止」的预测 —— 报 1 项而实际 5 项（3 项台账内增长未同步下调，来自 RIPFLOW/MATVOL-T/HOSTFLOW，另 2 项台账外超 500 行）；`slicer_stage14e04d_dual_view_contract_test` 是缺纹理静默降级为灰模的 fail-closed 违规；`stage14f03` 流程本身全绿、疑似门禁侧路径期望过时；`scene_layer_adapters_unit_tests` 为 13 过 12 失 1 的窄缺陷；`slicer_stage14c04` 需 14C 判定期望是否已过时。§13.2 给出性质、归属与优先级，并明确本专项不代劳任何一项。 |
