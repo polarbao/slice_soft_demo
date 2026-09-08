@@ -1544,6 +1544,15 @@ add_executable(tiff_writer_contract_unit_tests
 
 target_link_libraries(tiff_writer_contract_unit_tests PRIVATE slicer_core)
 
+if(TARGET TIFF::TIFF)
+    add_executable(tiff_row_layout_unit_tests tests/unit/tiff_row_layout/Main.cpp)
+    target_link_libraries(tiff_row_layout_unit_tests PRIVATE slicer_core TIFF::TIFF)
+    if(MSVC)
+        target_compile_options(tiff_row_layout_unit_tests PRIVATE /W4 /WX)
+    endif()
+    add_test(NAME tiff_row_layout_unit_tests COMMAND tiff_row_layout_unit_tests)
+endif()
+
 add_executable(tiff_backend_build_info_unit_tests
     tests/unit/tiff_backend_build_info/Main.cpp
 )
