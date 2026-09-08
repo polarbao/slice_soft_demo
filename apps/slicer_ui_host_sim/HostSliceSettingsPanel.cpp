@@ -293,6 +293,13 @@ void HostSliceSettingsPanel::BuildInterface()
     processForm->addRow(
         QStringLiteral("TIFF 压缩"), compressionRow);
     processForm->addRow(QStringLiteral("输出目录"), outputRow);
+    m_padToOriginXCheck = new QCheckBox(QStringLiteral("补齐至 X=0"), processGroup);
+    m_padToOriginXCheck->setObjectName(QStringLiteral("hostScenePadToOriginXCheck"));
+    m_padToOriginXCheck->setToolTip(QStringLiteral(
+        "仅补全场景左侧空白，不移动模型；按整像素覆盖 X=0，最多保留不足一像素余量。"));
+    processForm->addRow(QStringLiteral("输出画幅"), m_padToOriginXCheck);
+    connect(m_padToOriginXCheck, &QCheckBox::toggled,
+        this, &HostSliceSettingsPanel::OnSettingsEdited);
     layout->addWidget(processGroup);
 
     auto* materialGroup = new QGroupBox(
@@ -487,6 +494,8 @@ void HostSliceSettingsPanel::SetPersistentSettings(
     const QSignalBlocker dpiYBlocker(m_dpiYSpin);
     const QSignalBlocker layerBlocker(m_layerThicknessSpin);
     const QSignalBlocker outputBlocker(m_outputEdit);
+    const QSignalBlocker paddingBlocker(m_padToOriginXCheck);
+    m_padToOriginXCheck->setChecked(settings.scenepadtooriginx);
     const QSignalBlocker widthBlocker(m_buildWidthSpin);
     const QSignalBlocker heightBlocker(m_buildHeightSpin);
     const QSignalBlocker zBlocker(m_buildZSpin);
@@ -542,6 +551,7 @@ hostslicesettings HostSliceSettingsPanel::Settings() const
     settings.modelpath = m_modelPath;
     settings.modelformat = QFileInfo(m_modelPath).suffix().toLower();
     settings.outputdirectory = m_outputEdit->text().trimmed();
+    settings.scenepadtooriginx = m_padToOriginXCheck->isChecked();
     settings.dpix = m_dpiXSpin->value();
     settings.dpiy = m_dpiYSpin->value();
     settings.layerthicknessmm = m_layerThicknessSpin->value();

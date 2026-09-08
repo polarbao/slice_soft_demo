@@ -247,6 +247,7 @@ bool HostWorkspaceState::Save(
         sliceSettings.processpresetid);
     settings.setValue(QStringLiteral("dpiX"), sliceSettings.dpix);
     settings.setValue(QStringLiteral("dpiY"), sliceSettings.dpiy);
+    settings.setValue(QStringLiteral("scenePadToOriginX"), sliceSettings.scenepadtooriginx);
     settings.setValue(
         QStringLiteral("layerThicknessMm"),
         sliceSettings.layerthicknessmm);
@@ -376,6 +377,7 @@ bool HostWorkspaceState::Restore(
         QStringLiteral("processPresetId")).toString();
     restored.dpix = settings.value(QStringLiteral("dpiX"), -1).toInt();
     restored.dpiy = settings.value(QStringLiteral("dpiY"), -1).toInt();
+    restored.scenepadtooriginx = settings.value(QStringLiteral("scenePadToOriginX"), false).toBool();
     restored.layerthicknessmm = settings.value(
         QStringLiteral("layerThicknessMm"), -1.0).toDouble();
     const QString geometrySamplingId = settings.value(

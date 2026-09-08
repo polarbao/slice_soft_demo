@@ -249,6 +249,7 @@ struct hostslicesettings
     int dpix{635};
     int dpiy{600};
     double layerthicknessmm{0.038};
+    bool scenepadtooriginx{false};
     HostMaterialStrategy materialstrategy{HostMaterialStrategy::RgbSolid};
     hostmaterialprocesssettings materialprocess;
     hostbuildvolume buildvolume;

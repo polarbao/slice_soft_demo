@@ -181,6 +181,14 @@ void HostTransferProfileBridge::Apply(
     QJsonObject* profile,
     QString* profileHash)
 {
+    if (settings.scenepadtooriginx)
+    {
+        auto output = profile->value(QStringLiteral("output")).toObject();
+        output.insert(QStringLiteral("scenePadToOriginX"), true);
+        profile->insert(QStringLiteral("output"), output);
+        *profileHash = ComputeProfileHash(*profile);
+        profile->insert(QStringLiteral("profileHash"), *profileHash);
+    }
     if (settings.packageprotocol != HostPackageProtocol::Rgbwsvt)
     {
         return;
