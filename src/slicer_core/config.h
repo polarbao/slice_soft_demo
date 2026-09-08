@@ -29,6 +29,7 @@ struct OutputConfig {
     bool tiled{false};
     std::array<int, 2> tile_size{256, 256};
     int rows_per_strip{64};
+    bool scene_pad_to_origin_x{false}; // Scene canvas only; never moves model geometry.
 };
 
 struct BackgroundConfig {

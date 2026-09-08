@@ -211,6 +211,7 @@ bool ValidateRequest(
 {
     if (request.sceneid.empty()
         || !request.globalgrid.IsValid()
+        || (request.xpadding && !request.xpadding->IsValid(request.globalgrid.originxmm, request.globalgrid.pitchxmm, request.globalgrid.widthpx))
         || !std::isfinite(request.quantizationtolerance)
         || request.quantizationtolerance < 0.0
         || !ComputeLayerSizes(
@@ -573,19 +574,18 @@ bool ValidateInstance(
     }
     if (!QuantizeOffset(
             instance.localgrid.originxmm,
-            request.globalgrid.originxmm,
+            request.xpadding ? request.xpadding->originaloriginxmm : request.globalgrid.originxmm,
             request.globalgrid.pitchxmm,
             request.quantizationtolerance,
             placement.offsetx)
+        || (request.xpadding && !request.xpadding->AddToOffset(placement.offsetx))
         || !QuantizeOffset(
-            instance.localgrid.originymm,
-            request.globalgrid.originymm,
+            instance.localgrid.originymm, request.globalgrid.originymm,
             request.globalgrid.pitchymm,
             request.quantizationtolerance,
             placement.offsety)
         || !QuantizeOffset(
-            instance.localgrid.originzmm,
-            request.globalgrid.originzmm,
+            instance.localgrid.originzmm, request.globalgrid.originzmm,
             request.globalgrid.layerthicknessmm,
             request.quantizationtolerance,
             placement.offsetz))

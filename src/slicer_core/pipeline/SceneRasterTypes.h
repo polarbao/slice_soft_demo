@@ -4,6 +4,7 @@
 #include "slicer_core/api/Cancellation.h"
 #include "slicer_core/config/SlicePipelineConfig.h"
 #include "slicer_core/output/rgbwsv/RgbwsvPackage.h"
+#include "slicer_core/pipeline/SceneCanvasPadding.h"
 
 #include <cstddef>
 #include <functional>
@@ -120,6 +121,7 @@ struct SceneLayerComposeRequest
     SlicePipelineMode effectivepipelinemode{
         SlicePipelineMode::Legacy};
     SceneRasterGrid globalgrid;
+    std::optional<SceneCanvasXPadding> xpadding;
     RgbwsvProtocol protocol;
     std::vector<SceneInstanceRaster> instances;
     double quantizationtolerance{1.0e-6};

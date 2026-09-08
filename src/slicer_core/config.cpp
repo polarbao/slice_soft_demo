@@ -1,6 +1,5 @@
 #include "slicer_core/config.h"
 #include "slicer_core/system/Utf8Path.h"
-
 #include "slicer_core/config/ConfigMigration.h"
 #include "slicer_core/config/TransferChannelConfig.h"
 #include "slicer_core/geometry/OpenVdbAdapter.h"
@@ -181,6 +180,7 @@ SliceConfig load_slice_config(const std::filesystem::path& config_path) {
         config.output.package_dir = PathFromUtf8(output.value("packageDir", PathToUtf8(config.output.package_dir)));
         config.output.package_protocol = output.value("packageProtocol", config.output.package_protocol);
         config.output.dpi_x = output.value("dpiX", config.output.dpi_x);
+        config.output.scene_pad_to_origin_x = output.value("scenePadToOriginX", false);
         config.output.dpi_y = output.value("dpiY", config.output.dpi_y);
         config.output.layer_thickness_mm = output.value("layerThicknessMm", config.output.layer_thickness_mm);
         config.output.channel_order = read_string_array(output, "channelOrder", config.output.channel_order);
