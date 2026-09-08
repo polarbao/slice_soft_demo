@@ -111,4 +111,20 @@ TiffReadResult read_rgbwsv_stripped_tiff(const std::filesystem::path& path);
  */
 TiffReadResult read_rgbwsv_tiff(const std::filesystem::path& path);
 
+/**
+ * @brief 只解出规格、逐通道统计与校验和，**不物化整幅面像素**。
+ *
+ * MF-13c。包发布的读回全量校验只用 `spec` / `channel_stats` /
+ * `channel_checksums`，从不读 `pixels`；而物化一层是
+ * `width * height * 6` 字节（本场景 44 MB/层，整包 143 层约 6.3 GB 的
+ * 分配与拷贝）。跳过它对校验判据**没有任何影响**：越界判据改用解析出的
+ * 整幅面字节数，与物化时逐字一致；统计仍由同一个
+ * `AccumulateContiguousChannelStats` 从条带载荷直接累计。
+ *
+ * 返回值的 `pixels` 为空 —— **需要像素的调用方必须用
+ * `read_rgbwsv_tiff`**。当前仅 stripped 存储走此优化（生产包一律 stripped）；
+ * tiled 仍照原样物化，行为不变。
+ */
+TiffReadResult read_rgbwsv_tiff_stats(const std::filesystem::path& path);
+
 }  // namespace slicer_core

@@ -4,6 +4,7 @@
 #include "slicer_core/TiffReadStructureInternal.h"
 
 #include <algorithm>
+#include <array>
 #include <fstream>
 #include <limits>
 #include <span>
@@ -86,6 +87,22 @@ void AccumulateContiguousChannelStats(
         throw std::runtime_error(
             "TIFF contiguous RGBWSV payload is not pixel aligned");
     }
+    // MF-13b：逐通道直方图。
+    //
+    // 原实现每个字节要做约七件事（校验和累加、min、max、四个计数器各一次比较），
+    // 且每次都要重新解析 `result.channel_stats[channel]`。包发布的读回全量校验
+    // 要走完整包的每个字节 —— 5.9 GB 的包合计约 44 GB 标量运算，实测单线程
+    // 吞吐 148 MB/s，界限就在这里（生产口径下该校验占整个作业的 48%）。
+    //
+    // 改为每字节只做一次直方图自增，收尾时从 6x256 个计数导出全部统计。
+    // 判据逐项等价：
+    //   校验和   原为逐次 += value，等于 sum(value * count)
+    //   min/max  按值升序遍历非空桶取 min/max，与逐字节取 min/max 同值
+    //   四个计数 分别是 count(255)、count(!=255)、count(0)、count(0<v<255)
+    // 跨条带累加语义不变 —— 直方图是本次调用的局部量，导出时仍按原样合并进
+    // `result`（min/max 取 min/max，计数与校验和累加）。
+    std::array<std::array<std::uint32_t, 256U>, rgbwsv_channel_count>
+        histogram{};
     for (std::size_t offset{0U};
          offset < pixels.size();
          offset += rgbwsv_channel_count)
@@ -94,28 +111,59 @@ void AccumulateContiguousChannelStats(
              channel < rgbwsv_channel_count;
              ++channel)
         {
-            const std::uint8_t value = pixels[offset + channel];
-            result.channel_checksums[channel] += value;
-            TiffChannelStats& stats = result.channel_stats[channel];
-            stats.min_value = std::min(
-                stats.min_value,
-                static_cast<int>(value));
-            stats.max_value = std::max(
-                stats.max_value,
-                static_cast<int>(value));
-            stats.empty_pixels += value == 255U;
-            stats.print_pixels += value != 255U;
-            stats.full_print_pixels += value == 0U;
-            stats.partial_print_pixels += value != 0U && value != 255U;
+            ++histogram[channel][pixels[offset + channel]];
+        }
+    }
+    for (std::size_t channel{0U};
+         channel < rgbwsv_channel_count;
+         ++channel)
+    {
+        TiffChannelStats& stats = result.channel_stats[channel];
+        for (std::size_t value{0U}; value < 256U; ++value)
+        {
+            const std::uint64_t count{histogram[channel][value]};
+            if (count == 0U)
+            {
+                continue;
+            }
+            result.channel_checksums[channel] += value * count;
+            stats.min_value = std::min(stats.min_value, static_cast<int>(value));
+            stats.max_value = std::max(stats.max_value, static_cast<int>(value));
+            if (value == 255U)
+            {
+                stats.empty_pixels += count;
+            }
+            else
+            {
+                stats.print_pixels += count;
+                if (value == 0U)
+                {
+                    stats.full_print_pixels += count;
+                }
+                else
+                {
+                    stats.partial_print_pixels += count;
+                }
+            }
         }
     }
 }
 
-void InitializeReadPixels(TiffReadResult& result)
+std::size_t DecodedByteCount(const TiffReadResult& result)
 {
-    const std::size_t byteCount = static_cast<std::size_t>(result.spec.width)
+    return static_cast<std::size_t>(result.spec.width)
         * result.spec.height * result.spec.samples_per_pixel;
-    result.pixels.assign(byteCount, 255U);
+}
+
+void InitializeReadPixels(TiffReadResult& result, const bool retainPixels)
+{
+    if (!retainPixels)
+    {
+        // MF-13c：只要统计时不物化整幅面。见 read_rgbwsv_tiff_stats 的说明。
+        result.pixels.clear();
+        return;
+    }
+    result.pixels.assign(DecodedByteCount(result), 255U);
 }
 
 TiffCompressionMode ReadTiffCompressionMode(
@@ -220,22 +268,28 @@ void DecodeStrip(
     TiffReadResult& result,
     const std::span<const std::uint8_t> strip,
     const std::uint32_t startRow,
-    const std::uint32_t rows)
+    const std::uint32_t rows,
+    const bool retainPixels)
 {
     const std::size_t expectedBytes = static_cast<std::size_t>(rows)
         * result.spec.width * result.spec.samples_per_pixel;
     const std::size_t targetOffset = static_cast<std::size_t>(startRow)
         * result.spec.width * result.spec.samples_per_pixel;
+    // 越界判据改用解析出的整幅面字节数而不是 `result.pixels.size()` ——
+    // 不物化像素时后者为 0，但判据必须与物化时【逐字完全一致】。
     if (strip.size() != expectedBytes
-        || targetOffset + expectedBytes > result.pixels.size())
+        || targetOffset + expectedBytes > DecodedByteCount(result))
     {
         throw std::runtime_error(
             "TIFF strip payload does not match the decoded image range");
     }
-    std::copy(
-        strip.begin(),
-        strip.end(),
-        result.pixels.begin() + static_cast<std::ptrdiff_t>(targetOffset));
+    if (retainPixels)
+    {
+        std::copy(
+            strip.begin(),
+            strip.end(),
+            result.pixels.begin() + static_cast<std::ptrdiff_t>(targetOffset));
+    }
     AccumulateContiguousChannelStats(result, strip);
 }
 
@@ -279,10 +333,11 @@ TiffCompressionMode ParseTiffCompressionMode(const std::string_view name)
         "TIFF compression must be none or packbits: " + std::string{name});
 }
 
-TiffReadResult read_rgbwsv_tiled_tiff(const std::filesystem::path& path)
+TiffReadResult ReadTiledFromBuffer(
+    const std::filesystem::path& path,
+    const std::vector<std::uint8_t>& data,
+    const ParsedTiffEntries& entries)
 {
-    const std::vector<std::uint8_t> data = ReadFile(path);
-    const ParsedTiffEntries entries = ParseIfdEntries(data, path);
     TiffReadResult result;
     result.spec.storage_mode = TiffStorageMode::Tiled;
     result.spec.width =
@@ -303,7 +358,7 @@ TiffReadResult read_rgbwsv_tiled_tiff(const std::filesystem::path& path)
     const auto sampleFormats =
         ReadU16Array(data, FindRequiredEntry(entries, 339U), 339U);
     ValidateCommonSpec(result, bitsPerSample, sampleFormats, path);
-    InitializeReadPixels(result);
+    InitializeReadPixels(result, true);
 
     const auto tileOffsets =
         ReadU32Array(data, FindRequiredEntry(entries, 324U), 324U);
@@ -360,10 +415,12 @@ TiffReadResult read_rgbwsv_tiled_tiff(const std::filesystem::path& path)
     return result;
 }
 
-TiffReadResult read_rgbwsv_stripped_tiff(const std::filesystem::path& path)
+TiffReadResult ReadStrippedFromBuffer(
+    const std::filesystem::path& path,
+    const std::vector<std::uint8_t>& data,
+    const ParsedTiffEntries& entries,
+    const bool retainPixels)
 {
-    const std::vector<std::uint8_t> data = ReadFile(path);
-    const ParsedTiffEntries entries = ParseIfdEntries(data, path);
     TiffReadResult result;
     result.spec.storage_mode = TiffStorageMode::Stripped;
     result.spec.width =
@@ -382,7 +439,7 @@ TiffReadResult read_rgbwsv_stripped_tiff(const std::filesystem::path& path)
     const auto sampleFormats =
         ReadU16Array(data, FindRequiredEntry(entries, 339U), 339U);
     ValidateCommonSpec(result, bitsPerSample, sampleFormats, path);
-    InitializeReadPixels(result);
+    InitializeReadPixels(result, retainPixels);
     if (result.spec.rows_per_strip == 0U)
     {
         throw std::runtime_error(
@@ -435,13 +492,28 @@ TiffReadResult read_rgbwsv_stripped_tiff(const std::filesystem::path& path)
             decoded = DecodePackBitsBlock(payload, expectedBytes, path);
             payload = decoded;
         }
-        DecodeStrip(result, payload, startRow, rows);
+        DecodeStrip(result, payload, startRow, rows, retainPixels);
     }
     return result;
 }
 
-TiffReadResult read_rgbwsv_tiff(const std::filesystem::path& path)
+TiffReadResult read_rgbwsv_tiled_tiff(const std::filesystem::path& path)
 {
+    const std::vector<std::uint8_t> data = ReadFile(path);
+    return ReadTiledFromBuffer(path, data, ParseIfdEntries(data, path));
+}
+
+TiffReadResult read_rgbwsv_stripped_tiff(const std::filesystem::path& path)
+{
+    const std::vector<std::uint8_t> data = ReadFile(path);
+    return ReadStrippedFromBuffer(path, data, ParseIfdEntries(data, path), true);
+}
+
+TiffReadResult DispatchRgbwsvTiff(
+    const std::filesystem::path& path,
+    const bool retainPixels)
+{
+    // MF-13a：读一次、解析一次 IFD，判断完存储结构后把两者传下去。
     const std::vector<std::uint8_t> data = ReadFile(path);
     const ParsedTiffEntries entries = ParseIfdEntries(data, path);
     const bool hasTiles = FindOptionalEntry(entries, 324U).has_value()
@@ -450,14 +522,27 @@ TiffReadResult read_rgbwsv_tiff(const std::filesystem::path& path)
         || FindOptionalEntry(entries, 279U).has_value();
     if (hasTiles && !hasStrips)
     {
-        return read_rgbwsv_tiled_tiff(path);
+        // 瓦片路径的解码与统计是逐字节交织的，跳过物化要改它的内层循环；
+        // 生产包一律是 stripped（写入器只出 stripped，校验又比对
+        // manifest.storageMode），故此处不做该优化，行为与原先逐字一致。
+        return ReadTiledFromBuffer(path, data, entries);
     }
     if (hasStrips && !hasTiles)
     {
-        return read_rgbwsv_stripped_tiff(path);
+        return ReadStrippedFromBuffer(path, data, entries, retainPixels);
     }
     throw std::runtime_error(
         "TIFF storage structure is ambiguous or missing: " + path.string());
+}
+
+TiffReadResult read_rgbwsv_tiff(const std::filesystem::path& path)
+{
+    return DispatchRgbwsvTiff(path, true);
+}
+
+TiffReadResult read_rgbwsv_tiff_stats(const std::filesystem::path& path)
+{
+    return DispatchRgbwsvTiff(path, false);
 }
 
 }  // namespace slicer_core

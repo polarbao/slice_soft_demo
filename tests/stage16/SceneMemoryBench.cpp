@@ -28,6 +28,7 @@
 #include <iostream>
 #include <iterator>
 #include <string>
+#include <string_view>
 #include <vector>
 
 #if defined(_WIN32)
@@ -201,6 +202,39 @@ slicer_core::MultiModelScene BuildScene(
 
 }  // namespace
 
+// MF-14 需要的场景口径零漂移判据。
+//
+// 本专项此前只有 CLI 口径的逐字节对比 —— 而 CLI 与生产路径**不同路**
+// （见任务卡 §14.1.9）。场景路径的产物由本 bench 写出后随即删除，
+// 于是「改了 SceneLayerComposer 之后输出是否逐字节不变」一直无从检验。
+// 这里在清理之前把全部层 TIFF 按文件名排序拼接后取一次 sha256 并打印，
+// 成本是一次顺序读，换来一条真正的场景口径判据。
+std::string ComputeLayerDigest(const std::filesystem::path& packageDir)
+{
+    const std::filesystem::path layersDir = packageDir / "layers";
+    if (!std::filesystem::exists(layersDir))
+    {
+        return "missing";
+    }
+    std::vector<std::filesystem::path> layerPaths;
+    for (const std::filesystem::directory_entry& entry :
+         std::filesystem::directory_iterator(layersDir))
+    {
+        if (entry.is_regular_file())
+        {
+            layerPaths.push_back(entry.path());
+        }
+    }
+    std::sort(layerPaths.begin(), layerPaths.end());
+    std::string concatenated;
+    for (const std::filesystem::path& layerPath : layerPaths)
+    {
+        concatenated.append(ReadFile(layerPath));
+    }
+    return std::to_string(layerPaths.size()) + ":"
+        + slicer_core::ComputeSha256(concatenated);
+}
+
 int main(const int argc, char** argv)
 {
     if (argc < 3)
@@ -288,12 +322,68 @@ int main(const int argc, char** argv)
                   << " elapsedMs=" << elapsedMs
                   << " peakWorkingSetBytes=" << PeakWorkingSetBytes()
                   << "\n";
+        // MF-12：把生产口径的分段耗时打出来。
+        //
+        // 本 bench 走的是 RunMultiModelProductionService —— 与 DLL/Worker 生产
+        // 路径同一条，而 CLI 那条并不同路（LegacySceneLayerAdapter 把
+        // write_reports 写死为 false，故闭合精确分析在生产路径上从不执行）。
+        // result.profile 一直带着这些字段，只是从未打印，导致本专项此前所有
+        // 耗时数字都只有 CLI 口径。详见任务卡 §14.1.9 与 §14.4。
+        const slicer_core::SliceRunProfile& profile = result.profile;
+        std::cout << "BENCH_PROFILE available=" << (profile.available ? 1 : 0)
+                  << " level=" << profile.profile_level
+                  << " modelLoadMs=" << profile.model_load_ms
+                  << " gridSetupMs=" << profile.grid_setup_ms
+                  << " maskSamplingMs=" << profile.mask_sampling_ms
+                  << " texturePrepareMs=" << profile.texture_prepare_ms
+                  << " supportGenerationMs=" << profile.support_generation_ms
+                  << " layerComputeMs=" << profile.layer_compute_ms
+                  << " layerComposeMs=" << profile.layer_compose_ms
+                  << " tiffWriteMs=" << profile.tiff_write_ms
+                  << " outputWriteMs=" << profile.output_write_ms
+                  << " packagePublishMs=" << profile.package_publish_ms
+                  << " sliceProcessingMs=" << profile.slice_processing_ms
+                  << " totalMs=" << profile.total_ms
+                  << " instances=" << profile.instances.size()
+                  << "\n";
+        // 逐实例：生产者侧（run_slicer）的核心切片与合成耗时。这两笔与上面的
+        // 场景级 layerCompose 是【并发】的 —— 生产者写完第 L 层即被
+        // SceneLayerBarrier 阻塞等消费，故两者不可相加。
+        for (const slicer_core::SliceRunInstanceProfile& instance :
+             profile.instances)
+        {
+            std::cout << "BENCH_INSTANCE id=" << instance.instanceid
+                      << " widthPx=" << instance.widthpx
+                      << " heightPx=" << instance.heightpx
+                      << " layerCount=" << instance.layercount
+                      << " coreSliceMs="
+                      << (instance.coreslicems.has_value()
+                              ? instance.coreslicems.value() : -1.0)
+                      << " composeMs="
+                      << (instance.composems.has_value()
+                              ? instance.composems.value() : -1.0)
+                      << " totalMs="
+                      << (instance.totalms.has_value()
+                              ? instance.totalms.value() : -1.0)
+                      << "\n";
+        }
         if (!result.IsValid() && result.error.has_value())
         {
             // 失败时【保留】现场并把路径打出来 —— 那时输出包是诊断材料。
             std::cerr << "BENCH_ERROR " << result.error->message << "\n";
             std::cerr << "BENCH_ARTIFACTS_KEPT " << root.string() << "\n";
             return 1;
+        }
+        // 默认【不】算哈希：它要顺序读完整包（本场景 5.9 GB），会把进程墙钟
+        // 抬高约 40 s，使 bench 的进程耗时不再等于作业耗时 —— 第一版就是这么
+        // 踩到的，A/B 时误把这笔读盘算进了两侧。需要零漂移判定时置
+        // SLICESOFT_BENCH_DIGEST=1 单独开。
+        if (const char* const digestFlag{std::getenv("SLICESOFT_BENCH_DIGEST")};
+            digestFlag != nullptr && std::string_view{digestFlag} == "1")
+        {
+            std::cout << "BENCH_LAYERS digest="
+                      << ComputeLayerDigest(effectiveRequest.outputpackagedir)
+                      << "\n";
         }
         // 成功时清掉输出包。本 bench 的产物只有上面那行 BENCH 统计，
         // 层文件是过程数据 —— 而它们能到 120 GB：此前一次 a-2@10um 的跑留在

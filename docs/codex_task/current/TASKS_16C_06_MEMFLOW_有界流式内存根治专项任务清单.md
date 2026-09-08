@@ -1,7 +1,7 @@
 # TASKS_16C-06-MEMFLOW 有界流式内存根治专项任务清单
 
 > 文档状态：**ACTIVE / 两项原始阻塞均已实测解除 / 余 MF-03X2b、MF-07、MF-08（均非阻塞）**
-> 版本：v4.3 ｜ 日期：2026-09-06
+> 版本：v4.21 ｜ 日期：2026-09-07
 > 定位：Stage 16C-06 的唯一原子任务状态真源；承接 12F-06 和 13B-05 流式化债务
 > 决策：`docs/slice/DOC/DOC_DECISION_16C_06_MEMFLOW_有界逐层流式内存根治.md`
 > 方案：`docs/slice/DEV/DEV_16C_06_MEMFLOW_有界逐层流式切片设计.md`
@@ -52,6 +52,12 @@
 | MF-07d | 预算字段与开始前路由 | TODO —— 接生产前须先有多材质大幅面实测点 | MF-07c | - |
 | MF-07e | 消除场景路径中途回退 | **CLOSED**：验收已实质满足，见 11.4 | MF-05 | 2026-09-06 |
 | MF-08 | 真实模型、RIP、恢复与性能收口 | PENDING / INPUT OPEN | MF-07、设备输入 | - |
+| MF-09 | 层循环耗时优化 | **第一档 COMPLETE（View + workspace 复用，−11.6%，CLI+报告口径）；⚠ 对生产路径收益为零（§14.1.9）；三步剪枝已挂起（见 §14.4.1）** | MF-03X3 | - |
+| MF-10 | MATVOL 逐列求交优化（多材质大栅格 gridSetup 占 92%） | **NEW / 待估** | - | - |
+| MF-11 | 层循环并行化 | **DEFERRED / 已定责**：产品路径被屏障锁步，见 §14.3 | MF-09 实测曲线 | - |
+| MF-12 | 生产路径耗时构成测量 | **COMPLETE**：见 §14.4.1 —— 层计算只占 14%，包发布占 48% 且其中 99.9% 是读回校验 | MF-09 | - |
+| MF-13 | 包发布的读回全量校验 | **a+b+c+d 档 COMPLETE**：生产口径 `publish 17,732 -> 5,071`（−71.4%）、`total 55,346 -> 41,614`（−24.8%），**峰值内存不变**，见 §14.5.5 | MF-12 | - |
+| MF-14 | compose 窗口的整幅面开销 | **a 档已改，空窗复测实为约 −3%（不是 −19%）**；b 档已撤回（实测不等价）、c 档余量 1~2 s，见 §14.6.8/§14.6.11 | MF-13 | - |
 
 ## 2.1 当前可继续的任务（2026-09-06 盘点）
 
@@ -1270,10 +1276,1255 @@ OpenVDB 开启的配置下可能超过 256 MiB 的余量。接进生产前应当
 **出口：** 逐层 hash、RIP strict、取消恢复、wall/CPU/Peak Working Set 和 build identity。正式设备
 SLA/内存上限缺失时，只完成工程 Gate，不宣称 production SLA PASS。
 
+## 14. MF-09/10/11 耗时优化（2026-09-07 立卡）
+
+用户 2026-09-06 提出：**不改硬件的前提下，大画幅切片耗时还有多少空间**。
+本节是核查结论与据此拆出的三张卡。
+
+### 14.0 先更正我自己的一个判断
+
+初次答复时我看到「18 核机器、层循环完全串行、`layerComputeMs` 占 91.2%」，
+就给出了「并行化可拿 3~5 倍」的预期。**只读核查之后这个判断要收回**，
+理由见 14.3 —— 产品路径上那个循环**本来就被屏障锁步**，并行它拿不到吞吐。
+
+留下这段而不是抹掉，是因为那个错误有代表性：**看到「串行 + 占比高 + 多核空闲」
+就断定可以并行，漏掉了「它为什么串行」**。这里的答案是「因为下游要求按层序消费」，
+而那不是循环自己的性质。
+
+### 14.1 MF-09：层循环剩余整幅面 pass 剪枝（先做这张）
+
+MEMFLOW 的 2.53% 活动列剪枝**只覆盖了四处**：`compose_layer` 主循环、
+`MaterializeReliefModelLayer`、`AddInternalVoidSupportForLayer`、
+`AnalyzeRetainedMaterialLayerChannels`。层循环里**至少还有六处整幅面 pass 漏网**：
+
+| 位置 | 说明 |
+|---|---|
+| `SupportConnectivityAnalysis.cpp:19,27` | 每层新建并清零 7.37 MB 的 `visited`，再做整幅面扫描；**且 `slicer.cpp` 的调用点在 `config.support.enabled` 守卫【之外】**，支撑关闭时它照跑不误、全命中 continue |
+| `MaterialVolumePlan.cpp:451` | `MaterializeMaterialOwnershipLayer` 整幅面 |
+| `slicer.cpp` MATVOL 填补循环 | 整幅面 |
+| `slicer.cpp` compose 的 `whiteScratch` / `effectiveRgb` | 两次整幅面读 + 一次整幅面写，**外加每层两次新分配** |
+| `slicer.cpp` opacity varnish 循环 | 整幅面 |
+| `build_texture_preview_mask` | 双重整幅面循环（仅 preview 层） |
+
+**为什么先做这张：** 等价性论证与 MF-03X2b 已做过的是同一套
+（「分支链没有末尾 else，故表外列不写任何字节」），
+风险已知、验证路径已趟熟；且它**不增内存、不碰屏障、不碰进度协议、
+不引入任何数据竞争** —— 与并行化正相反。
+
+**第一步必须是量，不是改。** 在层循环内加细粒度计时，把 `layerComputeMs`
+这 516 秒拆到上述各段。剪枝能吃掉多少，先有数再动手 ——
+本专项已经吃过一次「凭直觉优化」的亏（§5.7 记录：只做剪枝而不复用缓冲，
+内部空腔耗时几乎不降，因为按幅面计的固定开销与按占用计的工作量是两笔账）。
+
+### 14.1.1 测量结果：瓶颈不是我们以为的那六处（2026-09-07）
+
+按「先量后改」插桩实测（a-2/0.2.obj，143 层快速档，`layerCompute` 约 45 秒）：
+
+| 段 | 耗时 | 占比 |
+|---|---|---|
+| **材料闭合语义分析** | **38,723 ms** | **约 86%** |
+| 支撑连通性统计 | 2,336 ms | 5% |
+| 物化三件套（X2a 已剪枝） | 948 ms | 2% |
+| 通道统计（X5 已剪枝） | 216 ms | 0.5% |
+| compose（X3 已剪枝） | 182 ms | 0.4% |
+
+**已经剪过的三处合计只占 3%。** 若按 14.1 原计划去剪那六处整幅面 pass，
+几乎白干 —— 这正是「先量后改」要防的事，本专项 §5.7 已经吃过一次同类的亏。
+
+**根因是一个没人预料会激活的默认值：**
+
+```text
+config.h 里 MaterialClosureConfig::enabled 默认 = true   <- 配置文件里根本没写这一项
+  -> collectMaterialClosureExact = enabled && write_reports = true
+  -> MaterialClosureSemanticLayerInput 声明在层循环【内】
+  -> 11 个 mask 各 assign(pixelCount, 0)
+  -> 736 万列 x 11 B = 81 MB/层，1429 层合计约 116 GB
+```
+
+即**任何不显式关闭它的作业都在付这笔钱**。
+
+生产路径（DLL -> Worker -> 场景路径）还要更贵：那里有 `ownedlayercallback`，
+`collectMaterialClosureSemantic` **恒为真**，比 CLI 多跑一段
+`PopulateRetainedMaterialClosureEmptyMask`。
+
+### 14.1.2 一次失败的尝试，及它证伪了什么
+
+**做法**：把 `MaterialClosureSemanticLayerInput` 提到层循环外跨层复用
+（新增就地填充入口 `Reset...InPlace`，因为 `input = Initialize(...)` 是移动赋值、
+会丢弃已有 buffer）。思路与 MF-03X4 对 compose 输出缓冲的处理同源。
+
+**结果：没有收益。** 公平 A/B（同一快速档，各跑三次取最小）：
+
+```text
+改前  75,338 / 62,389 / 61,579  ->  min = 61,579 ms
+改后  73,274 / 68,940 / 78,808  ->  min = 68,940 ms
+```
+
+两组波动范围重叠（22% 与 14%），故不能断言它更慢；但**可以断言没有任何证据
+支持它更快**。据此回退，不留无收益的复杂度。
+
+**它证伪的假设**：我以为那 86% 的开销在 `malloc/free`。**不是。**
+开销在 `assign(pixelCount, 0)` 的**写入本身** —— 那 81 MB/层无论对象复不复用
+都要写；复用只省掉分配器的簿记，相比之下微不足道。
+
+**因此正确方向只剩一条：不写那些字节**，即给闭合语义输入加活动列剪枝
+（实测该场景只有 2.53% 的列有模型）。前置是等价性验证：
+表外的列在闭合语义上是否恒为空、下游分析是否不依赖它们 ——
+判据与 X3「compose 的分支链没有末尾 else」同源，但**必须独立验证**，
+不能沿用。
+
+**还有一处未拆分**：那 38.7 秒里，`assign` 的写入与
+`InitializeSemantic` 末尾那个逐像素循环（算 `expectedOccupiedDomainMask`，
+7.37M 次/层）各占多少，尚未分开测。剪枝方案要同时覆盖两者才有意义，
+故下一步应先把这两段拆开量。
+
+### 14.1.3 再拆一层：初始化也不是大头，真正的开销在分析函数
+
+上一节把矛头指向「每层新建 11 个 mask」。**继续拆分之后，那个判断也要修正。**
+
+在 `InitializeSemantic` 内部分别计时（同一快速档）：
+
+```text
+closureAssignMs   6,202 ms    11 个 assign 合计，占 closure 段的 16%
+closureLoopMs     1,935 ms    末尾逐像素循环，占 5%
+合计              8,137 ms
+closure 段总计   38,723 ms    -> 还差 30,586 ms
+```
+
+**即：整个初始化只占 21%。** 就算把 assign 全部省掉，上限也只有 16% ——
+这从另一个角度印证了 14.1.2 那次回退是对的（复用对象连这 16% 都拿不到，
+因为字节照样要写）。
+
+**那 30 秒在 `AnalyzeMaterialClosureSemanticLayer`**，它有三笔整幅面开销：
+
+| 开销 | 规模（10um，736 万列） |
+|---|---|
+| 四次 `std::fill` 重置 workspace 的四个 gap mask | 29.5 MB/层 |
+| 从边界洪泛算 `externalBackgroundMask` | 整幅面 |
+| `for (y) for (x)` 主判定循环 | 736 万次/层 |
+
+### 14.1.4 等价性论证（剪枝的前置，已完成）
+
+主循环的判据是：
+
+```cpp
+candidateGap = layerEmptyMask[i] != 0
+            && expectedOccupiedDomainMask[i] != 0
+            && workspace.externalBackgroundMask[i] == 0
+```
+
+活动列表外的列，按 `BuildBoundedActiveColumns` 的定义是
+**「所有层都无模型，且能经其他无模型列连到幅面边界」**。于是：
+
+- `expectedOccupiedDomainMask` = `modelEnvelope || supportRequired || outerVarnishShell`
+  三者对表外列**全为 0** → **第二个条件不成立**；
+- 且这类列按定义就是外部空白，`externalBackgroundMask` 必为 1
+  → **第三个条件也不成立**。
+
+**故表外列恒不是候选间隙，剪枝是精确等价的**，且两条判据互为旁证。
+这一条与 X3 的判据同源，但**是独立论证的**，不是沿用。
+
+### 14.1.5 下一步的方案（未实施）
+
+按收益排序：
+
+1. **主判定循环改为只扫活动列** —— 直接省掉 97.47% 的迭代，等价性已由 14.1.4 论证；
+2. **四次 `std::fill` 改为只重置活动列** —— 前提是 workspace 跨层复用
+   （表外列从不被写，故恒为 0）。注意 14.1.2 的教训：**这一条单独做收益有限**
+   （fill 只是那 30 秒里的一部分），要与第 1 条一起做；
+3. **洪泛不能简单剪枝** —— 它恰恰要遍历外部空白来确定边界连通性。
+   但表外列的结果是**解析可知的**（恒为外部背景），故可跳过实际洪泛、直接置位。
+   这一条最需要小心，建议最后做并单独验证。
+
+**实施前必须先加 `activeColumns` 参数贯通到
+`MaterialClosureSemanticDetector`**，那是本方案的主要改动面。
+验收沿用本专项硬要求：零漂移四判据逐字节全等 + 快速档 min-of-3 的 A/B。
+
+### 14.1.6 MF-09 第一档落地：改走 View 版本 + workspace 跨层复用（COMPLETE）
+
+§14.1.5 把「主判定循环剪枝」排在收益第一位。**但在动剪枝之前，先发现了一笔
+更简单、且无需任何等价性假设的开销**：主循环调的是 owning 便利版本
+
+```cpp
+AnalyzeMaterialClosureSemanticLayer(input, connectivity, maxGapPx)   // owning
+```
+
+它在库内部做了两件按幅面计价的事，**与算法本身无关**：
+
+| 开销 | 规模（10um，736 万列） |
+|---|---|
+| 每层新建 workspace，`Prepare` 里 7 次 `resize` + `traversalQueue.reserve` | 约 110 MB/层 |
+| 返回前 7 次 `assign(view.begin(), view.end())` 把 mask 拷进 owning 结构 | 约 51.6 MB/层 |
+
+而 **View 版本两者都没有**，且与 owning 版本是同一实现 —— owning 版本本身就是
+「Prepare 一个临时 workspace、调 View 版本、把结果拷出来」。所以改走 View 版本
+**不需要任何等价性论证**，只需保证 workspace 跨层复用不串味（见下）。
+
+**为什么这次复用有收益，而 §14.1.2 那次没有：**
+
+```text
+14.1.2 复用的是输入缓冲，其填充是 assign(n, 0)  -> 复用后 n 字节照样要写
+14.1.6 复用的是 workspace，其准备是 resize(n)   -> 对已有容量是 no-op（不写）
+```
+
+同一个「跨层复用」的做法，收益取决于被复用者是用 `resize` 还是 `assign` 准备的。
+这一条值得记住。
+
+**串味风险已排除（这是本卡唯一的新风险）：** View 版本借出的 7 个 mask 在入口
+处全部被重置 —— 分析侧 6 次 `std::fill` 加 `BuildExternalBackgroundMask` 自身的
+`fill`；修复侧 2 次 `std::copy` 加 7 次 `std::fill`。逐一核对过，没有遗漏项。
+并补了一条单测直接钉住它（见下）。
+
+**同步下沉（G2）：** 整段 exact 闭合逐层处理（分析 + 可选修复 + 复检 + 计数回填）
+从 `slicer.cpp` 下沉为 `material/MaterialClosureExactLayerPass.{h,cpp}` 的
+`RunMaterialClosureExactLayerPass`，**`slicer.cpp` 净减 25 行**（+22/−47），
+本专项继续不依赖 MATOPQ 那条豁免。副产物：`repairValues` 原先每层重算一次
+（`ResolveMaterialClosureRepairValues(config)` 在层循环内），现在随
+`MaterialClosureExactLayerRequest` 在循环外解析一次。
+
+#### 实测（交错 A/B，同一时间窗，a-2/0.2.obj 143 层快速档）
+
+```text
+                layerComputeMs
+base   44,318 / 47,637 / 42,014   -> min 42,014
+mf09   39,154 / 37,132 / 37,286   -> min 37,132   -11.6%
+两组区间不重叠（mf09 最差 39,154 < base 最好 42,014）
+peakWorkingSetBytes 两侧同为 905 MB 量级，无内存回退
+```
+
+**方法上的一条教训（比数字更重要）：** 第一次测量拿改后结果去比
+§14.1.2 留下的旧基线（min 61,579 ms），算出 **−45%**。那是错的 ——
+当天 02:49 的机器负载远高于此刻，同一份 base 二进制现在只跑 42,014 ms。
+**跨时间窗比较在本机没有意义**（§短基准波动达 47%）。故重新编出 base 二进制
+与 mf09 交错跑三对，取上表。`−45%` 不成立，真实收益是 `−11.6%`。
+
+#### 零漂移（用户指定资产，逐字节）
+
+同一配置分别用 base / mf09 二进制跑，比对全部层 TIFF 的拼接 sha256 与
+`material_closure_report.json`：
+
+| 用例 | 层数 | layers sha256 | closure 报告 |
+|---|---|---|---|
+| `finger_suoguo/a-3/0.2.obj` @0.1mm | 143 | `647ec538…` 一致 | `2d0a8740…` 一致 |
+| `suoguo-baseline/qiegejiapian-zxl.stl` | 45 | `43ae7994…` 一致 | `51d26e51…` 一致 |
+| `suoguo-baseline/suoguo-hcc.stl` | 48 | `6eb44fea…` 一致 | `7467180c…` 一致 |
+
+**三个用例的 `gapPixels` 全为 0**，即真实资产跑不到修复分支。故修复路径**不能**
+由这三条对拍覆盖 —— 它由单测覆盖，且断言里先钉住「参照实现确实修了一个像素」
+再比对，避免整条空转（见 `oracle-tests-can-be-entirely-vacuous` 那类坑）。
+
+新增两条单测（`material_closure_semantic_detector_unit_tests`，已确认实际执行）：
+
+```text
+exact_layer_pass_matches_owning_repair_composition
+    修复路径下与旧 owning 组合逐字节比对：层通道 + 语义 mask + 全部计数
+exact_layer_pass_is_stable_across_workspace_reuse
+    先用有间隙的层把 workspace 写脏，再用同一 workspace 跑无间隙的层，
+    与全新 workspace 的结果全等 —— 直接钉住「跨层复用不串味」
+```
+
+#### 全量回归与门禁
+
+```text
+构建     BUILD_EXIT=0（含新增 material/MaterialClosureExactLayerPass.cpp）
+回归     10 失败 / 230，落在本工作树既有的 10~11 失败区间内（MAX_PATH 抖动）
+门禁     ValidateSourceSizeGuard.py PASS；slicer.cpp 净减 25 行
+```
+
+失败项里唯一需要单独定责的是 `scene_layer_adapters_unit_tests`
+（`legacy_adapter_applies_admitted_instance_transform` 的
+「translation preserves local layer bytes and dimensions」）。**已实测定责为既有失败**：
+把本卡改动 stash 掉、重编该 target 再跑，**同一用例、同一条断言照样红**。
+另有 `production_mode_catalog_unit_tests` 为 Not Run（找不到可执行文件），与本卡无关。
+
+判据上它本来也不可能由本卡引起：该用例比较的是**同一份代码**的 baseline 与
+translated 两次输出，任何一致的行为改变都会在两侧同时出现而相互抵消。
+
+#### 结论与下一步
+
+第一档收益 **−11.6%**，比 §14.1.5 预期的量级小，因为它只拿掉了「用便利接口的
+代价」（约 160 MB/层的分配、归零与拷贝），**没有触及那 736 万次/层的主判定循环**。
+§14.1.5 的三步方案仍然成立且未实施，其中第 1 条（主循环只扫活动列）依然是剩余
+收益里最大的一块，等价性论证已在 §14.1.4 完成。
+
+### 14.1.7 第三次「先量后改」，第三次推翻自己的排序：70% 在洪泛
+
+§14.1.5 把三步方案按预估收益排成「主判定循环 > 六次 fill > 洪泛（最需小心、
+放最后）」。**把 `AnalyzeMaterialClosureSemanticLayer` 内部再拆三段实测，
+这个排序完全反了**（同一快速档，`layerComputeMs` 38,237）：
+
+| 段 | 耗时 | 占 layerCompute |
+|---|---|---|
+| **`BuildExternalBackgroundMask` 边界洪泛** | **26,987 ms** | **70.6%** |
+| `for(y)for(x)` 主判定循环 | 1,075 ms | 2.8% |
+| 六次整幅面 `std::fill` | 517 ms | 1.4% |
+
+**即 §14.1.5 排第一的那条只值 2.8%，排最后的那条占 70%。**
+本卡至此已经三次靠实测推翻自己的排序（§14.1.1 推翻六处 pass、§14.1.3 推翻
+「开销在初始化」、本节推翻三步方案的次序）。**这条规律要当成纪律用，不是巧合。**
+
+洪泛为什么贵：它要访问全部「空白且与边界连通」的像素 —— 该场景 97.47% 的列
+在任何层都空，即每层要 BFS 约 718 万个像素，每个像素做 2 次整数除法定位、
+8 个邻居各一次 `IsInside` + `PixelIndex` 乘法 + `layerEmptyMask[]` 读
++ `external.at()`（**带边界检查**）；队列还是 `std::vector<std::size_t>`，
+最坏要写读 718 万 × 8 B ≈ 57 MB。
+
+### 14.1.8 这项诊断的总代价：占 layerCompute 的 92%、总墙钟的 83%
+
+直接把它关掉对照（`"materialClosure": {"enabled": false}`，其余配置逐字相同，
+同一二进制、同一时间窗、on/off/on/off 交错各两次取最小）：
+
+```text
+                 layerComputeMs      totalMs
+enabled = true       37,405           42,133
+enabled = false       2,953            7,072      -92.1% / -83.2%
+层 TIFF 143 层拼接 sha256 两侧同为 647ec538… —— 【逐字节一致】
+```
+
+**层输出完全不受影响，关掉它只少一份 `material_closure_report.json`。**
+且本卡实测的三个真实资产 `gapPixels` 全为 0 —— 这份报告在真实资产上从未发现
+任何东西。根因仍是 §14.1.1 那条：`MaterialClosureConfig::enabled` 默认 `true`，
+而配置文件从不写它，**任何不显式关闭它的 CLI 报告作业都在付这笔钱**。
+
+⚠ **这不构成「建议默认关掉」的结论。** 它是诊断能力，关不关是产品决策，
+需要用户裁定；本卡只负责把代价与影响面量出来。
+
+### 14.1.9 【重要修正】生产路径根本不跑这段，MF-09 对它收益为零
+
+上面所有数字都出自 **CLI 且开报告** 的路径。查证生产路径（用户实际用的
+`PrintApp -> slicer_module.dll -> slicer_worker.exe`）后发现：
+
+```cpp
+// pipeline/LegacySceneLayerAdapter.cpp:159   场景/生产适配器
+options.write_reports = false;
+```
+
+而闭合精确分析的开关是
+
+```cpp
+collectMaterialClosureExact = material_closure.enabled
+    && (options.write_reports || repairMaterialClosure);
+```
+
+`MultiModelProductionService` 通过 `AdaptLegacySceneLayers`
+（`MultiModelProductionService.cpp:1060`）走这个适配器，故
+**诊断模式下生产路径的 `collectMaterialClosureExact` 恒为 false** ——
+整段闭合精确分析（含那 70% 的洪泛）在生产路径上从不执行。
+
+**由此得出三条必须写明的结论：**
+
+1. **MF-09 第一档的 −11.6% 只作用于「CLI 且开报告」，对生产路径收益为零。**
+   与 MF-03X1 那次同类（那次是「用户配置没开表面光油，故收益为零」）。
+   §14.1.5 剩下的三步剪枝同理，**做完对生产路径也仍是零**。
+2. 生产路径仍会付 `collectMaterialClosureSemantic` 那部分（它由
+   `ownedlayercallback` 恒为真），即每层 11 个整幅面 mask 的 `assign`
+   —— §14.1.3 实测约占 closure 段的 16%，但那是在开报告的口径下测的，
+   在生产口径下的绝对占比**尚未测量**。
+3. **本专项此前所有耗时数字（含 a-2@10um 的 18.9 -> 9.44 分钟）都是 CLI 口径。**
+   引用给用户时必须标注口径；生产路径的实际耗时构成**从未测过**。
+
+**故下一步不是继续剪 CLI 的洪泛，而是先量生产路径。** 见 MF-12。
+
+### 14.4 MF-12：生产路径耗时构成测量（NEW，先量后改）
+
+**为什么立这张卡：** §14.1.9 查明 CLI 报告路径与生产路径**跑的不是同一段代码** ——
+生产路径把 `write_reports` 写死为 false，闭合精确分析（CLI 口径下占 layerCompute
+的 92%）在那边根本不执行。本专项迄今所有耗时数字都是 CLI 口径，
+**生产路径的耗时构成从未测量**。在没量之前，任何针对生产耗时的优化都是猜。
+
+**这正是 §5.7 与 §14.1.1/14.1.3/14.1.7 那条规律的第四次应用：**
+前三次是「量错了段」，这次是**量错了路径** —— 后者更隐蔽，因为两条路径共用
+`run_slicer`，看起来像同一件事。
+
+**要量什么：**
+
+```text
+1. 生产路径（DLL -> Worker -> MultiModelProductionService）一次真实作业的
+   分段耗时：模型载入 / 网格 / 采样 / 支撑 / 层计算 / 合成 / 写盘 / 屏障等待
+2. 层计算内部：collectMaterialClosureSemantic 那 11 个 assign 的绝对占比
+   （§14.1.3 的 16% 是开报告口径下的相对值，不能搬过来）
+3. SceneLayerBarrier 的 DepositAndWait 实际阻塞多久 —— 它同时是 MF-11
+   并行化被判 DEFERRED 的原因，若阻塞占比高则该结论需要复核
+```
+
+**怎么量（待定，两条候选）：**
+
+- `apps/slicer_ui_host_sim` 已有完整宿主链路与 `HostSliceJobController`，
+  且 MF-07b 已在其中接了 timing 面板 —— 优先考虑从这里驱动，代价最小；
+- 或在 `MultiModelProductionService` 内加与 `SLICE_TIMING` 同构的分段计时
+  （生产代码加计时需按本仓 profileLevel 约定走，不能裸插桩）。
+
+**验收：** 得到一张生产口径的分段表，并据此重排 MF-09/10/11 的优先级。
+**在这张表出来之前，不再对 CLI 专有路径做任何优化**（洪泛剪枝就此挂起）。
+
+**注意口径标注：** 该表出来后，§0 摘要与探查报告里所有耗时数字都要补口径标注
+（CLI+报告 / CLI 无报告 / 生产），否则会被误引用。
+
+### 14.4.1 MF-12 实测结果：生产口径与 CLI 口径几乎没有共同点（COMPLETE）
+
+**怎么量的：** `stage16c06_scene_memory_bench` 走的就是
+`RunMultiModelProductionService` —— 与 DLL/Worker 生产路径同一条。
+它返回的 `result.profile` 一直带着分段耗时，**只是从未打印**。本卡把
+`BENCH_PROFILE` 与 `BENCH_INSTANCE` 两行加上，无需任何生产代码插桩。
+
+**资产：** `a-2/0.2.obj`，0.1mm，143 层，1418×5197，单实例。
+
+```text
+totalMs                90,090
+├─ modelLoadMs            229    0.3%
+├─ gridSetupMs            229    0.3%
+├─ sliceProcessingMs   46,397   51.5%   = 场景 compose 窗口
+│     BENCH_INSTANCE：coreSliceMs 13,065 ／ composeMs 45,507
+│     两者【并发】：生产者写完第 L 层即被 SceneLayerBarrier 阻塞等消费，
+│     故不可相加；真正的逐层计算是那 13,065 ms
+└─ outputWriteMs       47,242   52.4%
+      ├─ tiffWriteMs    3,781    4.2%
+      └─ packagePublishMs 43,449 48.2%   ← 单项最大
+```
+
+**与 CLI 口径对照（同一资产、同一层厚）：**
+
+| | CLI+报告 | CLI 无报告 | 生产 |
+|---|---|---|---|
+| totalMs | 42,133 | 7,072 | 90,090 |
+| 层计算 | 37,405（92%，其中洪泛 70%） | 2,953 | 13,065（14.5%） |
+| 主要开销 | 闭合诊断 | — | 包发布读回校验 + compose |
+
+**三条口径的瓶颈互不相同。** 生产路径比 CLI+报告还慢一倍，但慢的地方完全不同 ——
+CLI 慢在闭合诊断（生产路径不跑），生产慢在包发布与 compose（CLI 便宜得多）。
+
+**对既有任务卡的影响（必须重排）：**
+
+| 卡 | 原判断 | MF-12 后的判断 |
+|---|---|---|
+| MF-09 | 层循环耗时优化，第一档 −11.6% | **对生产路径收益为零**（§14.1.9） |
+| §14.1.5 三步剪枝 | 剩余最大一块 | 只作用于 CLI+报告，**挂起** |
+| MF-10 | MATVOL `gridSetup` 占 92% | 生产口径 `gridSetupMs` 只有 229 ms（0.3%），**须用生产口径重估** |
+| MF-11 | 层循环并行化，DEFERRED（屏障锁步） | **结论加强**：可并行的 coreSlice 只占 14.5%，即便完美并行，上限也只有约 14% |
+
+### 14.5 MF-13：包发布的读回全量校验（NEW，单项最大）
+
+把 publish 阶段拆成六段实测（同一作业）：
+
+```text
+[PUB] ext1Ms=4.6  strictValidateMs=43,402.8  renameMs=1.8
+      ext2Ms=9.9  identityMs=11.5  cleanupMs=1.3   totalMs=43,440.9
+```
+
+**`internal::ValidateSlicePackageArtifact(stagingDir)` 一项占了 publish 的 99.9%**
+（`RgbwsvPackageWriter.cpp:1468`）—— 即**把刚写完的整包重新读回来做严格校验**。
+发布本身（同父目录 rename）只有 1.8 ms。
+
+**规模外推：** 该作业包约 5.9 GB / 143 层，读回校验 43.4 s。同资产 10um 是
+1429 层、约 59 GB，**读回校验单项就约 7 分钟**。
+
+**它验了什么（`rip_reader.cpp:685` 的 `ValidateSlicePackageImpl`，已查清）：**
+
+```text
+包级   manifest schema / grid / channelOrder / channelCount / bitDepth
+       / sampleFormat / planarConfig / storageMode / compression / polarity
+       / printValue / emptyValue / layers 数组长度
+逐层   文件存在 -> read_rgbwsv_tiff【完整解码六通道整幅面】
+       -> 比对 storageMode、compression、宽高
+       -> ValidateLayerStatistics：把解码出的 channel_stats 与 manifest 里
+          该层记录的统计逐项比对
+       -> merge_channel_stats + 记下 channel_checksums
+```
+
+**它不是可以随手删的东西：** 这是 fail-closed 的正确性闸门，且
+`PublishStagedPackage` 的「同父 rename 保住已严格校验的字节」这一保证正建立在它
+之上（源码注释明写）。
+
+⚠ **一条已被否掉的方向（记下来防止再想到）：** 「写盘时单趟校验，用写入器手上
+那份内存字节边写边验」看着等价性最强，**其实完全不等价** —— 读回校验的目的正是
+**验证落盘的字节**，用内存字节算会让写入器 bug、截断、磁盘坏块全都无从发现。
+这条判据一旦被绕过，那句「同父 rename 保住已严格校验的字节」就不再成立。
+
+**故候选方向只剩三条：**
+
+```text
+A  并行化逐层校验：143 层各自独立，只有 merge_channel_stats 与
+   layer_checksums 需要同步。语义【完全不变】—— 同样读盘、同样解码、同样比对。
+B  与写盘重叠：层是逐个写完的，可以边写边校验【已落盘】的层。语义不变，
+   只压墙钟不省 CPU。注意 compose 已被屏障锁步，重叠空间要先测。
+C  只验结构与标识、不重新解码像素。代价最低但【减弱了判据】，属产品决策，
+   须用户裁定，本专项不自行决定。
+```
+
+**A 的收益取决于这 43.4 s 是 I/O 界限还是 CPU 界限，尚未测量。**
+现有旁证倾向 CPU：同一份数据 `tiffWriteMs` 只用 3,781 ms 写完
+（约 1,560 MB/s，走系统写缓存），读回却是 43.4 s（约 137 MB/s，慢 11 倍）；
+而每层要解码 1418×5197×6 ≈ 44 MB 并逐字节累计统计与校验和，
+143 层合计约 6.3 GB 的字节级运算，`rowsPerStrip=64` 又意味着每层约 82 个小条带。
+**但这仍是推断，不是实测。** 动手前必须先量出 A 的上限：
+
+```text
+前置测量  在 read_rgbwsv_tiff 内部把「解码」与「统计/校验和」分开计时，
+          再看多线程校验的实际吞吐曲线（本机 18 线程）
+```
+
+**未测之前不动手** —— 本专项已四次因为「先量后改」推翻自己的排序，
+而本节的 A 方向本身就是在查清校验内容后**推翻了自己十分钟前写下的 A**。
+
+**验收口径：** 生产口径（`stage16c06_scene_memory_bench`）的 `packagePublishMs`
+与 `totalMs`，min-of-3 交错 A/B；零漂移仍按四判据 + 用户指定资产逐字节。
+
+#### 14.5.1 MF-13a：去掉每层被读两次（已改，收益低于噪声）
+
+查 `read_rgbwsv_tiff`（`tiff_io.cpp:443`）时发现一处纯浪费：
+
+```cpp
+read_rgbwsv_tiff(path)
+    ReadFile(path);              // 整个文件（本场景每层约 44 MB）
+    ParseIfdEntries(data, path);  // 只为判断条带还是瓦片
+    -> read_rgbwsv_stripped_tiff(path)
+           ReadFile(path);            // 【又读一遍同一个文件】
+           ParseIfdEntries(data, ...); // 【又解析一遍同一个 IFD】
+```
+
+即每个被校验的层都被读两次、IFD 解析两次。已改为把已读缓冲与已解析 IFD 传下去
+（新增 `ReadTiledFromBuffer` / `ReadStrippedFromBuffer`，公开的单参版本降为薄封装
+以免影响其他调用方）。**语义完全不变：同一批字节、同一套判据。**
+
+**实测：收益低于噪声。** 为排除整作业口径的写盘/删盘干扰，改用
+`rip_reader_test --package` 对**同一个已写好的包**（5.9 GB / 143 层）反复跑，
+只跑校验本身、不写不删，四对交错：
+
+```text
+base   40,035 / 88,439 / 227,072 / 75,322  -> min 40,035 ms
+mf13a  39,542 / 84,148 /  52,048 / 45,419  -> min 39,542 ms   -1.2%
+```
+
+**−1.2% 落在噪声里，不能算收益。** 量级上本来也只该有 3% 左右 ——
+第二次 `ReadFile` 由系统文件缓存供给，代价是 44 MB 的分配与拷贝
+（143 层合计约 6.3 GB），不是真正的磁盘 I/O。
+
+**按本专项既定做法处理：效果低于噪声时，按算法依据取舍。** 它是**严格更少的
+工作量**（少一次整文件读、少一次 IFD 解析），且没有引入新的复杂度或新判据，
+故**保留**，但**不得对外宣称收益数字**。
+
+⚠ **同时要记下这批测量的污染源：** 跑上表时机器上有 **18 个 MSBuild 进程**
+（另一个会话在同一工作树里构建）。这解释了同一份二进制、同一份输入为何在
+40,035 ~ 227,072 ms 之间跳（5.7 倍）。**整作业口径那一轮先测出的
+「publish −42%」就是这个污染的产物，不成立** —— 该轮 base 的 publish 在
+54,090 ~ 117,497 ms 间跳，而隔离测量证明真实差异只有 1.2%。
+
+**故 §14.5 的前置问题（那 43.4 s 是 I/O 界限还是 CPU 界限）此刻测不了。**
+现有数据只能说：单线程校验吞吐约 148 MB/s，且**看不到缓存预热效应**
+（base#1 40,035 之后紧接的 mf13a#1 是 39,542，几乎相同），
+倾向 CPU 界限但**不足以下结论**。**待机器空闲后重测，再决定 A（并行化）
+是否值得做。**
+
+**功能证据（非性能）：** 上表 8 次校验（其中 4 次走新代码）全部 EXIT=0，
+在真实 143 层包上通过；`ctest -R "tiff|rip"` 16/16 通过。
+
+#### 14.5.2 【更正 14.5.1】MF-13a 的「收益低于噪声」是错的：实为 −34.5%
+
+§14.5.1 判定 MF-13a「−1.2%，低于噪声」，并据此写下「按算法依据保留、不宣称收益」。
+**那个结论是污染的产物，现予更正。**
+
+当时机器上有 18 个 MSBuild（另一会话在同一工作树构建）。等它跑完后，用同一套
+隔离口径（`rip_reader_test --package` 对同一个已写好的包只跑校验、不写不删）
+重测，并**同时记录 CPU 时间**（CPU 时间基本免疫争用）：
+
+```text
+                        wall(min of 3)     cpu(min of 3)
+MF-13a 之前（704c161）      11,713 ms         11,562 ms
+MF-13a 之后（0c270e9）       7,675 ms          7,609 ms     -34.5% / -34.2%
+两组区间完全不重叠，且各自波动 < 1%（11,713~11,774 / 7,675~8,480）
+```
+
+**即那次「每层被读两次」的修复真实收益是 −34.5%，不是 −1.2%。**
+量级上我原先估「约 3%」也错了 —— 第二次 `ReadFile` 虽由文件缓存供给，但它要
+**新分配 44 MB 并拷贝**（新页还要被内核清零），再加一次完整 IFD 解析；
+这笔内存流量与统计主循环是同一量级。
+
+**提交 `0c270e9` 的说明里写的「收益低于噪声」应以本节为准。**
+教训已并入记忆：并行会话的构建会把同一份二进制、同一份输入的耗时拉出 5.7 倍差，
+交错 A/B 抵消不了这种量级的争用；**基准前后都要查 `tasklist`，并优先看 CPU 时间**。
+
+#### 14.5.3 MF-13b：逐字节七件事改为直方图（COMPLETE，−31.7%）
+
+§14.5 的前置问题「43.4 s 是 I/O 界限还是 CPU 界限」**已由代码判定并被实测确认**：
+
+```cpp
+// tiff_io.cpp  AccumulateContiguousChannelStats（改前）
+for (每个像素) for (6 个通道) {
+    result.channel_checksums[channel] += value;        // 1
+    TiffChannelStats& stats = result.channel_stats[channel];
+    stats.min_value = std::min(...);                   // 2
+    stats.max_value = std::max(...);                   // 3
+    stats.empty_pixels        += value == 255U;        // 4
+    stats.print_pixels        += value != 255U;        // 5
+    stats.full_print_pixels   += value == 0U;          // 6
+    stats.partial_print_pixels += value != 0U && value != 255U;  // 7
+}
+```
+
+**每个字节约七件事**，且内层按 `channel` 变址、无法向量化。整包每个字节都要走
+一遍：5.9 GB 的包合计约 44 GB 标量运算。**实测 CPU 时间约等于墙钟
+（5,141 / 5,272 ms），确认是 CPU 界限，单线程。**
+
+**改法：逐通道 256 桶直方图。** 每字节只做一次 `++histogram[channel][value]`，
+收尾时从 6×256 个计数导出全部统计。判据逐项等价：
+
+```text
+校验和    原为逐次 += value，等于 sum(value * count)
+min/max   按值升序遍历非空桶取 min/max，与逐字节取 min/max 同值
+四个计数  分别是 count(255)、count(!=255)、count(0)、count(0<v<255)
+跨条带    直方图是本次调用的局部量，导出时仍按原样合并进 result
+```
+
+**实测（隔离口径，安静机器，交错三对）：**
+
+```text
+                    wall(min)    cpu(min)
+MF-13a（改前）       7,744 ms     7,594 ms
+MF-13b（改后）       5,290 ms     5,188 ms     -31.7% / -31.7%
+区间完全不重叠，各自波动 < 4%
+```
+
+**a + b 合计：`11,482 -> 5,272 ms`（−54.1%），CPU `11,234 -> 5,141`（−54.2%）。**
+两条独立测量相乘（0.655 × 0.683 = 0.447）与合并实测（0.459）互相印证。
+
+**等价性网（这条是本卡的关键，因为既有对拍验不出统计的错）：**
+
+⚠ `tiff_writer_equivalence_unit_tests` 里原有的 `ResultsAreEquivalent`
+**验不出统计算错** —— 它两侧都调 `read_rgbwsv_tiff`，共用同一份统计实现，
+统计一旦错会在两侧同时错、比较照样相等；而且整条用例在 LibTIFF 不可用时被跳过。
+这正是 `oracle-tests-can-be-entirely-vacuous` 那类坑。
+
+故新增一条**独立参照**的对拍 `channel_stats_match_independent_reference`：
+就地用改前的逐字节写法算出参照值，与读取器输出**逐字段**比对
+（六个统计字段 + 六个通道校验和 × 六种像素模式），且**放在 LibTIFF 早退之前**
+以保证永不被跳过。
+
+**并已验证它非空转：** 把直方图导出里的 `value * count` 故意改回 `value`，
+测试当场红（`FAIL stats oracle: checksum mismatch case 0`），改回后复绿。
+
+**其他证据：** `rip_reader_test` 在真实 48 层包上 PASS，`--summary` 输出与改前
+逐字节相同；逐层校验本身会比对 `printPixels`/`emptyPixels`（48 层 × 6 通道）。
+
+**回归：** 11 失败 / 230，落在本工作树既有的 10~11 区间内。比上一轮多的那一条
+`slicer_stage14e04b_capability_coverage_test` 已读输出定责为 **MAX_PATH 抖动**：
+`failed to write report: ...package.staging.job-slice-<pid>-<ts>.attempt-<32hex>/reports/...`
+约 290 字符，而 job/attempt id 每次都变，故路径长度在阈值上下浮动
+（`hostflow_ha03_qt_end_to_end` 同因）。与本卡无关。TIFF/统计相关的六条
+（`tiff_writer_equivalence` / `tiff_writer_contract` / `rip_reader_resolution` /
+`multi_model_package_writer` / `rgbwsv_production_package_writer` /
+`material_closure_semantic_detector`）全部通过。
+
+#### 14.5.4 端到端验收（生产口径，MF-13a + MF-13b 合计）
+
+按 §14.5 定的验收口径跑（`stage16c06_scene_memory_bench`，
+a-2/0.2.obj @0.1mm、143 层、单实例，old/new 交错三对）：
+
+```text
+                packagePublishMs                    totalMs
+old   62,735 / 54,921 / 46,806 -> min 46,806   124,910 / 108,642 / 96,754 -> min 96,754
+new   23,328 / 22,042 / 24,404 -> min 22,042    77,127 /  67,896 / 76,425 -> min 67,896
+                        -52.9%                             -29.8%
+两项的区间都完全不重叠（new 最差 24,404 远低于 old 最好 46,806）
+```
+
+**publish 的 −52.9% 与隔离口径的 −54.1% 相符**，互为印证。
+`old` 一侧波动较大（46.8~62.7 s）—— 这一轮末尾机器上还有 1 个 MSBuild，
+且 bench 每次要写再删 5.9 GB；`new` 一侧则很稳（22.0~24.4 s）。
+
+**改写后的生产口径耗时账（a-2/0.2.obj @0.1mm）：**
+
+| 段 | 改前 | 改后 |
+|---|---|---|
+| 包发布（读回全量校验） | 46,806 ms（48%） | **22,042 ms** |
+| compose 窗口 | 约 46,400 ms（其中生产者实算仅约 13,100） | 未动 |
+| TIFF 写盘 | 约 3,800 ms | 未动 |
+| **总计** | **96,754 ms** | **67,896 ms** |
+
+**下一个大头已经清楚：compose 窗口那约 46 s 里，生产者真正的逐层计算只有约
+13 s，其余约 33 s 是屏障等待与消费侧 compose。** 它现在是最大的单项
+（约占改后总时长的一半），且与 MF-11（层循环并行化）判为 DEFERRED 的依据同源
+（`SceneLayerBarrier` 锁步），**故下一步是先量清那 33 s 的构成**，
+而不是直接去做 §14.5 的候选 A（并行化逐层校验）。
+
+候选 A 仍然可做、依据也更强了（已确认 CPU 界限、单线程），但它现在只针对
+剩下的 22 s，收益上限低于那 33 s。**排序按实测，不按先想到哪个。**
+
+### 14.6 MF-14：流式单实例合成被排除在快路径之外（NEW，现最大单项）
+
+#### 14.6.1 实测：compose 窗口的 62% 是合成本身
+
+在消费侧插临时探针把 compose 窗口拆三段（a-2/0.2.obj @0.1mm、143 层、单实例）：
+
+```text
+[CMP] composeTotalMs=58,343  awaitMs=14,852  appendMs=7,053
+                             (25.5%)         (12.1%)
+其余 = 36,438 ms（62.4%）= 场景合成本身
+同一次的 coreSliceMs=14,484 —— 与 awaitMs 14,852 几乎相等，
+即消费者等待的时间就是生产者算一层的时间（屏障锁步的直接体现）
+```
+
+**合成本身 36,438 ms / 143 层 = 255 ms/层**，而一层是 1418×5197×6 ≈ 44 MB，
+折合 **173 MB/s** —— 与 MF-13 之前那个逐字节统计循环（148 MB/s）几乎同一量级，
+是同一种气味：**每字节/每像素的标量循环**。
+
+> 说明：那一轮里另外两次跑总时长到 223 s / 248 s（机器上有 MSBuild），
+> 上表取的是三次里最干净的一次（总 87,858 ms，与无争用区间相符）。
+> 三次的**比例**基本一致，故结构性结论可用，绝对值待安静机器复测。
+
+#### 14.6.2 根因：流式模式【故意】绕开了单实例快路径
+
+`ComposeSingleInstanceConsuming`（`SceneLayerComposer.cpp:1394`）本来就是为
+单实例准备的快路径 —— 它逐层只做一次 `std::move(sourceLayer.output)`，
+**零逐像素工作**。但它在流式下不会被选中，且这是**明写在代码里的取舍**：
+
+```cpp
+// MultiModelSliceOrchestrator.cpp:398
+// MF-05：ComposeSceneLayersConsuming 实为单实例快路径的转发，
+// 它直接 move 每层的 output、不经 layerprovider。流式下 instances 的
+// layers 为空，走快路径必然报「层数不齐」，故此时统一走 Borrowed 主路径。
+if constexpr (Consume) {
+    if (!compose.layerprovider) { return internal::ComposeSceneLayersConsuming(...); }
+    return internal::ComposeSceneLayersBorrowed(compose, request.instances);
+}
+```
+
+于是**生产路径（恒为流式）即便只有一个实例，也要走通用跨实例合成**
+（`SceneLayerComposer.cpp:1183` 起）：
+
+```cpp
+for (int y{0}; y < localHeight; ++y) for (int x{0}; x < localWidth; ++x) {
+    if ((sourcePixel % kCancellationCheckStride) == 0U && StopIfCancellationRequested(...))
+    sourceOwnership = ResolveOwnership(sourceLayer, sourcePixel);
+    if (sourceOwnership == Empty) continue;
+    destinationPixel = (y + offsety) * globalWidth + (x + offsetx);
+    ResolveCrossInstancePixel(request, result, placement, sourceLayer,
+        sourcePixel, destinationPixel, sourceOwnership, ownership,
+        ownerindices, output.channels, placements, globalLayerIndex);   // 12 参
+}
+```
+
+**143 层 × 737 万像素 ≈ 10.5 亿次迭代**，每次一个取模的取消检查、一次
+`ResolveOwnership`，非空像素还要一次 12 参的跨实例冲突解析 ——
+**而单实例根本不可能发生跨实例冲突**，且 `IsExactSingleInstanceGrid` 成立时
+`destinationPixel == sourcePixel`，那层字节本来就已经在正确位置上。
+
+**这是本专项第四次遇到同一个形状的问题**：一条为「一般情形」写的整幅面循环，
+在「实际跑的那个情形」下做的全是无用功（前三次：MF-03X2b 的列剪枝、
+MF-09 的 owning 便利接口、MF-13b 的逐字节统计）。
+
+#### 14.6.3 方案（未实施）
+
+**流式单实例快路径**：当只有一个可见实例且 `IsExactSingleInstanceGrid` 成立时，
+provider 交回的那一层直接送 sink，跳过逐像素循环。
+
+**必须保住的四件事（实施前逐条落地，不得默认）：**
+
+```text
+1. ValidateLayer 仍要逐层跑 —— 现有注释明确要求「校验强度不降级」，
+   快路径不能顺手把它跳过
+2. RgbwsvProductionLayerStatistics 必须逐层产出且与通用路径【逐字段相同】，
+   manifest 与逐层校验都依赖它（MF-13 已经证明：逐层统计是写进 manifest、
+   又在读回校验时被逐项比对的）
+3. ownership / ownerindices 两个数组只服务跨实例冲突判定。单实例下无冲突，
+   但要先查清下游是否有别的读者，不能假设
+4. 取消检查现在是每 kCancellationCheckStride 个像素一次；快路径至少要保住
+   逐层一次，否则取消响应会退化
+```
+
+**验收：** 生产口径 `stage16c06_scene_memory_bench` 的 `sliceProcessingMs` 与
+`totalMs`，old/new 交错 min-of-3（**且基准前后查 `tasklist` 确认无 MSBuild**）；
+零漂移按四判据 + 用户指定资产逐字节；并要有一条**独立参照**的对拍证明
+快路径与通用路径的逐层统计逐字段相同（MF-13b 已有前例：既有对拍两侧共用同一
+实现时是验不出错的）。
+
+#### 14.6.4 【更正 14.6.3】那 36 s 的构成实测出来了，我的方案排错了序
+
+§14.6.3 写的「那 36 s 里绝大部分应可消掉」**是错的**。把 36 s 再拆一层实测
+（两次跑高度一致，尽管机器上有 3~4 个 MSBuild）：
+
+| 段 | 耗时 | 能不能省 |
+|---|---|---|
+| `ValidateLayer`（逐层） | **约 18,300 ms** | **不能** —— 校验强度不得降级 |
+| `for(y)for(x)` 逐像素拷贝循环 | 约 4,100 ms | 单实例下可整段跳过 |
+| 其余（逐层缓冲的分配与填充） | 约 14,000 ms | 大部分可省 |
+
+```text
+[VAL] validateLayerMs=18,277.8  pixelCopyMs=4,086.7     (run1)
+[VAL] validateLayerMs=18,754.5  pixelCopyMs=4,105.0     (run2)
+```
+
+**我原本要动的那条逐像素循环只值 4.1 s，不是 36 s。** 这是本卡第五次靠实测
+推翻自己的排序。
+
+**「其余约 14 s」已定位**（`SceneLayerComposer.cpp:1133` 起，全都在层循环【内】）：
+
+```cpp
+std::fill(ownership.begin(), ownership.end(), SceneRasterOwnership::Empty);
+std::fill(ownerindices.begin(), ownerindices.end(), -1);   // 737 万 x 4 B = 29.5 MB
+RgbwsvProductionLayer output;                              // 层内声明 -> 每层新建
+output.channels.assign(globalByteCount, request.protocol.empty_value);
+                                                           // 每层新分配并填充 44 MB
+```
+
+即每层约 80~100 MB 的纯内存写，143 层合计约 12~14 GB —— 与实测的约 14 s 相符。
+注意 `output` 声明在层循环内且其缓冲会被 `std::move` 交给 sink，
+**所以单靠「提到循环外复用」拿不到收益**（§14.1.2 的教训：`assign` 的字节
+无论复不复用都要写；这里更是每层都把缓冲交出去了）。
+
+#### 14.6.5 重排后的方案（按实测收益排序）
+
+```text
+a  ValidateLayer 的五趟合成一趟（约 18.3 s，最大一块）
+   现在是 4 次 IsBinaryMask 各一趟全幅面 + 1 趟带 ResolveOwnership 的闭合检查
+   = 5 趟。四个掩码的二值性可以在闭合检查那一趟里就地判定，判据完全不变，
+   且 ResolveOwnership 每像素 4 次 .at() 可在一次尺寸检查后改 []。
+   **严格更少的工作量、判据一字不改** —— 与 MF-13b 同型。
+b  流式单实例直接移交源层通道（约 4.1 s + 那 44 MB assign 的大部分）
+   exact grid + 单实例下 dst==src 且不可能有跨实例冲突，那层字节已在正确位置，
+   故可省掉「新分配 44 MB + 填 empty_value + 逐像素搬回来」这一整套。
+c  ownership / ownerindices 的两趟 fill（约 29.5 MB/层）
+   单实例下无冲突可判，但**必须先查清下游是否另有读者**，不能假设。
+```
+
+**收益上限（先界定，避免再夸大）：** a+b+c 合计最多消掉约 22 s
+（36 s 中扣掉必须保留的 ValidateLayer 判据本身所需的一趟）。而 `awaitMs` 那
+14.9 s 是屏障锁步下生产者的算力，**不会**因此消失 —— 合成变快只会让消费者
+更早开始等。故 compose 窗口的现实预期是 **约 58 s → 约 30~36 s**，
+总时长约 68 s → 约 45~50 s。**不是降到零，也不是「绝大部分」。**
+
+**§14.6.3 里那四条「必须保住的事」仍然全部有效**，且 a 档使第 1 条更重要 ——
+动的正是 `ValidateLayer` 本身，判据一字不能改，必须有独立参照的对拍。
+
+#### 14.6.6 MF-14a：热路径去掉约 210 亿次边界检查（已改）
+
+§14.6.5 把「`ValidateLayer` 五趟合成一趟」列为 a 档。**动手前先算了一下，
+发现那个方案的靶子选错了**：四条 `IsBinaryMask` 合计每层只读 29.5 MB，
+143 层约 4.2 GB，即便按 10 GB/s 也只有 0.4 s —— **不可能是那 18.3 s**。
+
+真正的开销在**逐像素循环自身的边界检查**。该循环每个像素要走：
+
+```text
+ResolveOwnership          3 次 .at()（modelownership / outerVarnish / support）
+SourcePixelHasClosure     6 次 .at()（六个通道字节）+ 1~2 次掩码 .at()
+IsEmptySourcePixel        最多 6 次 .at()（Empty 归属时）
+统计与包围盒               已用 []
+```
+
+**约 20 次 `.at()` / 像素 × 737 万像素 × 143 层 ≈ 210 亿次边界检查。**
+
+**改法：热路径改用 `[]`。** 这不是「去掉检查不管安全」—— 调用方在进入循环
+之前已经把全部尺寸校验过了：
+
+```cpp
+layer.output.channels.size() != byteCount            -> Block
+IsBinaryMask(layer.modelownership,        pixelCount) -> 含 size 判定
+IsBinaryMask(layer.modelvarnishownership, pixelCount)
+IsBinaryMask(layer.outervarnishownership, pixelCount)
+IsBinaryMask(layer.supportownership,      pixelCount)
+```
+
+故 `pixelIndex < pixelCount` 时全部下标必然在界内。**那几条尺寸校验由此成为
+本改动的前提**，已在两处互相加注（谓词处说明前提是什么、`IsBinaryMask` 处
+说明删改前先看谓词），避免以后有人顺手删掉。
+
+**同步下沉（G2）：** 第一版只在原文件里加注释就让
+`SceneLayerComposer.cpp` 从 1592 涨到 1602 行，**G2 当场 FAIL**。
+未申请豁免，改为把三个谓词下沉到新文件
+`pipeline/SceneSourcePixelClosure.{h,cpp}`：
+`SceneLayerComposer.cpp` **1592 → 1467 行（净减 125）**，门禁 PASS。
+常量也不再两处各有一份（composer 里的 `kChannelCount` 等改为指向下沉后的定义）。
+
+#### 14.6.7 本专项第一次拿到【场景口径】的零漂移判据
+
+**这是本卡的一个副产物，但价值不低于 a 档本身。**
+
+此前本专项所有逐字节对比都是 CLI 口径 —— 而 CLI **根本不走 `SceneLayerComposer`**
+（§14.1.9）。也就是说「改了场景合成器之后输出是否逐字节不变」一直无从检验：
+bench 的产物写完即删，没有任何钩子。
+
+故给 `stage16c06_scene_memory_bench` 加了一行：清理之前把全部层 TIFF 按文件名
+排序拼接取一次 sha256，打印 `BENCH_LAYERS digest=<层数>:<sha256>`。
+代价是一次顺序读，换来一条真正的场景口径判据。
+
+**MF-14a 的验收结果（a-2/0.2.obj @0.1mm、143 层、单实例，交错三对）：**
+
+```text
+零漂移   六次跑（pre14a x3 / 14a x3）digest 全部为 143:579bf5b2db951cde
+         -> 场景路径层字节【逐字节一致】
+
+耗时     sliceProcessingMs（即 compose 窗口）
+  pre14a  66,283 / 61,341 / 60,107 -> min 60,107
+  14a     58,028 / 56,940 / 48,664 -> min 48,664      -19.0%
+  totalMs
+  pre14a  96,021 / 89,996 / 88,374 -> min 88,374
+  14a     86,766 / 84,711 / 80,684 -> min 80,684      -8.7%
+```
+
+⚠ **耗时数字标记为待复测。** 全程机器上有 4~5 个 MSBuild（另一会话在同一
+工作树构建）。三次里 `14a` 都低于同轮 `pre14a`，且两组 `sliceProcessingMs`
+区间勉强不重叠（14a 最差 58,028 < pre14a 最好 60,107，只差 2,079 ms）——
+方向可信，**幅度不可引用**。§14.5.2 已经吃过一次这个亏（那次污染把 −34.5%
+测成 −1.2%），故此处只记方向、等空窗按 CPU 时间口径复测。
+
+**与预估对照：** a 档针对的是 §14.6.4 实测的 18.3 s，−19% 的 compose 窗口
+约合省 11.4 s，即那 18.3 s 的六成左右 —— 与「去掉 20 次/像素的边界检查」
+这个量级相符，没有超出该档能解释的范围。
+
+**b / c 档仍未做**（流式单实例直接移交源层通道、ownership 两趟 fill），
+收益上限仍按 §14.6.5 界定的口径：compose 窗口约 58 s → 约 30~36 s。
+
+#### 14.6.8 【撤回 b 档】直接移交源层通道**不等价**，且 c 档余量只有 1~2 s
+
+§14.6.5 的 b 档写的是「流式单实例直接移交源层通道 —— exact grid + 单实例下
+`dst == src` 且不可能有跨实例冲突，那层字节已在正确位置」。
+**实现前读了 `WriteOwnedPixel`，发现这个前提是错的。**
+
+合成**不是**把源像素逐字节搬过去，而是**按归属重新推导每个像素**：
+
+```cpp
+// WriteOwnedPixel：先把六个通道全填 empty_value，再按归属只写回该归属有权的通道
+std::fill_n(destination.begin() + destinationBase, kChannelCount, protocol.empty_value);
+if (ownership == Model) {
+    for (channel : 0..5) if (channel != kSupportChannel) {        // <- 支撑通道被丢掉
+        if (channel == kVarnishChannel
+            && source.modelvarnishownership.at(sourcePixel) == 0U) continue;  // <- 光油也可能被丢
+        destination.at(destinationBase + channel) = source.output.channels.at(sourceBase + channel);
+    }
+} else if (ownership == OuterVarnish) { 只写 V }
+  else if (ownership == Support)      { 只写 S }
+```
+
+**反例是现成的：** 一个 `modelownership == 1` 且 `supportownership == 1` 的像素 ——
+闭合判据要求它在**源层**里 `S == print_value`
+（`SourcePixelHasClosure` 的 model 分支：`expected = supportownership != 0 ?
+print_value : empty_value`），而 `WriteOwnedPixel` 走 Model 分支时**跳过支撑通道**，
+composed 输出里该像素的 `S` 是 `empty_value`。
+
+**即直接拷贝源通道会让模型像素底下多打一层支撑 —— 真实的输出改变，不是等价优化。**
+b 档就此**撤回**，不实施。
+
+**顺带修正 b 档的收益估算：** 即便改成「按归属重新推导但跳过跨实例簿记」，
+`output.channels.assign(globalByteCount, empty_value)` 那一趟**也省不掉** ——
+`WriteOwnedPixel` 只管它写到的像素，Empty 归属的像素（本场景占绝大多数）
+正是靠这一趟前置填充才拿到 `empty_value`；而那块缓冲每层都被 `std::move`
+交给 sink，故也无法跨层复用。
+
+**c 档（ownership / ownerindices 的两趟 fill）余量重新界定：**
+两个数组合计每层约 37 MB（`ownerindices` 是 737 万 × 4 B = 29.5 MB，
+`ownership` 737 万 × 1 B），143 层约 5.3 GB 的写。按本机实测的内存写入吞吐
+折算**约 1~2 s**，占改后总时长的 2% 上下。**收益小且需先查清下游读者，
+故降级为「有空再做」，不作为下一步。**
+
+#### 14.6.9 MF-14 收口：compose 窗口剩下的都是不易再压的
+
+a 档之后，compose 窗口的构成（按 §14.6.1 的口径推算）：
+
+| 段 | 量级 | 还能不能压 |
+|---|---|---|
+| `awaitMs`（等生产者算完本层） | 约 15 s | **不能** —— 这是生产者的真实算力，屏障锁步下只能靠 MF-11 并行化，而那条已判 DEFERRED（可并行部分仅占 14.5%） |
+| `appendMs`（逐层 TIFF 写盘） | 约 7 s | 受盘速界限 |
+| `ValidateLayer` 残余 | 约 7 s | 判据本身要求的一趟逐像素闭合检查 |
+| 逐像素拷贝循环 | 约 4 s | 按归属重新推导，见 §14.6.8，不可绕过 |
+| 逐层缓冲填充 | 约 1~2 s（c 档） | 小 |
+
+**故 MF-14 到 a 档为止收口。** 要再往下压 compose 窗口，需要的不是又一处
+整幅面剪枝，而是**改协议**：让 sink 把用完的层缓冲还回来（省掉每层 44 MB 的
+分配与填充），或重启 MF-11 把生产者并行化（那 15 s 的 `awaitMs`）。
+两者都是接口/架构层面的改动，**不属于本专项「有界流式内存根治」的范围**，
+应另立专项并由用户裁定。
+
+#### 14.6.10 端到端零漂移（跨 MF-13a + MF-13b + MF-14a）与【唯一待办】
+
+把 §14.5/§14.6 的全部改动一起对拍：基线取 `704c161`（MF-13a 之前），
+现状取 HEAD，交错三对，同时记 CPU 时间与场景层哈希。
+
+```text
+digest   六次跑【唯一一个值】
+         143:579bf5b2db951cde30bcb28ed0abd089016db4c4b8b9da02bf23cf3fc3ea282a
+         -> 跨 MF-13a / MF-13b / MF-14a 全部改动，场景路径层字节【逐字节不变】
+
+cpu      allbase 221,719 / 183,688 / 186,672 -> min 183,688
+         now     177,594 / 157,531 / 131,547 -> min 131,547     -28.4%
+wall     allbase 224,806 / 186,705 / 188,651 -> min 186,705
+         now     179,120 / 158,834 / 132,019 -> min 132,019     -29.3%
+```
+
+⚠ **耗时仍不可引用。** 全程 7~10 个 MSBuild，两侧的绝对值都被抬到干净基线的
+约两倍（干净时该作业约 90 s，这里 132~225 s）。**两组区间勉强不重叠**
+（now 最差 177,594 < allbase 最好 183,688，只差 6 s），故只能说方向可信。
+`allbase` 自身在 183.7~224.8 s 之间抖动了 22% —— 与要测的差值同量级。
+
+**顺带一条结构性观察：`cpu ≈ wall`（131.5 vs 132.0、183.7 vs 186.7）。**
+说明屏障锁步下生产者与消费者是**交替**而非重叠执行 —— 这与 §14.6.1 实测的
+`awaitMs ≈ coreSliceMs` 互相印证，也再次说明 MF-11 判 DEFERRED 的依据是对的
+（真要并行，得先改屏障协议）。
+
+**本专项耗时线的唯一待办：** 机器空闲时（`tasklist` 里 MSBuild 为 0）
+把下面两项按 CPU 时间口径复测一次，替换掉标注为「待复测」的幅度：
+
+```text
+1. MF-14a 单独：compose 窗口（sliceProcessingMs），基线 6102742^ vs 6102742
+2. MF-13 + MF-14a 合计：基线 704c161 vs HEAD，取 totalMs 与 cpu
+```
+
+可引用的干净数字目前只有一个：**MF-13 单独的生产口径端到端
+`totalMs 96,754 -> 67,896`（−29.8%）、`packagePublishMs 46,806 -> 22,042`
+（−52.9%），区间不重叠**（§14.5.4，测于机器较空时）。
+
+#### 14.6.11 【空窗复测·权威值】MF-14a 实为约 −3%，而不是 −19%
+
+§14.6.7 与 §14.6.10 把 MF-14a 的幅度标为「待复测」。机器空下来后
+（`tasklist` 里 MSBuild 为 0~1）按同一口径重测两轮，**结论要改**。
+
+**Round A：`704c161` vs HEAD（MF-13a + MF-13b + MF-14a 合计），交错三对**
+
+```text
+              publish(min)        slice(min)      进程墙钟(min)
+allbase        36,262 ms          34,910 ms        153,155 ms
+now            16,919 ms          33,545 ms        132,725 ms
+                -53.3%             -3.9%            省 20,430 ms
+```
+
+**Round B：MF-14a 单独（基线 `6102742^`），交错三对，全程 MSBuild = 0**
+
+```text
+              slice(min)     publish(min)
+pre14a         34,679 ms      16,868 ms
+now            33,742 ms      16,951 ms
+                -2.7%          无差异（正确：MF-14a 不碰 publish）
+```
+
+**绝对值（同一空窗，取 bench 内部 `totalMs`）：**
+
+| 生产口径 | allbase | now | |
+|---|---|---|---|
+| **totalMs** | **71,937 ms** | **51,665 ms** | **−28.2%** |
+| packagePublishMs | 36,536 | 16,851 | −53.9% |
+| sliceProcessingMs | 35,169 | 34,579 | −1.7% |
+| tiffWriteMs | 3,293 | 3,791 | 盘速抖动 |
+
+**三条独立算法互相印证：** 内部总时长差 20,272 ms ≈ 进程墙钟差 20,430 ms
+≈ 分项之和 20,708 ms。
+
+**要改的两处结论：**
+
+1. **MF-14a 实为约 −1.7%~−3.9%（约 1 s），不是 −19.0%。**
+   两轮的区间虽仍不重叠，但只差 274~512 ms —— **已在本 bench 的可靠下限附近**，
+   故正确表述是「约 −3%，量级约 1 s」，不应给三位有效数字。
+   §14.6.7 记的 −19.0% 是 4~5 个 MSBuild 下的产物，作废。
+2. **§14.5.4 那次「机器较空」的测量其实也不够空**：它的 allbase `totalMs`
+   是 96,754 ms，而今天真正空窗下只有 71,937 ms。故 **MF-13 单独的 −29.8%
+   也不应再作为权威值**；权威值改为本节这组（合计 −28.2%，其中 publish −53.9%
+   贡献几乎全部）。
+
+**publish 那一笔是唯一扛住了全部复测的：** 三轮独立测量分别得
+−52.9% / −53.3% / −53.9%，高度一致。**MF-13a + MF-13b 是本轮真正的收益来源；
+MF-14a 的量级只有它的二十分之一。**
+
+**顺带修掉一个我自己引入的副作用：** §14.6.7 加的层哈希默认每次都算，
+它要顺序读完整包（5.9 GB），把进程墙钟抬高约 40 s —— 这也正是本节 Round A 里
+「进程墙钟 153 s 而内部 totalMs 只有 72 s」的原因。已改为 opt-in：
+需要零漂移判定时置 `SLICESOFT_BENCH_DIGEST=1`。
+
+**零漂移：** 本节两轮共 12 次跑 + 绝对值 2 次跑，digest **全部**为
+`143:579bf5b2db951cde30bcb...`，与污染那轮的结果一致。
+
+#### 14.5.5 MF-13c / MF-13d：不物化像素 + 并行化（COMPLETE）
+
+§14.5 的候选 A 是「并行化逐层校验」。**实施时先插了一步 c 档，因为它同时省
+时间和内存**，而本专项的主指标是内存 —— 先做 c 再做 d，并发才付得起。
+
+**MF-13c：校验根本不需要解码后的像素。** 查证 `ValidateSlicePackageImpl` 只用
+`spec` / `channel_stats` / `channel_checksums`，**从不读 `pixels`**；而物化一层是
+`width × height × 6` 字节（本场景 44 MB/层、整包约 6.3 GB 的分配与拷贝）。
+新增 `read_rgbwsv_tiff_stats`：跳过物化，统计仍由同一个
+`AccumulateContiguousChannelStats` 从条带载荷直接累计。
+
+```text
+越界判据从 result.pixels.size() 改为解析出的整幅面字节数 —— 与物化时逐字一致，
+否则畸形 TIFF 会不再被拒。这一处是 c 档唯一改动了形式的判据，已单独钉住。
+tiled 路径不做此优化（其解码与统计逐字节交织），生产包一律 stripped，行为不变。
+```
+
+**MF-13d：并行化，并发上限刻意设为 4 而非 18。** 每个线程读一层时持有一份整
+文件缓冲（44 MB）。c 档之后单线程驻留从约 88 MB 降到约 44 MB，故 4 线程约
+176 MB；取满 18 线程会是约 800 MB，**与本专项把生产峰值压到 1 GB 量级的目标
+相抵**，因此不取。
+
+**判定顺序一字未改**（这是 d 档唯一的风险面），做法是三段式：
+
+```text
+1. 预扫：只取候选路径，不做任何判定（连 path 缺失都不在这里报）
+2. 并行：只读、只记结果或异常，从不抛
+3. 顺扫：完全照原顺序做全部判定，用第 2 段的结果替代原地读盘
+```
+
+结果确定性也成立：`merge_channel_stats` 全是 min/max/求和，
+`layer_checksums` 末尾按 index 排序，**与线程数无关**。
+代价是失败包会多读几层（结果丢弃），只多花 I/O、不改结论。
+
+#### 14.5.6 验收
+
+**隔离口径**（`rip_reader_test --package`，同一 143 层 / 5.9 GB 包，交错三次，
+运行中采样峰值工作集）：
+
+| | wall(min) | cpu(min) | 峰值 |
+|---|---|---|---|
+| c/d 之前 | 16,999 ms | 16,781 ms | 91 MB |
+| +MF-13c | 14,912 ms | 14,656 ms | **49 MB（−46%）** |
+| +MF-13d | **4,602 ms** | 17,641 ms | 176 MB |
+
+合计 **16,999 → 4,602 ms（−72.9%，3.7×）**。4 线程拿到 3.24×，
+即 **81% 并行效率**。CPU 时间升 20%（并行开销与缓存争用），墙钟才是目标。
+
+**生产口径**（`stage16c06_scene_memory_bench`，交错三对）：
+
+```text
+                total        publish       slice      峰值
+改前         55,346 ms     17,732 ms    36,595 ms    971 MB
+现在         41,614 ms      5,071 ms    35,974 ms    971 MB
+              -24.8%        -71.4%       持平        【不变】
+```
+
+**峰值内存不变是本档最重要的一条**：那 176 MB 并发瞬时占用发生在 compose 之后，
+完全落在 compose 既有峰值（约 971 MB）之下，被吸收掉了。**若日后把并发调高，
+必须重测这一项** —— 本专项的主指标是内存，不能为耗时把峰值做回去。
+
+**等价性：**
+
+```text
+逐字节   同一真实包（143 层 / 5.9 GB）三个版本 --summary 输出逐字节一致
+单测     新增 stats_only_read_matches_full_read：与完整读法逐字段比对
+         （6 统计字段 + 6 通道校验和 + spec + 像素保留契约 × 6 种像素模式）
+         并已用故意打断验证非空转（让 stats 版漏掉统计累加 -> 当场红）
+回归     11 失败 / 230，与前两轮逐项相同；读路径相关全过
+         （rip_reader_resolution / tiff_writer_* / multi_model_package_writer /
+          rgbwsv_production_package_writer / scene_slice_route_positive+negative）
+```
+
+**负例（手工，因为自动化缺口见下）：** 拷小包分别注入四种畸形，比对两版本的
+错误码与消息 —— **四例全部逐字相同**：
+
+| 注入 | 两版本一致的报错 |
+|---|---|
+| 第 3 层 TIFF 截断 | `E_TIFF_READ_FAILED ... layer_000003.tiff` |
+| 第 3 层文件缺失 | `E_LAYER_MISSING ... layer_000003.tiff` |
+| manifest 第 5 层 widthPx 改错 | `E_LAYER_SIZE_MISMATCH expected 237, actual 12345` |
+| **第 3 层 TIFF 截断 + 第 5 层 widthPx 错** | `E_TIFF_READ_FAILED`（报靠前那个） |
+
+最后一例正是三段式要保住的顺序判据。
+
+⚠ **发现一个既有缺口（不是本档引入的）：`rip_reader_test` 的
+`--expect-error` / `--expect-code` 没有被任何 ctest 驱动，即
+`ValidateSlicePackageImpl` 的错误路径没有自动化负例覆盖。**
+本档只能手工验（上表）。**建议补一张卡把这四例固化成 ctest** ——
+一个 fail-closed 闸门的拒绝路径长期没有自动化覆盖，本身就是风险。
+
+#### 14.5.7 耗时线累计验收（专项起点 `704c161` -> HEAD）
+
+三对交错，同时验零漂移与峰值：
+
+```text
+              totalMs        publish        slice        峰值
+orig(min)     78,963 ms     39,567 ms     38,698 ms     971 MB
+HEAD(min)     41,117 ms      5,120 ms     35,770 ms     971 MB
+               -47.9%         -87.1%        -7.6%       【不变】
+digest 六次唯一值 143:579bf5b2db951cde30bcb... -> 逐字节不变
+```
+
+⚠ **诚实区间是 −43%~−48%，不是 −47.9% 这一个数。** 本轮开跑时机器上有 7 个
+MSBuild（收尾降到 0~1），`orig` 侧的 min 是 78,963 ms；而 §14.6.11 在真空窗下
+测同一基线只有 71,937 ms。拿真空窗基线算则是 **−42.8%**。
+`slice` 的 −7.6% 同理偏大（真空窗下 MF-14a 只值约 −3%）。
+
+**唯一无论拿哪个基线都成立的是 publish：5,120 ms vs 39,567~42,548 ms，约 8 倍。**
+
+**耗时线的收益归属（按可靠度排序）：**
+
+| 档 | 改的是什么 | 贡献 |
+|---|---|---|
+| MF-13d | 逐层校验并行化（4 线程） | 隔离口径 −69% |
+| MF-13a | 每层被读两次、IFD 解析两次 | 隔离口径 −34.5% |
+| MF-13b | 逐字节七件事改直方图 | 隔离口径 −31.7% |
+| MF-13c | 校验不再物化整幅面像素 | 隔离口径 −11.9%，**内存 −46%** |
+| MF-14a | 逐像素热路径去边界检查 | 约 −3%（空窗复测值） |
+
+**即耗时线的收益几乎全部来自「包发布的读回校验」这一处**，
+而 compose 侧（MF-14）只贡献了约 3%。
+
+### 14.2 MF-10：MATVOL 逐列求交
+
+多材质大栅格实测 `gridSetupMs` 占 **92%**（gubao04 XY 放大 4 倍，639 秒 / 691 秒），
+而层计算只占 5%。**这条路径的瓶颈根本不在层循环**，MF-09/MF-11 对它都无效。
+`MaterializeMaterialOwnershipLayer` 是 O(列数 × 三角数)。需要独立方案，待估。
+
+### 14.3 MF-11：层循环并行化 —— DEFERRED，四条理由
+
+**一（决定性）：产品路径上该循环已被屏障锁步。**
+
+```text
+slicer.cpp 的 ownedlayercallback
+  -> LegacySceneLayerAdapter 的 layersink
+  -> MultiModelProductionService 的 barrier.DepositAndWait(slotIndex, layerIndex)
+```
+
+`SceneLayerBarrier` 的语义是：生产者写完第 L 层后**阻塞**，直到消费者
+（合成 + 写包）消费掉第 L 层才放行；类注释明写「每实例一个生产者线程、
+一个消费者线程」，`AwaitLayer` 还特意注明「按实例序升序 —— 否则输出 hash 会抖」。
+
+**故并行 18 路的结果是 18 个线程全堵在 `DepositAndWait` 上：吞吐不变、内存 ×18。**
+要真拿到加速，得同时改造屏障（允许乱序 deposit）+ `SceneLayerComposer`
++ `RgbwsvProductionPackageSession`（其 State 里 `layers`/`writtenLayerCount`
+全是顺序流式的）—— 那是三个模块的重构，不是「给循环加个并行」。
+
+那个 91.2% 的实测来自 **`slicer_cli` 单模型直写路径**（无 ownedlayercallback、
+TIFF 直接写盘）。那条路径确实能并行，但**它不是产品路径** ——
+立卡前必须先确认用户的实际生产路径走哪条。
+
+**二：与本专项目标直接冲突。** 专项的全部价值是把峰值压到百 MB 级；
+按跨层复用缓冲清单估算，18 路并行会推回 **1.6~4.6 GB**
+（最小配置约 12 B/列 x 736 万列 x 18；开 MATVOL + closure 则约 35 B/列）。
+在同一个专项分支上做，等于自己拆自己的验收判据。
+
+**三：内存带宽大概率先饱和。** 该循环算术强度极低（全是 uint8 掩码的逐列读写、
+`fill_n`、洪泛），每层要流过 44 MB 的 compose 输出加若干整幅面 pass。
+桌面双通道内存下，3~6 线程可能就打满。**这条无法靠只读核查证实 ——
+必须先用 2/4/8/12/18 五个点实测扩展曲线**（且按既有规矩，短基准要多次取最小值）。
+
+**四：Amdahl 上限没有 18×。** 串行余量 8.8%（1 - 516,877/566,649），
+18 线程理论加速约 7.2×，无限线程也只有 11.4×。
+
+**若将来重启，核查已列出必须处理的清单**（择要）：
+`lastOwnedMaterial` 是唯一的真·串行前缀依赖（MATVOL 路径，直接影响落盘 RGB）；
+八个顺序敏感的 `push_back` 容器需改按下标预分配；`texture_runtime.report` 与
+`material_policy_report` 的裸 `++` 是最容易被漏掉的竞争点（顺序无关 ≠ 无竞争）；
+进度上报有**两条**协议规则（percent 与 current 各一条，且 `current` 未被钳位）；
+`profile.*_ms` 是逐层墙钟求和，并行后会变成 N 倍虚数，让人误判「并行没效果」。
+
+---
+
 ## 13. 修订记录
 
 | 日期 | 版本 | 变更 |
 |---|---|---|
+| 2026-09-07 | v4.21 | 新增 §14.5.7 耗时线累计验收（专项起点 `704c161` -> HEAD，三对交错）：`totalMs 78,963 -> 41,117`、`publish 39,567 -> 5,120`（−87.1%）、`slice 38,698 -> 35,770`，**峰值 971 MB 不变**，digest 六次唯一值即逐字节不变。⚠ **诚实区间标为 −43%~−48%**：本轮开跑时有 7 个 MSBuild，`orig` 的 min 78,963 高于 §14.6.11 真空窗下同一基线的 71,937，按后者算是 −42.8%；`slice` 的 −7.6% 同理偏大（空窗下 MF-14a 只值约 −3%）。唯一不受基线选择影响的是 publish：5,120 vs 39,567~42,548 ms，约 8 倍。并给出收益归属：MF-13d 并行化 −69%、MF-13a −34.5%、MF-13b −31.7%、MF-13c −11.9%（且内存 −46%）、MF-14a 约 −3% —— **耗时线收益几乎全部来自包发布的读回校验这一处**，compose 侧仅约 3%。 |
+| 2026-09-07 | v4.20 | 新增 §14.5.5/§14.5.6：**MF-13 的 c、d 两档落地**。c 档发现校验只用 `spec`/`channel_stats`/`channel_checksums`、**从不读 `pixels`**，新增 `read_rgbwsv_tiff_stats` 跳过每层 44 MB 的物化（整包约 6.3 GB 的分配与拷贝）—— 它同时省时间**和内存**，故先做 c 再做 d。d 档并行化，**并发上限刻意取 4 而非 18**：c 档后单线程驻留约 44 MB，4 线程约 176 MB，取满 18 会是约 800 MB、与本专项压峰值的目标相抵。判定顺序用三段式（预扫只取路径不判定 / 并行只读不抛 / 顺扫照原顺序判定）保住一字不变，结果与线程数无关。隔离口径 `16,999 -> 4,602 ms`（**−72.9%，3.7×**，4 线程 81% 并行效率），峰值 `91 -> 49 -> 176 MB`；生产口径 `total 55,346 -> 41,614`（−24.8%）、`publish 17,732 -> 5,071`（**−71.4%**），而**峰值内存 971 MB 不变** —— 那 176 MB 发生在 compose 之后、被既有峰值吸收；日后调高并发必须重测此项。等价性：真实包三版本 `--summary` 逐字节一致；新增 `stats_only_read_matches_full_read` 对拍并已故意打断验证非空转；回归 11/230 与前两轮逐项相同。并手工验了四个负例（含「第 3 层 TIFF 坏 + 第 5 层 manifest 宽度错」的顺序判据），错误码与消息全部逐字相同。⚠ 顺带发现既有缺口：`rip_reader_test` 的 `--expect-error/--expect-code` 无任何 ctest 驱动，**包级校验的错误路径没有自动化负例覆盖**，建议另立卡把这四例固化成 ctest。 |
+| 2026-09-07 | v4.19 | 新增 §14.6.11（空窗复测·权威值），**改掉两处结论**。机器空下来后按同一口径重测两轮：**MF-14a 实为约 −1.7%~−3.9%（约 1 s），不是 −19.0%** —— 两轮区间虽仍不重叠但只差 274~512 ms，已在本 bench 可靠下限附近，故只应表述为「约 −3%」；−19.0% 是 4~5 个 MSBuild 下的产物，作废。**且 §14.5.4 那次「机器较空」的测量也不够空**（其 allbase `totalMs` 96,754，今天真正空窗只有 71,937），故 MF-13 单独的 −29.8% 也不再作权威值。权威值改为：生产口径 `totalMs 71,937 -> 51,665`（**−28.2%**）、`packagePublishMs 36,536 -> 16,851`（−53.9%）、`sliceProcessingMs 35,169 -> 34,579`（−1.7%）；三条独立算法互证（内部总时长差 20,272 ≈ 墙钟差 20,430 ≈ 分项和 20,708）。**publish 是唯一扛住全部复测的一笔**（三轮 −52.9% / −53.3% / −53.9%），即 MF-13a+13b 是真正的收益来源，MF-14a 的量级只有其二十分之一。并修掉自己引入的副作用：层哈希默认每次都读完整包（5.9 GB、抬高墙钟约 40 s，正是 Round A 里墙钟 153 s 而内部 totalMs 仅 72 s 的原因），改为 `SLICESOFT_BENCH_DIGEST=1` opt-in。零漂移：本节 14 次跑 digest 全部一致。 |
+| 2026-09-07 | v4.18 | 新增 §14.6.10：把 MF-13a + MF-13b + MF-14a 一起做端到端对拍（基线 `704c161` vs HEAD，交错三对）。**六次跑的场景层哈希是唯一一个值 `143:579bf5b2db951cde30bcb...`，即跨全部改动逐字节不变**。耗时 cpu `183,688 -> 131,547`（−28.4%）、wall `186,705 -> 132,019`（−29.3%），两组区间勉强不重叠，但全程 7~10 个 MSBuild、两侧绝对值都被抬到干净基线的约两倍（干净约 90 s，这里 132~225 s），`allbase` 自身抖动 22% 与待测差值同量级，**故仍只记方向**。顺带记下一条结构性观察：`cpu ≈ wall`，说明屏障锁步下生产者与消费者交替而非重叠执行，与 §14.6.1 的 `awaitMs ≈ coreSliceMs` 互证，也再次支持 MF-11 的 DEFERRED 判定。并明确本专项耗时线的**唯一待办**：机器空闲时按 CPU 时间口径复测 MF-14a 单独与 MF-13+MF-14a 合计两项，替换掉「待复测」的幅度；目前唯一可引用的干净数字是 MF-13 单独的 `totalMs 96,754 -> 67,896`（−29.8%）。 |
+| 2026-09-07 | v4.17 | 新增 §14.6.8（**撤回 b 档**）与 §14.6.9（MF-14 收口）。实现前读 `WriteOwnedPixel` 发现 b 档的前提是错的：合成**不是**逐字节搬运源像素，而是按归属重新推导 —— 先把六通道填 `empty_value`，再只写回该归属有权的通道；Model 归属**跳过支撑通道**，且 `modelvarnishownership` 未置位时连光油通道也跳过。**现成反例**：`modelownership==1 && supportownership==1` 的像素，闭合判据要求源层 `S == print_value`，而 composed 输出里它是 `empty_value` —— 直接拷贝源通道会让模型像素底下多打一层支撑，**是真实的输出改变，不是等价优化**，故 b 档撤回不实施。并修正其收益估算：`output.channels.assign` 那一趟也省不掉（Empty 归属像素正靠它拿到 empty_value，且缓冲每层被 move 给 sink、无法复用）。c 档余量重新界定为约 1~2 s（两数组每层约 37 MB、143 层约 5.3 GB 写），降级为「有空再做」。据此 **MF-14 到 a 档为止收口**：compose 窗口剩下的是 `awaitMs` 约 15 s（生产者真实算力，只能靠已 DEFERRED 的 MF-11）、append 约 7 s（盘速）、ValidateLayer 残余约 7 s（判据要求的一趟）、逐像素推导约 4 s（不可绕过）。再往下压需要改协议（sink 归还层缓冲）或重启并行化，属接口/架构改动，**不在本专项范围内，应另立专项并由用户裁定**。 |
+| 2026-09-07 | v4.16 | 新增 §14.6.6（MF-14a 已改）与 §14.6.7（场景口径零漂移判据）。**动手前先算掉了 §14.6.5 自己排的 a 档靶子**：四条 `IsBinaryMask` 合计每层只读 29.5 MB、143 层约 4.2 GB，按 10 GB/s 也只有 0.4 s，不可能是那 18.3 s。真正的开销是逐像素循环自身的边界检查 —— 约 20 次 `.at()` / 像素 × 737 万 × 143 层 ≈ **210 亿次**。改为热路径用 `[]`，依据是调用方进入循环前已校验 `channels.size()` 与四个掩码各自的 `IsBinaryMask`（含 size 判定），故下标必然在界内；**那几条校验由此成为前提**，已在两处互相加注。G2 第一版只加注释就从 1592 涨到 1602 行当场 FAIL，未申请豁免，改为把三个谓词同步下沉到 `pipeline/SceneSourcePixelClosure.{h,cpp}`，`SceneLayerComposer.cpp` **1592 → 1467 行**、门禁 PASS。副产物：给 bench 加了 `BENCH_LAYERS digest=`，**本专项第一次有了场景口径的逐字节判据**（此前全是 CLI 口径，而 CLI 根本不走 SceneLayerComposer）。验收：六次跑 digest 全为 `143:579bf5b2db951cde`，**层字节逐字节一致**；耗时 compose 窗口 `60,107 -> 48,664`（−19.0%）、总时长 `88,374 -> 80,684`（−8.7%），⚠ 但全程有 4~5 个 MSBuild，**幅度标记为待空窗复测、只记方向**。 |
+| 2026-09-07 | v4.15 | 新增 §14.6.4（**更正**）与 §14.6.5（重排方案）。把 §14.6.1 的 36 s 再拆一层实测（两次高度一致）：`ValidateLayer 约 18,300 ms`（**不能省**，校验强度不得降级）、`逐像素拷贝循环约 4,100 ms`、`其余约 14,000 ms`。**即 §14.6.3 要动的那条逐像素循环只值 4.1 s，不是 36 s，「绝大部分可消掉」的说法是错的** —— 本卡第五次靠实测推翻自己的排序。「其余 14 s」已定位到层循环内的三笔：两次全幅面 `std::fill`（ownerindices 就是 29.5 MB/层）与 `output.channels.assign(44 MB)` —— `output` 声明在层循环内、缓冲又被 move 给 sink，故**提到循环外复用拿不到收益**。方案按实测重排为 a（ValidateLayer 五趟合一趟 + 去 `.at()`，约 18.3 s，判据一字不改，与 MF-13b 同型）、b（流式单实例直接移交源层通道，约 4.1 s 加那 44 MB assign 的大部分）、c（ownership 两趟 fill，须先查清下游读者）。收益上限先行界定：compose 窗口约 58 s -> 约 30~36 s、总时长约 68 s -> 约 45~50 s，因为 await 的 14.9 s 是生产者算力、不会消失。 |
+| 2026-09-07 | v4.14 | 新增 §14.6，立 MF-14。消费侧插探针把 compose 窗口拆三段：`composeTotal 58,343 = await 14,852（25.5%）+ append 7,053（12.1%）+ 合成本身 36,438（62.4%）`；`awaitMs` 与同次 `coreSliceMs 14,484` 几乎相等，正是屏障锁步的直接体现。合成本身 255 ms/层、折合 173 MB/s，与 MF-13b 之前那个逐字节统计循环同一气味。**根因已定**：`MultiModelSliceOrchestrator.cpp:398` 明写「流式下统一走 Borrowed 主路径」，故生产路径即便单实例也要走通用跨实例合成 —— 143 层 × 737 万像素 ≈ 10.5 亿次迭代，每次含取模的取消检查、`ResolveOwnership`，非空像素还要一次 12 参 `ResolveCrossInstancePixel`，而单实例不可能有跨实例冲突、且 exact grid 下 dst==src。这是本专项第四次遇到同一形状的问题（前三次：X2b 列剪枝、MF-09 owning 接口、MF-13b 逐字节统计）。方案是流式单实例快路径，并列出四条必须保住的事（ValidateLayer 不降级、逐层统计逐字段相同、查清 ownership 的其他读者、取消检查至少逐层一次）。**收益上限已先行界定**：那 36 s 大部分可消，但 await 的 14.9 s 是生产者算力、不会消失，故预期 compose 窗口 58 s -> 22~25 s，不是降到零。 |
+| 2026-09-07 | v4.13 | 新增 §14.5.4 端到端验收：生产口径 old/new 交错三对，`packagePublishMs 46,806 -> 22,042`（**−52.9%**）、`totalMs 96,754 -> 67,896`（**−29.8%**），两项区间都完全不重叠；publish 的 −52.9% 与隔离口径的 −54.1% 相符，互为印证。并据此重排下一步：**compose 窗口那约 46 s 现在是最大单项**（其中生产者实算仅约 13 s，其余约 33 s 是屏障等待与消费侧 compose，约占改后总时长一半），故先去量清那 33 s，而不是接着做 §14.5 的候选 A（并行化逐层校验）—— 后者只针对剩下的 22 s。 |
+| 2026-09-07 | v4.12 | 新增 §14.5.2（**更正**）与 §14.5.3（MF-13b COMPLETE）。§14.5.2：MF-13a 的「−1.2%、低于噪声」是 18 个 MSBuild 争用下的假结论，等机器空闲后用同一隔离口径并记录 CPU 时间重测，实为 `11,713 -> 7,675 ms`（**−34.5%**，区间不重叠、各自波动 <1%）；提交 `0c270e9` 说明里的「收益低于噪声」应以本节为准。§14.5.3：把 `AccumulateContiguousChannelStats` 的每字节约七件事（校验和 + min + max + 四个计数器，且按通道变址无法向量化）改为逐通道 256 桶直方图，每字节只做一次自增、收尾导出，判据逐项等价；实测 `7,744 -> 5,290 ms`（**−31.7%**），CPU 时间同幅下降，**确认校验是 CPU 界限、单线程**（CPU≈墙钟），§14.5 的前置问题就此解答。a+b 合计 `11,482 -> 5,272 ms`（**−54.1%**），两条独立测量相乘与合并实测互证。⚠ 关键：既有 `ResultsAreEquivalent` **验不出统计算错**（两侧共用同一实现，且 LibTIFF 缺失时整条跳过），故新增独立参照对拍 `channel_stats_match_independent_reference`（六字段 × 六通道 × 六种像素模式，置于 LibTIFF 早退之前），并**已用故意打断验证它非空转**。 |
+| 2026-09-07 | v4.11 | 新增 §14.5.1（MF-13a）。`read_rgbwsv_tiff` 原先读完整文件、解析 IFD 只为判断条带/瓦片，随后调用的单参版本【又把文件读一遍、IFD 再解析一遍】—— 每个被校验的层都被读两次。已改为传递已读缓冲与已解析 IFD（语义完全不变）。**但实测收益低于噪声**：用 `rip_reader_test` 对同一个已写好的包只跑校验、不写不删、四对交错，min 40,035 -> 39,542 ms（−1.2%）；量级上本来也只该有 3%，因为第二次读由文件缓存供给。按本专项既定做法（效果低于噪声则按算法依据取舍）**保留**该改动 —— 它是严格更少的工作量且未引入新复杂度，但**不宣称收益**。⚠ 并记下污染源：测量时机器上有 **18 个 MSBuild**（另一会话在同一工作树构建），同一二进制同一输入在 40,035~227,072 ms 间跳；**先前整作业口径测出的「publish −42%」即此污染的产物，不成立**。§14.5 的前置问题（I/O 界限还是 CPU 界限）此刻测不了，待机器空闲后重测。 |
+| 2026-09-07 | v4.10 | §14.5 修正：查清 `ValidateSlicePackageImpl`（`rip_reader.cpp:685`）的实际判据后，**否掉了自己上一版写下的候选 A**（「写盘时用内存字节单趟校验」）—— 读回校验的目的正是验证**落盘**字节，用内存字节算会让写入器 bug、截断、坏块无从发现，那句「同父 rename 保住已严格校验的字节」也就不再成立。候选改为：A 并行化逐层校验（层间独立，语义完全不变）、B 与写盘重叠、C 只验结构不解码像素（减弱判据，属产品决策）。并补上校验内容清单与「43.4 s 是 I/O 界限还是 CPU 界限尚未测量」的前置要求（旁证倾向 CPU：写 1,560 MB/s vs 读回 137 MB/s，且每层要解码 44 MB并逐字节累计统计与校验和）。 |
+| 2026-09-07 | v4.9 | 新增 §14.4.1（MF-12 COMPLETE）与 §14.5（立 MF-13）。**生产口径首次量出来**（a-2/0.2.obj @0.1mm，143 层，单实例，总 90,090 ms）：`packagePublishMs 43,449`（48.2%）、compose 窗口 `46,397`（51.5%，其中生产者真正的 `coreSliceMs` 只有 13,065 = 14.5%，其余是屏障等待与消费侧compose）、`tiffWriteMs 3,781`、`gridSetupMs` 仅 229。**与 CLI 口径几乎没有共同点**：CLI+报告 42,133 ms 慢在闭合诊断（生产不跑）、CLI 无报告 7,072 ms、生产 90,090 ms 慢在包发布与 compose。据此重排：MF-09 与三步剪枝对生产收益为零已确认；**MF-10 的「gridSetup 占 92%」须用生产口径重估**（生产口径只有 0.3%）；MF-11 的 DEFERRED 结论**加强** —— 可并行的 coreSlice 只占 14.5%，完美并行上限也仅约 14%。并把 publish 拆六段实测：`strictValidateMs 43,402.8` 占 publish 的 **99.9%**，即把刚写完的整包重新读回严格校验（rename 只有 1.8 ms）；10um 外推该项单独约 7 分钟。立 MF-13，方向是「换成不需重新读盘的等价校验」而非关掉校验，并要求先查清校验内容再动手。bench 侧新增 BENCH_PROFILE / BENCH_INSTANCE 两行输出（生产代码零插桩，探针已回退）。 |
+| 2026-09-07 | v4.8 | 新增 §14.1.7~14.1.9。§14.1.7：把分析函数再拆三段实测，**第三次推翻自己的排序** —— §14.1.5 排第一的主判定循环只占 2.8%、六次 fill 占 1.4%，而排最后的边界洪泛占 **70.6%**（26,987 / 38,237 ms）。§14.1.8：把整项诊断关掉对照，`layerComputeMs 37,405 -> 2,953`（−92.1%）、`totalMs 42,133 -> 7,072`（−83.2%），且 143 层 TIFF 逐字节一致 —— 关掉只少一份闭合报告；但关不关是产品决策，本卡只量代价不下结论。§14.1.9 **重要修正**：`LegacySceneLayerAdapter` 把 `write_reports` 写死为 false，而精确分析由 `write_reports || repair` 门控，故 **诊断模式下生产路径（DLL -> Worker -> MultiModelProductionService）从不执行这段** —— MF-09 第一档的 −11.6% 与 §14.1.5 三步剪枝对生产路径收益均为零（同 MF-03X1 那类），且本专项所有耗时数字都是 CLI 口径，生产路径的耗时构成从未测量。据此立 MF-12 先量生产路径，**不再继续剪 CLI 的洪泛**。 |
+| 2026-09-07 | v4.7 | 新增 §14.1.6：MF-09 **第一档落地并验收**。在动剪枝之前先拿掉「用 owning 便利接口的代价」——每层新建 workspace（约 110 MB/层）+ 返回前 7 次 mask 拷贝（约 51.6 MB/层），改走同一实现的 View 版本并把 workspace 跨层复用，**无需任何等价性假设**。交错 A/B（同一时间窗、各三次取最小）`42,014 -> 37,132 ms`，**−11.6%**，两组区间不重叠；峰值内存无回退。**并修正一次自己的测量错误**：首次拿改后结果去比 §14.1.2 的旧基线得出 −45%，实为跨时间窗比较 —— 同一份 base 二进制此刻只跑 42,014 ms，故 −45% 不成立。零漂移在用户指定资产（a-3/0.2.obj、qiegejiapian-zxl、suoguo-hcc）上层 TIFF 与闭合报告逐字节一致；三者 `gapPixels` 全为 0，修复路径改由两条新单测覆盖（含「参照实现确实修了一个像素」的非空转断言，与「跨层复用不串味」的对照）。同步下沉 `MaterialClosureExactLayerPass`，`slicer.cpp` 净减 25 行，不依赖 MATOPQ 豁免。§14.1.5 三步方案仍未实施。 |
+| 2026-09-07 | v4.6 | 新增 §14.1.3~14.1.5：继续拆分后**修正了上一节的判断** —— 初始化（11 个 assign + 逐像素循环）合计只占 closure 段的 21%，真正的 30 秒在 `AnalyzeMaterialClosureSemanticLayer`（四次整幅面 fill 共 29.5 MB/层、边界洪泛、736 万次/层的主判定循环）。这从另一角度印证 14.1.2 的回退是对的：复用对象连那 16% 都拿不到。并**完成剪枝的等价性论证**：表外列的 `expectedOccupiedDomainMask` 三个分量全为 0，且必为外部背景，故 `candidateGap` 恒 false，两条判据互为旁证 —— 该论证独立完成，未沿用 X3。给出按收益排序的三步方案（主循环剪枝 > fill 剪枝 > 洪泛解析化），并标注洪泛那条最需小心、应最后做。本次仍无代码改动。 |
+| 2026-09-07 | v4.5 | 新增 §14.1.1/14.1.2：MF-09 按「先量后改」插桩实测，**结果推翻原计划** —— 瓶颈不是那六处整幅面 pass（已剪过的三处合计仅占 3%），而是**材料闭合语义分析占 86%**；根因是 `MaterialClosureConfig::enabled` 默认为 true 而配置文件从不写它，导致每层新建 11 个整幅面 mask（81 MB/层、1429 层约 116 GB）。并**如实记录一次失败的尝试**：把该对象提到循环外跨层复用，公平 A/B（各三次取最小）显示 61,579 -> 68,940 ms，无任何收益证据，已回退。它证伪的假设是「开销在 malloc/free」—— 实际在 `assign` 的写入本身，那些字节无论复不复用都要写。故正确方向只剩活动列剪枝，且需独立做等价性验证；另标注 38.7 秒里 `assign` 写入与逐像素循环尚未分开量。 |
+| 2026-09-07 | v4.4 | 新增 §14：应用户「不改硬件、大画幅耗时还有多少空间」的提问立三张卡。**并更正我自己的初次判断** —— 当时看到「18 核、层循环串行、layerCompute 占 91.2%」就断言并行可拿 3~5 倍，只读核查后收回：产品路径上该循环被 `SceneLayerBarrier` 锁步（生产者写完一层即阻塞等消费），并行 18 路只会全堵在 `DepositAndWait`，吞吐不变而内存 ×18；那个 91.2% 来自 `slicer_cli` 直写路径，不是产品路径。据此 MF-11（并行化）DEFERRED 并记下重启时必须处理的清单。改为先做 MF-09：层循环里还有至少六处整幅面 pass 是 MEMFLOW 剪枝的漏网之鱼（其中 `analyze_support_connectivity` 每层新建清零 7.37 MB 且调用点在 support.enabled 守卫之外），等价性论证与 X2b 同一套、不增内存不碰屏障。MF-09 第一步是**加细粒度计时先把 516 秒拆开**，不是直接改。另立 MF-10：多材质大栅格的瓶颈在 MATVOL 逐列求交（gridSetup 占 92%），与层循环无关。 |
 | 2026-08-21 | v2.2 | MF-03B4B 专项准备补齐：冻结 public DTO、facts identity、retained 精确顺序、Stage 15 eligible branch、caller output/sink 强异常边界、closure 固定 workspace、独立 oracle 与实施拆分；结论 PREPARED / IMPLEMENTATION GO，生产仍未接线。 |
 | 2026-08-21 | v2.1 | MF-03B4A COMPLETE：实现 plan-bound verified replay、Base/outer-varnish 最终化、逐层 compact connectivity sink 与 fail-closed 生命周期；Release 组合 Gate 通过且生产零接线。MF-03B4B 解除依赖等待但未开工。 |
 | 2026-08-21 | v2.0 | 完成 MF-03B4 准备审计并拆为 B4A/B4B；冻结 replay identity/digest checkpoint、Base/varnish/统计、材料/Stage15/closure、生命周期与零漂移 Gate。B4A 转 PREPARED，B4B 等待 B4A。 |
