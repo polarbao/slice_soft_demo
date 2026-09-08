@@ -323,6 +323,7 @@ set(SLICESOFT_CORE_SOURCES
     src/slicer_core/output/rgbwsvt/RgbwsvtProtocol.h
     src/slicer_core/output/rgbwsvt/RgbwsvtLegacyPackageMetadata.cpp
     src/slicer_core/output/rgbwsvt/RgbwsvtLegacyPackageMetadata.h
+    src/slicer_core/output/rgbwsvt/LegacyTransferCanvas.h
     src/slicer_core/output/rgbwsvt/RgbwsvtPackageReader.cpp
     src/slicer_core/output/rgbwsvt/RgbwsvtPackageReader.h
     src/slicer_core/output/rgbwsvt/RgbwsvtPackageSchemaReader.cpp
@@ -2148,6 +2149,13 @@ target_link_libraries(model_transform_unit_tests PRIVATE slicer_core)
 
 add_executable(frame_geometry_unit_tests tests/unit/frame_geometry/Main.cpp)
 add_executable(frame_scene_tests tests/unit/frame_geometry/Scene.cpp)
+add_executable(x_origin_padding_tests tests/unit/x_origin_padding/Main.cpp tests/unit/x_origin_padding/Production.cpp tests/unit/x_origin_padding/Transfer.cpp)
+target_link_libraries(x_origin_padding_tests PRIVATE slicer_core)
+target_compile_definitions(x_origin_padding_tests PRIVATE SLICESOFT_SOURCE_DIR="${CMAKE_SOURCE_DIR}")
+if(MSVC)
+    target_compile_options(x_origin_padding_tests PRIVATE /W4 /WX)
+endif()
+add_test(NAME x_origin_padding_tests COMMAND x_origin_padding_tests)
 target_link_libraries(frame_scene_tests PRIVATE slicer_core)
 target_compile_definitions(frame_scene_tests PRIVATE
     SLICESOFT_SOURCE_DIR="${CMAKE_CURRENT_SOURCE_DIR}")

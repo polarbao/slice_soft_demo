@@ -89,6 +89,7 @@ int main(int argc, char* argv[])
     expected.outputdirectory = temporaryRoot.path();
     expected.dpix = 720;
     expected.dpiy = 600;
+    expected.scenepadtooriginx = true;
     expected.layerthicknessmm = 0.05;
     expected.geometrysamplingstrategy = HostGeometrySamplingStrategy::
         LayerSlabSupersample2x2AtLeastTwoCandidate;
@@ -178,6 +179,7 @@ int main(int argc, char* argv[])
                           == expected.processpresetid
                       && actual.dpix == expected.dpix
                       && actual.dpiy == expected.dpiy
+                      && actual.scenepadtooriginx == expected.scenepadtooriginx
                       && std::abs(actual.layerthicknessmm
                                    - expected.layerthicknessmm) < 1.0e-9
                       && actual.geometrysamplingstrategy
@@ -274,6 +276,7 @@ int main(int argc, char* argv[])
             "textured_nail_rgb_white_ondemand_lower_support"));
         settings.remove(QStringLiteral("packageProtocol"));
         settings.remove(QStringLiteral("transferChannel"));
+        settings.remove(QStringLiteral("scenePadToOriginX"));
         settings.endGroup();
         settings.sync();
     }
@@ -293,6 +296,7 @@ int main(int argc, char* argv[])
     }
     if (!Check(
             migratedLoaded
+                && !migratedPreferences.slicesettings.scenepadtooriginx
                 && migratedPreferences.slicesettings.packageprotocol
                     == HostPackageProtocol::Rgbwsv
                 && !migratedPreferences.slicesettings.transferchannel.enabled

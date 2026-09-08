@@ -25,7 +25,7 @@
 #include <QTemporaryDir>
 #include <QTextStream>
 #include <sstream>
-
+#include "HostXOriginPaddingTests.h"
 namespace
 {
 // 断言随规则而非索引：凡叠加了非 RGB 通道的条目，其 tooltip 必须写明是伪彩色。
@@ -1562,7 +1562,7 @@ int main(int argc, char* argv[])
         errors << "模块加载失败：" << error << Qt::endl;
         return 3;
     }
-    if (!VerifyMaterialVolumeConditionalEmission(
+    if (!VerifyXOriginPadding(modelPath, outputDirectory, errors) || !VerifyMaterialVolumeConditionalEmission(
             modelPath, outputDirectory, errors)
         || !VerifyPresetProfileHashClosure(
             modelPath, outputDirectory, errors)
