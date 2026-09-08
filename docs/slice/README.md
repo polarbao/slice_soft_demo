@@ -20,6 +20,15 @@ Barrier、Sparse Candidate 依次通过零漂移 Gate 后才可接入。
 16C-04/07..09 保留后续排期，16C-10 正式设备 SLA 保持 `INPUT_OPEN`，16B-04/16D-05 仍需
 用户独立授权。
 
+## TIFFVIEW 收口入口（2026-09-08）
+
+生产 TIFF 与场景俯视朝向统一专项已完成；下列入口仅更新 TIFFVIEW，不重判其他专项状态。
+
+- [收口总结](REPORT/REPORT_TIFFVIEW_生产文件与场景朝向统一收口总结.md)：修复范围、验证结果、提交拆分及已部署版本边界。
+- [行序与旧包兼容裁决](DOC/DOC_DECISION_TIFFVIEW_生产TIFF行序与旧包兼容.md)：新包 maxY-first、旧包兼容及软件同步要求。
+- [ND002 详细排查与验证](REPORT/REPORT_TIFFVIEW_ND002_生产TIFF与预览朝向差异排查.md)：原始证据、真实包重编码及本地 RIP 验证。
+- [任务清单](../codex_task/current/TASKS_TIFFVIEW_生产文件与场景朝向统一.md)：TV-00..04 状态真源。
+
 ## 目录结构
 
 | 目录 | 内容 | 使用场景 |
