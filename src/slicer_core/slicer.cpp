@@ -24,6 +24,7 @@
 #include "slicer_core/model.h"
 #include "slicer_core/output/rgbwsv/RgbwsvPackageWriter.h"
 #include "slicer_core/output/rgbwsvt/RgbwsvtLegacyPackageMetadata.h"
+#include "slicer_core/output/rgbwsvt/LegacyTransferCanvas.h"
 #include "slicer_core/reports/MaterialProcessReport.h"
 #include "slicer_core/reports/MaterialVolumeReport.h"
 #include "slicer_core/reports/MaterialClosureReport.h"
@@ -4243,15 +4244,15 @@ SliceRunResult run_slicer(const std::filesystem::path& config_path, const SliceR
             ResolveSupportBaseProjectionPreparation(
                 config.support.base_projection,
                 config.output.layer_thickness_mm);
-        LiftModelForSupportBase(
-            model_report,
-            supportBaseProjectionPreparation.model_lift_mm);
+        LiftModelForSupportBase(model_report, supportBaseProjectionPreparation.model_lift_mm);
     }
     const GridSpec grid = make_grid_spec(config, model_report.bbox_mm);
+    const LegacyTransferCanvas transferCanvas(grid, config.output.scene_pad_to_origin_x
+        && config.transfer_channel_policy.enabled && options.instanceoverride.has_value());
+    const GridSpec outputGrid = transferCanvas.OutputGrid(grid);
     const MaterialVolumeGrid materialVolumeGrid{
         grid.width_px, grid.height_px, grid.origin_x_mm, grid.origin_y_mm,
-        grid.pixel_size_x_mm, grid.pixel_size_y_mm, config.output.layer_thickness_mm,
-        grid.layer_count};
+        grid.pixel_size_x_mm, grid.pixel_size_y_mm, config.output.layer_thickness_mm, grid.layer_count};
 
     // 退化面阈值：默认沿用适配器内建值；工艺文件显式收紧时才覆盖。
     // CAD/NURBS 导出的多材质资产常含 nm^2 级合法薄面，默认门会误杀并制造边界边。
@@ -5036,6 +5037,7 @@ SliceRunResult run_slicer(const std::filesystem::path& config_path, const SliceR
                     .widthPx = grid.width_px, .heightPx = grid.height_px,
                     .channels = layer},
                 current_model_mask);
+            transferCanvas.Apply(transferLayer.value());
             // 光油（V）与弹性材料（T）不得占用同一像素：一个体素不可能同时是两种材料。
             //
             // ComposeRgbwsvtLayer 对缩裹像素【丢弃全部六通道只写 T】，
@@ -5140,17 +5142,18 @@ SliceRunResult run_slicer(const std::filesystem::path& config_path, const SliceR
         }
         if (options.write_preview_files && should_write_preview(config.preview, layer_index, grid.layer_count)) {
             const auto previewWriteStart = SlicerClock::now();
-            const std::vector<std::uint8_t> texture_preview_mask = build_texture_preview_mask(
+            std::vector<std::uint8_t> texture_preview_mask = build_texture_preview_mask(
                 config,
                 grid,
                 current_model_mask,
                 config.material_role_mapping.enabled ? &material_role_columns : nullptr,
                 &column_ranges,
                 layer_index);
+            transferCanvas.PadPreviewMask(texture_preview_mask);
             Json::Array written = write_layer_previews(
                 config.preview,
                 package_dir,
-                grid,
+                outputGrid,
                 layer_index,
                 transferLayer.has_value() ? transferLayer->channels : layer,
                 config.texture.enabled ? &texture_preview_mask : nullptr,
@@ -5163,7 +5166,7 @@ SliceRunResult run_slicer(const std::filesystem::path& config_path, const SliceR
             {"index", layer_index},
             {"zMm", diagnostics.z_mm},
             {"path", relative_path},
-            {"widthPx", grid.width_px},
+            {"widthPx", outputGrid.width_px},
             {"heightPx", grid.height_px},
             {"modelPixels", layer_model_pixels},
             {"supportPixels", layer_support_pixels},
@@ -5244,10 +5247,7 @@ SliceRunResult run_slicer(const std::filesystem::path& config_path, const SliceR
             layer.channel_stats[5U].print_pixels,
             layer.semantic.unprintable_white_carrier_pixels});
     }
-    // MF-03B4B：ChannelStats 已从 TiffChannelStats 改为 BoundedMaterialChannelStats，
-    // 使 bounded 路径的统计不再依赖 TiffReadApi.h。两者字段【逐项相同】（6 个字段、
-    // 类型与默认值一致），故此处按字段显式转换而非 reinterpret——布局相同不等于
-    // 标准保证可互相解释，显式转换才经得起将来任一侧增删字段。
+    // MF-03B4B：bounded 统计不依赖 TIFF；此处逐字段转换，不能按相同布局 reinterpret。
     std::array<TiffChannelStats, rgbwsv_channel_count> reportChannelTotals{};
     for (std::size_t channel{0}; channel < rgbwsv_channel_count; ++channel)
     {
@@ -5262,13 +5262,13 @@ SliceRunResult run_slicer(const std::filesystem::path& config_path, const SliceR
     }
     Json material_process_report = BuildMaterialProcessReport(MaterialProcessReportRequest{
         &config, model_report.format, model_report.model_path,
-        grid.width_px, grid.height_px, grid.layer_count,
+        outputGrid.width_px, grid.height_px, grid.layer_count,
         grid.pixel_size_x_mm, grid.pixel_size_y_mm,
         materialProcessLayers, reportChannelTotals});
     Json transfer_channel_report;
-    if (transferSession.has_value() && options.write_tiff_layers)
+    if (transferSession && options.write_tiff_layers)
     {
-        const std::uint64_t totalPixels = static_cast<std::uint64_t>(grid.width_px)
+        const std::uint64_t totalPixels = static_cast<std::uint64_t>(outputGrid.width_px)
             * static_cast<std::uint64_t>(grid.height_px) * static_cast<std::uint64_t>(grid.layer_count);
         material_process_report = BuildRgbwsvtMaterialProcessReport(
             material_process_report, config.material_process_profile,
@@ -5338,7 +5338,7 @@ SliceRunResult run_slicer(const std::filesystem::path& config_path, const SliceR
         {"slicingMode", config.slicing_mode},
         {"grid",
          Json::object({
-             {"widthPx", grid.width_px},
+             {"widthPx", outputGrid.width_px},
              {"heightPx", grid.height_px},
              {"layerCount", grid.layer_count},
              {"pixelSizeMm", Json::array({grid.pixel_size_x_mm, grid.pixel_size_y_mm})},
@@ -5757,7 +5757,7 @@ SliceRunResult run_slicer(const std::filesystem::path& config_path, const SliceR
          })},
         {"grid",
          Json::object({
-             {"widthPx", grid.width_px},
+             {"widthPx", outputGrid.width_px},
              {"heightPx", grid.height_px},
              {"layerCount", grid.layer_count},
              {"dpiX", config.output.dpi_x},
@@ -5767,7 +5767,7 @@ SliceRunResult run_slicer(const std::filesystem::path& config_path, const SliceR
              {"pixelSizeYmm", grid.pixel_size_y_mm},
              {"pixelSizeMm", Json::array({grid.pixel_size_x_mm, grid.pixel_size_y_mm})},
              {"layerThicknessMm", config.output.layer_thickness_mm},
-             {"originMm", Json::array({grid.origin_x_mm, grid.origin_y_mm, 0.0})},
+             {"originMm", Json::array({outputGrid.origin_x_mm, grid.origin_y_mm, 0.0})},
          })},
         {"slicing",
          Json::object({
@@ -5876,7 +5876,7 @@ SliceRunResult run_slicer(const std::filesystem::path& config_path, const SliceR
     SliceRunResult result;
     result.package_dir = package_dir;
     result.effective_pipeline_mode = "legacy";
-    result.width_px = grid.width_px;
+    result.width_px = outputGrid.width_px;
     result.height_px = grid.height_px;
     result.layer_count = grid.layer_count;
     result.model_pixel_count = total_model_pixels;
