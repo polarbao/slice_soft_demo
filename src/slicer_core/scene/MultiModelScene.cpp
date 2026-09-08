@@ -1,5 +1,5 @@
 #include "slicer_core/scene/MultiModelScene.h"
-
+#include "slicer_core/system/Utf8Path.h"
 #include "slicer_core/system/Sha256.h"
 
 #include <algorithm>
@@ -369,8 +369,8 @@ Json SerializeResourceScope(const ResourceScope& value)
     return Json::object({
         {"resourceScopeId", value.resourcescopeid},
         {"kind", ResourceScopeKindValue(value.kind)},
-        {"rootPath", value.rootpath.generic_string()},
-        {"packagePath", value.packagepath.generic_string()},
+        {"rootPath", PathToUtf8(value.rootpath)},
+        {"packagePath", PathToUtf8(value.packagepath)},
         {"partIdentity", value.partidentity},
     });
 }
@@ -381,8 +381,8 @@ ResourceScope DeserializeResourceScope(const Json& value)
     scope.resourcescopeid =
         value.at("resourceScopeId").as_string();
     scope.kind = ParseResourceScopeKind(value.at("kind").as_string());
-    scope.rootpath = value.at("rootPath").as_string();
-    scope.packagepath = value.at("packagePath").as_string();
+    scope.rootpath = PathFromUtf8(value.at("rootPath").as_string());
+    scope.packagepath = PathFromUtf8(value.at("packagePath").as_string());
     scope.partidentity = value.at("partIdentity").as_string();
     return scope;
 }
@@ -391,7 +391,7 @@ Json SerializeModelSource(const ModelSource& value)
 {
     Json::Object result{
         {"modelId", value.modelid},
-        {"sourcePath", value.sourcepath.generic_string()},
+        {"sourcePath", PathToUtf8(value.sourcepath)},
         {"format", value.format},
         {"resourceScopeId", value.resourcescopeid},
         {"sourceHash", value.sourcehash},
@@ -405,7 +405,7 @@ ModelSource DeserializeModelSource(const Json& value)
 {
     ModelSource source;
     source.modelid = value.at("modelId").as_string();
-    source.sourcepath = value.at("sourcePath").as_string();
+    source.sourcepath = PathFromUtf8(value.at("sourcePath").as_string());
     source.format = value.at("format").as_string();
     source.autoorientenabled = value.value("autoOrient", true);
     source.resourcescopeid = value.at("resourceScopeId").as_string();

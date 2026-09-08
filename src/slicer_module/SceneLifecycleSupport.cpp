@@ -1,4 +1,5 @@
 #include "slicer_module/SceneLifecycleSupport.h"
+#include "slicer_core/system/Utf8Path.h"
 
 #include "slicer_module/CapabilityJsonAdapter.h"
 
@@ -230,7 +231,7 @@ BuildModelRegistration(const ImportedModelResource& resource) noexcept
             : (!metadata.mesh_identity.empty()
                 ? metadata.mesh_identity
                 : metadata.source_digest);
-        registration.source.displayname = sourcePath.stem().string();
+        registration.source.displayname = slicer_core::PathToUtf8(sourcePath.stem());
 
         if (format == "obj")
         {

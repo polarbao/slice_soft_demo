@@ -1,4 +1,5 @@
 #include "slicer_core/api/scene/SceneFacadeAuthority.h"
+#include "slicer_core/system/Utf8Path.h"
 
 #include "slicer_core/scene/ModelInstance.h"
 #include "slicer_core/scene/ModelTransform.h"
@@ -232,7 +233,7 @@ ApiResult<void> AddRegisteredModelToScene(
     instance.instance.instanceid = operation.instance_id;
     instance.instance.modelid = model.scene_model_id;
     instance.instance.sourcetransformidentity =
-        model.source.sourcepath.generic_string();
+        PathToUtf8(model.source.sourcepath);
     instance.instance.sourcebboxmm = model.model->bbox_mm;
     instance.requestedtransform = NormalizeModelTransform(
         operation.initial_transform);

@@ -2,6 +2,7 @@
 
 #include "slicer_core/api/implementation/ModelFacadeImplementation.h"
 #include "slicer_core/geometry/SceneModelTriangleMeshAdapter.h"
+#include "slicer_core/system/Utf8Path.h"
 
 #include <algorithm>
 #include <cctype>
@@ -72,9 +73,8 @@ std::shared_ptr<const ImportedModelResource> ModelCapabilityAdapter::FindByPath(
 std::string ModelCapabilityAdapter::NormalizePath(
     const std::filesystem::path& path)
 {
-    std::string value = std::filesystem::absolute(path)
-        .lexically_normal()
-        .generic_string();
+    std::string value = slicer_core::PathToUtf8(
+        std::filesystem::absolute(path).lexically_normal());
     std::transform(
         value.begin(),
         value.end(),
@@ -98,7 +98,7 @@ slicer_core::Json ModelCapabilityAdapter::MakeMetadata(
             {"diffuseRgb", MakeNumberArray(material.diffuse_rgb)},
             {"texturePath", material.texture_path.empty()
                 ? slicer_core::Json{nullptr}
-                : slicer_core::Json{material.texture_path.generic_string()}}}));
+                : slicer_core::Json{slicer_core::PathToUtf8(material.texture_path)}}}));
     }
     return MakeSuccess({
         {"modelId", std::to_string(metadata.model_id)},
@@ -119,7 +119,7 @@ slicer_core::Json ModelCapabilityAdapter::Import(
     const slicer_core::Json& request)
 {
     slicer_core::api::ModelImportRequest importRequest;
-    importRequest.model_path = RequireString(request, "modelPath");
+    importRequest.model_path = slicer_core::PathFromUtf8(RequireString(request, "modelPath"));
     const slicer_core::Json& options = RequireObject(request, "options");
     importRequest.compute_bbox = RequireBoolean(options, "computeBBox");
     importRequest.extract_materials = RequireBoolean(options, "extractMaterials");
@@ -208,7 +208,7 @@ ModelCapabilityAdapter::ResolvePreflightModel(
         }
         return resource->scenemodel;
     }
-    const std::filesystem::path path = RequireString(request, "modelPath");
+    const auto path = slicer_core::PathFromUtf8(RequireString(request, "modelPath"));
     slicer_core::ModelLoadConfig config;
     config.input.model_path = path;
     return std::make_shared<const slicer_core::SceneModel>(

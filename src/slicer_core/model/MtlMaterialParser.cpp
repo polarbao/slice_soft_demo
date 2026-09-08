@@ -1,4 +1,5 @@
 #include "slicer_core/model/MtlMaterialParser.h"
+#include "slicer_core/model/AssetReferencePath.h"
 
 #include <algorithm>
 #include <cctype>
@@ -76,7 +77,7 @@ MtlMaterialLineResult ApplyDiffuseTexture(
         return {};
     }
     material->diffuse_texture_path =
-        ResolveTexturePath(texture_name, context.mtl_dir, context.obj_dir);
+        ResolveTexturePath(AssetReferencePath(texture_name), context.mtl_dir, context.obj_dir);
     material->has_texture = true;
     material->texture_exists = std::filesystem::exists(material->diffuse_texture_path);
     return MtlMaterialLineResult{true, false};

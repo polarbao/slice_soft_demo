@@ -1,5 +1,5 @@
 #include "slicer_core/model.h"
-
+#include "slicer_core/model/AssetReferencePath.h"
 #include "slicer_core/model/ObjFaceParser.h"
 #include "slicer_core/model/MtlMaterialParser.h"
 #include "slicer_core/model/FrameGeometry.h"
@@ -778,7 +778,7 @@ std::vector<ZipEntryData> read_3mf_zip_entries(const std::filesystem::path& path
     std::vector<ZipEntryData> entries;
 
     mz_zip_archive archive{};
-    if (!mz_zip_reader_init_file(&archive, path.string().c_str(), 0)) {
+    if (!mz_zip_reader_init_file(&archive, PathToUtf8(path).c_str(), 0)) {
         const std::string error = mz_zip_get_error_string(mz_zip_get_last_error(&archive));
         throw std::runtime_error("E_3MF_ZIP_OPEN_FAILED: " + error + ": " + path.string());
     }
@@ -1203,7 +1203,7 @@ std::string normalize_3mf_internal_path(std::string path) {
 }
 
 std::filesystem::path safe_cache_file_name(const std::filesystem::path& cache_dir, const std::string& id, const std::string& path) {
-    std::string name = id + "_" + std::filesystem::path(path).filename().string();
+    std::string name = id + "_" + PathToUtf8(PathFromUtf8(path).filename());
     for (char& ch : name) {
         if (!(std::isalnum(static_cast<unsigned char>(ch)) || ch == '.' || ch == '_' || ch == '-')) {
             ch = '_';
@@ -1891,7 +1891,7 @@ ModelReport load_model_report(const ModelLoadConfig& config, const std::filesyst
     } else if (format == "obj") {
         load_obj(model_path, config.transform, mesh);
         for (const std::string& library : mesh.material_libraries) {
-            const std::filesystem::path mtl_path = (model_path.parent_path() / library).lexically_normal();
+            const std::filesystem::path mtl_path = (model_path.parent_path() / model_detail::AssetReferencePath(library)).lexically_normal();
             load_mtl(mtl_path, model_path.parent_path(), mesh);
         }
     } else if (format == "3mf") {

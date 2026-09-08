@@ -1,4 +1,5 @@
 #include "slicer_core/geometry/SceneModelTriangleMeshAdapter.h"
+#include "slicer_core/system/Utf8Path.h"
 
 #include <cmath>
 #include <map>
@@ -65,7 +66,7 @@ AdaptedTriangleMesh AdaptSceneModelToTriangleMesh(
     }
 
     AdaptedTriangleMesh result;
-    result.mesh.source_name = scene.model_path.generic_string();
+    result.mesh.source_name = PathToUtf8(scene.model_path);
     result.mesh.bbox_mm = scene.bbox_mm;
     result.material_infos = scene.material_infos;
     result.topology.source_triangles = scene.triangles.size();
