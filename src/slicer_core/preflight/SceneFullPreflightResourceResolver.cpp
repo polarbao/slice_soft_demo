@@ -1,5 +1,5 @@
 #include "slicer_core/preflight/SceneFullPreflightService.h"
-
+#include "slicer_core/system/Utf8Path.h"
 #include "slicer_core/scene/SceneResourceIdentity.h"
 #include "slicer_core/system/Sha256.h"
 
@@ -20,7 +20,7 @@ std::string ReadFile(const std::filesystem::path& path)
     if (!input)
     {
         throw std::runtime_error(
-            "failed to read model source: " + path.generic_string());
+            "failed to read model source: " + PathToUtf8(path));
     }
     return {
         std::istreambuf_iterator<char>(input),

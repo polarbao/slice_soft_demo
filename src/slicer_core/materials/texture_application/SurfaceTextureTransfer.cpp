@@ -1,5 +1,5 @@
 #include "slicer_core/materials/texture_application/SurfaceTextureTransfer.h"
-
+#include "slicer_core/system/Utf8Path.h"
 #include "slicer_core/materials/texture_application/SurfaceAttributeMap.h"
 
 #include <algorithm>
@@ -154,7 +154,7 @@ SurfaceTextureTransferResult TransferSurfaceTexture(
                 {
                     try
                     {
-                        const std::string textureKey = material->diffuse_texture_path.lexically_normal().generic_string();
+                        const std::string textureKey = slicer_core::PathToUtf8(material->diffuse_texture_path.lexically_normal());
                         auto found = textureCache.find(textureKey);
                         if (found == textureCache.end())
                         {

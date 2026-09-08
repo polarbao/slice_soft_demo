@@ -1,5 +1,5 @@
 #include "slicer_core/slicer.h"
-
+#include "slicer_core/system/Utf8Path.h"
 #include "slicer_core/diagnostics/MaterialClosureCandidateDetector.h"
 #include "slicer_core/diagnostics/MaterialClosureSemanticDetector.h"
 #include "slicer_core/geometry/SceneModelTriangleMeshAdapter.h"
@@ -2128,7 +2128,7 @@ MaterialRoleMappingReportData build_material_role_mapping_report(
             {"hasDiffuse", material.has_diffuse},
             {"diffuseRgb", rgb_to_json(material.diffuse_rgb)},
             {"hasTexture", material.has_texture},
-            {"texturePath", material.diffuse_texture_path.generic_string()},
+            {"texturePath", slicer_core::PathToUtf8(material.diffuse_texture_path)},
         }));
         if (role == MaterialRole::SupportCandidate) {
             report.warnings.push_back("input material treated as support_candidate and did not write S: " + material.name);
@@ -2185,13 +2185,13 @@ TextureRuntime prepare_texture_runtime(const SliceConfig& config, const ModelRep
         RuntimeMaterialTexture runtime_material;
         runtime_material.material = material;
         if (material.has_texture) {
-            runtime.report.texture_files.push_back(material.diffuse_texture_path.generic_string());
+            runtime.report.texture_files.push_back(slicer_core::PathToUtf8(material.diffuse_texture_path));
             if (material.texture_source == "3mf_internal") {
                 runtime.report.source = "3mf_internal";
             }
             if (!material.texture_exists) {
                 ++runtime.report.missing_textures;
-                runtime.report.warnings.push_back("missing texture: " + material.diffuse_texture_path.generic_string());
+                runtime.report.warnings.push_back("missing texture: " + slicer_core::PathToUtf8(material.diffuse_texture_path));
                 if (config.texture.missing_texture_policy == "fail_fast") {
                     throw std::runtime_error("texture file does not exist: " + material.diffuse_texture_path.string());
                 }
@@ -2202,7 +2202,7 @@ TextureRuntime prepare_texture_runtime(const SliceConfig& config, const ModelRep
                     ++runtime.report.loaded_textures;
                 } catch (const std::exception& error) {
                     ++runtime.report.missing_textures;
-                    runtime.report.warnings.push_back("texture decode failed: " + material.diffuse_texture_path.generic_string());
+                    runtime.report.warnings.push_back("texture decode failed: " + slicer_core::PathToUtf8(material.diffuse_texture_path));
                     if (config.texture.missing_texture_policy == "fail_fast") {
                         throw;
                     }
@@ -2215,7 +2215,7 @@ TextureRuntime prepare_texture_runtime(const SliceConfig& config, const ModelRep
             {"hasDiffuse", material.has_diffuse},
             {"diffuseRgb", rgb_to_json(material.diffuse_rgb)},
             {"hasTexture", material.has_texture},
-            {"texturePath", material.diffuse_texture_path.generic_string()},
+            {"texturePath", slicer_core::PathToUtf8(material.diffuse_texture_path)},
             {"source", material.texture_source},
             {"textureLoaded", runtime_material.loaded},
         }));
@@ -3870,11 +3870,11 @@ Json obj_mtl_material_report_to_json(const ModelReport& model_report) {
             {"hasDiffuse", material.has_diffuse},
             {"diffuseRgb", rgb_to_json(material.diffuse_rgb)},
             {"hasTexture", material.has_texture},
-            {"texturePath", material.diffuse_texture_path.generic_string()},
+            {"texturePath", slicer_core::PathToUtf8(material.diffuse_texture_path)},
             {"textureExists", material.texture_exists},
         }));
         if (material.has_texture) {
-            textures.push_back(material.diffuse_texture_path.generic_string());
+            textures.push_back(slicer_core::PathToUtf8(material.diffuse_texture_path));
         }
     }
     int faces_with_material{0};
@@ -3915,7 +3915,7 @@ Json three_mf_report_to_json(const ModelReport& model_report) {
     }
     return Json::object({
         {"enabled", model_report.three_mf.enabled},
-        {"packagePath", model_report.three_mf.package_path.generic_string()},
+        {"packagePath", slicer_core::PathToUtf8(model_report.three_mf.package_path)},
         {"modelPartPath", model_report.three_mf.model_part_path},
         {"unit", model_report.three_mf.unit},
         {"unitScaleToMm", model_report.three_mf.unit_scale_to_mm},
@@ -4087,7 +4087,7 @@ bool MatchesSourceIdentity(
     {
         return false;
     }
-    const std::filesystem::path identityPath(sourceIdentity);
+    const std::filesystem::path identityPath = PathFromUtf8(sourceIdentity);
     std::error_code error;
     const bool equivalent = std::filesystem::equivalent(
         loadedModelPath,
@@ -5664,13 +5664,13 @@ SliceRunResult run_slicer(const std::filesystem::path& config_path, const SliceR
             {"hasDiffuse", material.has_diffuse},
             {"diffuseRgb", rgb_to_json(material.diffuse_rgb)},
             {"hasTexture", material.has_texture},
-            {"texturePath", material.diffuse_texture_path.generic_string()},
+            {"texturePath", slicer_core::PathToUtf8(material.diffuse_texture_path)},
             {"textureExists", material.texture_exists},
         }));
     }
 
     const Json model_json = Json::object({
-        {"modelPath", model_report.model_path.generic_string()},
+        {"modelPath", slicer_core::PathToUtf8(model_report.model_path)},
         {"format", model_report.format},
         {"stlEncoding", model_report.stl_encoding},
         {"vertexCount", static_cast<std::uint64_t>(model_report.vertex_count)},
@@ -5703,11 +5703,11 @@ SliceRunResult run_slicer(const std::filesystem::path& config_path, const SliceR
         "p0.report.package.1",
         Json::object({
             {"component", "slicer_core"},
-            {"packageDir", package_dir.generic_string()},
+            {"packageDir", slicer_core::PathToUtf8(package_dir)},
         }),
         Json::object({
-            {"configPath", config_path.generic_string()},
-            {"modelPath", model_report.model_path.generic_string()},
+            {"configPath", slicer_core::PathToUtf8(config_path)},
+            {"modelPath", slicer_core::PathToUtf8(model_report.model_path)},
             {"schema", config.output.package_protocol},
         }));
 
@@ -5750,8 +5750,8 @@ SliceRunResult run_slicer(const std::filesystem::path& config_path, const SliceR
         {"fallbackApplied", false},
         {"source",
          Json::object({
-             {"configPath", config_path.generic_string()},
-             {"modelPath", model_report.model_path.generic_string()},
+             {"configPath", slicer_core::PathToUtf8(config_path)},
+             {"modelPath", slicer_core::PathToUtf8(model_report.model_path)},
              {"format", model_report.format},
              {"engine", "legacy"},
          })},

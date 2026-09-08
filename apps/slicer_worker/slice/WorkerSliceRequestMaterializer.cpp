@@ -1,4 +1,5 @@
 #include "slicer_worker/slice/WorkerSliceRequestMaterializer.h"
+#include "slicer_core/system/Utf8Path.h"
 
 #include "slicer_core/api/ProfileIdentity.h"
 #include "slicer_core/config.h"
@@ -180,9 +181,9 @@ void CleanupMaterialization(const MaterializedPaths& paths) noexcept
     {
         std::filesystem::remove(path, error);
         error.clear();
-        std::filesystem::remove(path.string() + ".tmp", error);
+        std::filesystem::remove(slicer_core::PathWithSuffix(path, ".tmp"), error);
         error.clear();
-        std::filesystem::remove(path.string() + ".backup", error);
+        std::filesystem::remove(slicer_core::PathWithSuffix(path, ".backup"), error);
         error.clear();
     }
 }
@@ -192,7 +193,7 @@ void WriteJsonAtomically(
     const slicer_core::Json& document,
     const slicer_core::api::ICancelToken& cancelToken)
 {
-    const std::filesystem::path temporary = path.string() + ".tmp";
+    const auto temporary = slicer_core::PathWithSuffix(path, ".tmp");
     std::error_code error;
     std::filesystem::remove(temporary, error);
     error.clear();
@@ -437,7 +438,7 @@ WorkerSliceMaterialization WorkerSliceRequestMaterializer::Materialize(
             Fail(kContractCode, "slice output contract does not match capability");
         }
         const std::filesystem::path packageDirectory =
-            std::filesystem::path(ReadStringField(
+            slicer_core::PathFromUtf8(ReadStringField(
                 request.Output(), "packageDir", kOutputCode));
         if (!IsNormalizedAbsolute(packageDirectory))
         {

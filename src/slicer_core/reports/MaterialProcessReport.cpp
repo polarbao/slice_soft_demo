@@ -1,4 +1,5 @@
 #include "slicer_core/reports/MaterialProcessReport.h"
+#include "slicer_core/system/Utf8Path.h"
 
 #include <stdexcept>
 
@@ -81,7 +82,7 @@ Json BuildMaterialProcessReport(const MaterialProcessReportRequest& request)
     return Json::object({
         {"enabled", profile.enabled}, {"profileName", profile.name},
         {"target", profile.target}, {"inputFormat", request.inputFormat},
-        {"sourceModel", request.sourceModel.generic_string()},
+        {"sourceModel", PathToUtf8(request.sourceModel)},
         {"grid", Json::object({
             {"widthPx", request.widthPx}, {"heightPx", request.heightPx},
             {"layerCount", request.layerCount},

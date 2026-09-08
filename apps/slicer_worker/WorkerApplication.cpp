@@ -1,4 +1,5 @@
 #include "WorkerApplication.h"
+#include "slicer_core/system/Utf8Path.h"
 #include "SliceSoftBuildVersion.h"
 
 #include "slicer_worker/preflight/WorkerPreflightExecutor.h"
@@ -134,7 +135,7 @@ int WorkerApplication::HandleSpiRequest(
             "--spi-request requires exactly one absolute request JSON path");
     }
 
-    const std::filesystem::path requestPath{argv[2]};
+    const auto requestPath = slicer_core::PathFromUtf8(argv[2]);
     if (!requestPath.is_absolute())
     {
         return PrintFailure(

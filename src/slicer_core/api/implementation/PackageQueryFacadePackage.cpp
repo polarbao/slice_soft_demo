@@ -1,5 +1,5 @@
 #include "slicer_core/api/implementation/PackageQueryFacadeInternal.h"
-
+#include "slicer_core/system/Utf8Path.h"
 #include "slicer_core/TiffReadApi.h"
 #include "slicer_core/system/Sha256.h"
 
@@ -141,7 +141,7 @@ std::string FileMetadataIdentity(const std::filesystem::path& path)
         return {};
     }
     return ComputeSha256(
-        path.generic_string() + "|" + std::to_string(bytes) + "|"
+        slicer_core::PathToUtf8(path) + "|" + std::to_string(bytes) + "|"
         + std::to_string(modified.time_since_epoch().count()));
 }
 

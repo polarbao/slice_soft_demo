@@ -1,5 +1,5 @@
 #include "slicer_core/preview/TiffLayerSource.h"
-
+#include "slicer_core/system/Utf8Path.h"
 #include "slicer_core/json_value.h"
 #include "slicer_core/system/Sha256.h"
 #include "slicer_core/TiffReadApi.h"
@@ -615,7 +615,7 @@ std::string ComputeFileMetadataIdentity(
             error.message());
     }
     const std::string payload =
-        path.generic_string() + "|" + std::to_string(bytes) + "|"
+        PathToUtf8(path) + "|" + std::to_string(bytes) + "|"
         + std::to_string(modified.time_since_epoch().count());
     return ComputeSha256(payload);
 }
@@ -755,7 +755,7 @@ ProductionPackageIndex TiffLayerSource::IndexPackage(
         std::filesystem::weakly_canonical(absoluteManifest.parent_path());
     package.manifestPath = absoluteManifest;
     package.packageIdentity =
-        ComputeSha256(package.packageDirectory.generic_string());
+        ComputeSha256(PathToUtf8(package.packageDirectory));
     package.manifestHash = ComputeSha256(manifestPayload);
     package.width = static_cast<std::uint32_t>(
         RequirePositiveInt(grid, "widthPx", absoluteManifest));

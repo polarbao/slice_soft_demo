@@ -1,4 +1,5 @@
 #include "slicer_core/config.h"
+#include "slicer_core/system/Utf8Path.h"
 
 #include "slicer_core/config/ConfigMigration.h"
 #include "slicer_core/config/TransferChannelConfig.h"
@@ -172,12 +173,12 @@ SliceConfig load_slice_config(const std::filesystem::path& config_path) {
         throw std::runtime_error("missing required field: input.modelPath");
     }
     const auto& input_json = root.at("input");
-    config.input.model_path = input_json.at("modelPath").as_string();
+    config.input.model_path = PathFromUtf8(input_json.at("modelPath").as_string());
     config.input.format = input_json.value("format", config.input.format);
 
     if (root.contains("output")) {
         const auto& output = root.at("output");
-        config.output.package_dir = output.value("packageDir", config.output.package_dir.string());
+        config.output.package_dir = PathFromUtf8(output.value("packageDir", PathToUtf8(config.output.package_dir)));
         config.output.package_protocol = output.value("packageProtocol", config.output.package_protocol);
         config.output.dpi_x = output.value("dpiX", config.output.dpi_x);
         config.output.dpi_y = output.value("dpiY", config.output.dpi_y);

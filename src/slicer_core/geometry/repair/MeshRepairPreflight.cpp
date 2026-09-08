@@ -1,5 +1,5 @@
 #include "slicer_core/geometry/repair/MeshRepairPreflight.h"
-
+#include "slicer_core/system/Utf8Path.h"
 #include "slicer_core/geometry/MeshTopologyDiagnostics.h"
 #include "slicer_core/geometry/repair/MeshCompleteSelfIntersectionAnalyzer.h"
 #include "slicer_core/geometry/repair/MeshRepairEligibilityPolicy.h"
@@ -188,7 +188,7 @@ std::uint64_t CountTextureResources(const AdaptedTriangleMesh& mesh)
     {
         if (material.has_texture)
         {
-            paths.insert(material.diffuse_texture_path.generic_string());
+            paths.insert(PathToUtf8(material.diffuse_texture_path));
         }
     }
     return static_cast<std::uint64_t>(paths.size());

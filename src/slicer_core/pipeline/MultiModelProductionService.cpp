@@ -12,7 +12,7 @@
 #include "slicer_core/scene/SceneResourceIdentity.h"
 #include "slicer_core/scene/SceneViewGeometry.h"
 #include "slicer_core/system/Sha256.h"
-
+#include "slicer_core/system/Utf8Path.h"
 #include <algorithm>
 #include <chrono>
 #include <cmath>
@@ -118,13 +118,13 @@ SceneProductionContract ReadContract(
 
     SceneProductionContract result;
     result.profileconfigpath = ResolvePath(
-        contract.at("profileConfigPath").as_string(),
+        PathFromUtf8(contract.at("profileConfigPath").as_string()),
         baseDirectory);
     result.outputpackagedir = ResolvePath(
-        contract.at("outputPackageDir").as_string(),
+        PathFromUtf8(contract.at("outputPackageDir").as_string()),
         baseDirectory);
     result.scenebasedirectory = ResolvePath(
-        document.at("sourceScenePath").as_string(),
+        PathFromUtf8(document.at("sourceScenePath").as_string()),
         baseDirectory)
         .parent_path();
     result.dpix = static_cast<int>(
@@ -287,7 +287,7 @@ std::map<std::string, LoadedSceneModel> LoadSceneModels(
         item.model = std::move(model);
         item.importprofile.modelid = source.modelid;
         item.importprofile.sourcepath =
-            sourcePath.generic_string();
+            PathToUtf8(sourcePath);
         item.importprofile.parsems = parseMs;
         item.importprofile.texturems = std::nullopt;
         item.importprofile.previewms = std::nullopt;

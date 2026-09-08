@@ -1,4 +1,5 @@
 #include "slicer_module/WorkerJobService.h"
+#include "slicer_core/system/Utf8Path.h"
 
 #include "slicer_core/api/artifacts/PackageArtifactSafety.h"
 #include "slicer_module/HandleRegistry.h"
@@ -280,7 +281,7 @@ struct WorkerJobService::Implementation
             slicer_core::Json::Object payload = std::move(document);
             slicer_core::Json::Object input = payload.at("input").as_object();
             const std::filesystem::path requested{
-                input.at("outputPath").as_string()};
+                slicer_core::PathFromUtf8(input.at("outputPath").as_string())};
             const std::filesystem::path fileName = requested.filename().empty()
                 ? std::filesystem::path{"repaired.obj"}
                 : requested.filename();
@@ -300,7 +301,7 @@ struct WorkerJobService::Implementation
         {
             const slicer_core::Json& output = document.at("output");
             const std::filesystem::path packageDirectory{
-                output.at("packageDir").as_string()};
+                slicer_core::PathFromUtf8(output.at("packageDir").as_string())};
             const auto identity =
                 slicer_core::api::artifacts::MakePackageArtifactIdentity(
                     packageDirectory,
@@ -512,7 +513,7 @@ struct WorkerJobService::Implementation
             options.executablePath = execution->workerExecutable;
             options.arguments = {
                 "--spi-request",
-                execution->requestPath.generic_string()};
+                slicer_core::PathToUtf8(execution->requestPath)};
             options.workingDirectory = execution->workerExecutable.parent_path();
             options.cancellationMarkerPath = execution->cancelPath;
             options.timeout = execution->route.timeout;

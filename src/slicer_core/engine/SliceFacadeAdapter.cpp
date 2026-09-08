@@ -1,4 +1,5 @@
 #include "slicer_core/engine/SliceFacadeAdapter.h"
+#include "slicer_core/system/Utf8Path.h"
 
 #include <algorithm>
 #include <cctype>
@@ -70,7 +71,7 @@ std::filesystem::path NormalizePath(
 std::string ComparablePathString(
     const std::filesystem::path& path)
 {
-    std::string value = NormalizePath(path).generic_string();
+    std::string value = PathToUtf8(NormalizePath(path));
 #ifdef _WIN32
     std::transform(
         value.begin(),
@@ -198,9 +199,9 @@ api::ApiResult<api::SliceResult> SliceFacadeAdapter::Run(
                 MakeError(
                     "PM-SLICER-PROFILE-0031",
                     "requested package path differs from the effective config",
-                    "requested=" + NormalizePath(request.package_dir).generic_string()
+                    "requested=" + PathToUtf8(NormalizePath(request.package_dir))
                         + "; effective="
-                        + NormalizePath(contract->packagedir).generic_string()));
+                        + PathToUtf8(NormalizePath(contract->packagedir))));
         }
         if (cancelToken.IsCancelRequested())
         {

@@ -1,5 +1,5 @@
 #include "slicer_core/preflight/ModelPreflightService.h"
-
+#include "slicer_core/model/AssetReferencePath.h"
 #include "slicer_core/config.h"
 #include "slicer_core/geometry/MeshScaleTolerance.h"
 #include "slicer_core/geometry/SceneModelTriangleMeshAdapter.h"
@@ -48,7 +48,7 @@ std::string ReadBinaryFile(const std::filesystem::path& path)
     std::ifstream input{path, std::ios::binary};
     if (!input)
     {
-        throw std::runtime_error("failed to read file: " + path.string());
+        throw std::runtime_error("failed to read file: " + PathToUtf8(path));
     }
     return std::string{
         std::istreambuf_iterator<char>{input},
@@ -123,8 +123,8 @@ std::vector<ResourceEntry> CollectResources(const ModelReport& scene)
     for (const std::string& library : scene.material_libraries)
     {
         resources.emplace(
-            "mtl:" + std::filesystem::path{library}.generic_string(),
-            (scene.model_path.parent_path() / library).lexically_normal());
+            "mtl:" + PathToUtf8(model_detail::AssetReferencePath(library)),
+            (scene.model_path.parent_path() / model_detail::AssetReferencePath(library)).lexically_normal());
     }
     for (const MaterialInfo& material : scene.material_infos)
     {
@@ -552,7 +552,7 @@ ModelPreflightExecutionResult ModelPreflightService::Run(
 
         MeshRepairPreflightRequest preflightRequest;
         preflightRequest.mesh = &adapted;
-        preflightRequest.input.sourcePath = scene.model_path.generic_string();
+        preflightRequest.input.sourcePath = PathToUtf8(scene.model_path);
         preflightRequest.input.inputFormat = scene.format;
         preflightRequest.options.mode = "strict_closed";
         preflightRequest.options.analyzeCompleteSelfIntersections = true;

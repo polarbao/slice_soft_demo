@@ -1,4 +1,5 @@
 #include "slicer_module/PackageCapabilityAdapter.h"
+#include "slicer_core/system/Utf8Path.h"
 
 #include "slicer_module/ModelCapabilityAdapter.h"
 #include "slicer_core/api/PackageQueryFacade.h"
@@ -57,7 +58,7 @@ private:
     [[nodiscard]] static std::filesystem::path ReadPackageDir(
         const slicer_core::Json& request)
     {
-        return RequireString(request, "packageDir");
+        return slicer_core::PathFromUtf8(RequireString(request, "packageDir"));
     }
 
     [[nodiscard]] static slicer_core::Json MakeChannelCounts(
@@ -161,7 +162,7 @@ private:
             {"emptyPixels", MakeChannelCounts(
                 result.Value()->channels, result.Value()->empty_pixels)},
             {"storageMode", result.Value()->storage_mode},
-            {"tiffPath", result.Value()->tiff_path.generic_string()}});
+            {"tiffPath", slicer_core::PathToUtf8(result.Value()->tiff_path)}});
     }
 
     [[nodiscard]] slicer_core::Json RenderLayerPreview(
@@ -172,7 +173,7 @@ private:
         previewRequest.layer_index = RequireInteger(request, "layerIndex");
         previewRequest.mode = RequireString(request, "mode");
         previewRequest.max_width_px = RequireInteger(request, "maxWidthPx");
-        previewRequest.output_path = RequireString(request, "outputPath");
+        previewRequest.output_path = slicer_core::PathFromUtf8(RequireString(request, "outputPath"));
         for (const slicer_core::Json& channel : RequireArray(request, "channels"))
         {
             if (!channel.is_string())
@@ -190,7 +191,7 @@ private:
             return MakeFailure(*result.Error());
         }
         return MakeSuccess({
-            {"outputPath", result.Value()->output_path.generic_string()},
+            {"outputPath", slicer_core::PathToUtf8(result.Value()->output_path)},
             {"widthPx", result.Value()->width_px},
             {"heightPx", result.Value()->height_px},
             {"cacheKey", result.Value()->cache_key}});
@@ -210,7 +211,7 @@ private:
             {"reportName", result.Value()->report_name},
             {"reportSchema", result.Value()->report_schema},
             {"data", ParseStructuredObject(result.Value()->data)},
-            {"sourcePath", result.Value()->source_path.generic_string()}});
+            {"sourcePath", slicer_core::PathToUtf8(result.Value()->source_path)}});
     }
 
     std::unique_ptr<slicer_core::api::PackageQueryFacade> m_facade;

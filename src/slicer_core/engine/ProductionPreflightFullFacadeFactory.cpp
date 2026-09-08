@@ -1,5 +1,5 @@
 #include "slicer_core/engine/ProductionPreflightFullFacadeFactory.h"
-
+#include "slicer_core/system/Utf8Path.h"
 #include "slicer_core/api/ProfileIdentity.h"
 #include "slicer_core/config.h"
 #include "slicer_core/model.h"
@@ -49,7 +49,7 @@ Json ReadJson(const std::filesystem::path& path)
     if (!input)
     {
         throw std::runtime_error(
-            "failed to open JSON document: " + path.generic_string());
+            "failed to open JSON document: " + PathToUtf8(path));
     }
     return Json::parse(input);
 }

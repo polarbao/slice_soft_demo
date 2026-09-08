@@ -1,5 +1,5 @@
 #include "slicer_core/materials/texture_application/TextureFillPartitionTextureTransfer.h"
-
+#include "slicer_core/system/Utf8Path.h"
 #include "slicer_core/materials/texture_application/SurfaceAttributeMap.h"
 
 #include <algorithm>
@@ -331,7 +331,7 @@ TextureFillPartitionTextureTransferResult TransferTextureFillPartition(
         else if (material != nullptr && material->has_texture)
         {
             const std::string textureKey =
-                material->diffuse_texture_path.lexically_normal().generic_string();
+                slicer_core::PathToUtf8(material->diffuse_texture_path.lexically_normal());
             if (!material->texture_exists || textureKey.empty())
             {
                 ++result.stats.missingTextureCount;

@@ -1,5 +1,5 @@
 #include "slicer_core/reports/MultiModelSceneReport.h"
-
+#include "slicer_core/system/Utf8Path.h"
 #include "slicer_core/config/SlicePipelineConfig.h"
 
 #include <algorithm>
@@ -182,7 +182,7 @@ Json ModelsToJson(const MultiModelScene& scene)
     {
         result.push_back(Json::object({
             {"modelId", model.modelid},
-            {"sourcePath", model.sourcepath.generic_string()},
+            {"sourcePath", slicer_core::PathToUtf8(model.sourcepath)},
             {"format", model.format},
             {"resourceScopeId", model.resourcescopeid},
             {"sourceHash", model.sourcehash},
@@ -433,7 +433,7 @@ MultiModelSceneReportDocument BuildMultiModelSceneReportImpl(
     const std::string sceneHash =
         ComputeMultiModelSceneHash(scene);
     const std::string reportPath =
-        MultiModelSceneReportRelativePath().generic_string();
+        slicer_core::PathToUtf8(MultiModelSceneReportRelativePath());
     const std::filesystem::path absolutePackageDir =
         std::filesystem::absolute(packageDir).lexically_normal();
 
@@ -522,7 +522,7 @@ MultiModelSceneReportDocument BuildMultiModelSceneReportImpl(
          })},
         {"package",
          Json::object({
-             {"path", absolutePackageDir.generic_string()},
+             {"path", slicer_core::PathToUtf8(absolutePackageDir)},
              {"manifest", "manifest.json"},
              {"sceneReport", reportPath},
          })},

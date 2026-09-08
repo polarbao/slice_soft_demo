@@ -1,5 +1,5 @@
 #include "slicer_core/pipeline/GlobalSurfaceShellProductionPipeline.h"
-
+#include "slicer_core/system/Utf8Path.h"
 #include "slicer_core/diagnostics/TextureFillPartitionFullClosureAdapter.h"
 #include "slicer_core/diagnostics/TextureFillPartitionReleaseBenchmark.h"
 #include "slicer_core/geometry/SceneModelTriangleMeshAdapter.h"
@@ -372,8 +372,8 @@ SliceRunResult RunGlobalSurfaceShellProductionPipeline(
     benchmarkRequest.adaptedMesh = &adapted;
     benchmarkRequest.caseName =
         config.material_process_profile.name;
-    benchmarkRequest.configPath = configPath.generic_string();
-    benchmarkRequest.modelPath = scene.model_path.generic_string();
+    benchmarkRequest.configPath = PathToUtf8(configPath);
+    benchmarkRequest.modelPath = PathToUtf8(scene.model_path);
     benchmarkRequest.buildType = kBuildType;
     benchmarkRequest.voxelMm = ClassificationResolutionMm(config);
     benchmarkRequest.widthMm = config.texture.surface_shell.width_mm;

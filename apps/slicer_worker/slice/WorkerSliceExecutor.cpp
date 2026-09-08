@@ -1,5 +1,5 @@
 #include "slicer_worker/slice/WorkerSliceExecutor.h"
-
+#include "slicer_core/system/Utf8Path.h"
 #include "slicer_worker/slice/WorkerSliceRequestMaterializer.h"
 
 #include "slicer_core/engine/ProductionPreflightFullFacadeFactory.h"
@@ -202,8 +202,8 @@ slicer_core::Json BuildBasicOutput(
 {
     const slicer_core::SliceRunProfile& profile = result.profile;
     return slicer_core::Json::object({
-        {"packageDir", result.package_dir.generic_string()},
-        {"manifestPath", result.manifest_path.generic_string()},
+        {"packageDir", slicer_core::PathToUtf8(result.package_dir)},
+        {"manifestPath", slicer_core::PathToUtf8(result.manifest_path)},
         {"layerCount", result.layer_count},
         {"grid", slicer_core::Json::object({
             {"widthPx", result.grid_px[0]},

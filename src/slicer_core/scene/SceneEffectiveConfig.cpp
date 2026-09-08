@@ -1,4 +1,5 @@
 #include "slicer_core/scene/SceneEffectiveConfig.h"
+#include "slicer_core/system/Utf8Path.h"
 
 #include "slicer_core/system/Sha256.h"
 
@@ -94,7 +95,7 @@ bool PublishStagedFile(
     const std::filesystem::path& outputPath)
 {
     const std::filesystem::path backupPath =
-        outputPath.string() + ".backup";
+        PathWithSuffix(outputPath, ".backup");
     std::error_code error;
     std::filesystem::remove(backupPath, error);
     error.clear();
@@ -207,16 +208,16 @@ SceneEffectiveConfigResult GenerateSceneEffectiveConfig(
         {"schema", std::string(SceneEffectiveConfigSchemaName())},
         {"subjectType", "scene"},
         {"sourceScenePath",
-         request.sourcescenepath.generic_string()},
+         PathToUtf8(request.sourcescenepath)},
         {"sourceProfileId", request.sourceprofileid},
         {"generatedAtUtc", request.generatedatutc},
         {"production", request.production},
         {"sliceContract",
          Json::object({
              {"profileConfigPath",
-              request.sourceprofileconfigpath.generic_string()},
+              PathToUtf8(request.sourceprofileconfigpath)},
              {"outputPackageDir",
-              request.outputpackagedir.generic_string()},
+              PathToUtf8(request.outputpackagedir)},
              {"dpiX", request.dpix},
              {"dpiY", request.dpiy},
              {"layerHeightMm", request.layerheightmm},
@@ -296,7 +297,7 @@ SceneEffectiveConfigResult WriteSceneEffectiveConfig(
     }
 
     const std::filesystem::path stagingPath =
-        request.generatedconfigpath.string() + ".tmp";
+        PathWithSuffix(request.generatedconfigpath, ".tmp");
     std::filesystem::remove(stagingPath, error);
     error.clear();
     {

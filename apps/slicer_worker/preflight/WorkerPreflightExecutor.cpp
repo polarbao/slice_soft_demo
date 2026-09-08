@@ -1,5 +1,5 @@
 #include "slicer_worker/preflight/WorkerPreflightExecutor.h"
-
+#include "slicer_core/system/Utf8Path.h"
 #include "slicer_core/api/ProfileIdentity.h"
 #include "slicer_core/engine/ProductionPreflightFullFacadeFactory.h"
 #include "slicer_core/scene/MultiModelScene.h"
@@ -130,7 +130,7 @@ void WriteJsonAtomically(
     const slicer_core::Json& document,
     const slicer_core::api::ICancelToken& cancelToken)
 {
-    const std::filesystem::path temporary = path.string() + ".tmp";
+    const auto temporary = slicer_core::PathWithSuffix(path, ".tmp");
     std::error_code error;
     std::filesystem::remove(temporary, error);
     error.clear();
@@ -167,7 +167,7 @@ void CleanupMaterialization(
     {
         std::filesystem::remove(path, error);
         error.clear();
-        std::filesystem::remove(path.string() + ".tmp", error);
+        std::filesystem::remove(slicer_core::PathWithSuffix(path, ".tmp"), error);
         error.clear();
     }
 }

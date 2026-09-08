@@ -1,4 +1,5 @@
 #include "slicer_core/api/artifacts/PackageArtifactSafety.h"
+#include "slicer_core/system/Utf8Path.h"
 
 #include "slicer_core/system/Sha256.h"
 
@@ -234,17 +235,17 @@ PackageArtifactIdentity MakePackageArtifactIdentity(
         throw std::invalid_argument(
             "package artifact target requires a parent directory");
     }
-    const std::string prefix = target.filename().string();
+    const auto prefix = target.filename();
     const std::string suffix = jobId + "." + attemptId;
 
     PackageArtifactIdentity identity;
     identity.package_directory = target;
     identity.staging_directory = target.parent_path()
-        / (prefix + ".staging." + suffix);
+        / PathWithSuffix(prefix, ".staging." + suffix);
     identity.backup_directory = target.parent_path()
-        / (prefix + ".backup." + suffix);
+        / PathWithSuffix(prefix, ".backup." + suffix);
     identity.lease_directory = target.parent_path()
-        / (prefix + ".lease");
+        / PathWithSuffix(prefix, ".lease");
     identity.job_id = jobId;
     identity.attempt_id = attemptId;
     return identity;
@@ -262,7 +263,7 @@ std::string MakePackageAttemptId(const std::string_view correlationId)
 
 bool IsTemporaryPackagePath(const std::filesystem::path& path) noexcept
 {
-    std::string filename = path.filename().string();
+    std::string filename = PathToUtf8(path.filename());
     std::transform(
         filename.begin(),
         filename.end(),

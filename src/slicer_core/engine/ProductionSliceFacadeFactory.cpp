@@ -1,4 +1,5 @@
 #include "slicer_core/engine/ProductionSliceFacadeFactory.h"
+#include "slicer_core/system/Utf8Path.h"
 
 #include "slicer_core/api/artifacts/PackageArtifactSafety.h"
 #include "slicer_core/engine/SliceFacadeAdapter.h"
@@ -75,7 +76,7 @@ api::ApiResult<SliceSubmissionContract> ResolveSubmissionContract(
                 "scene effective config is invalid",
                 effective.error.has_value()
                     ? effective.error->message
-                    : effectiveConfigPath.generic_string()));
+                    : PathToUtf8(effectiveConfigPath)));
     }
 
     try
@@ -86,10 +87,10 @@ api::ApiResult<SliceSubmissionContract> ResolveSubmissionContract(
                                  .at("sceneHash")
                                  .as_string();
         contract.packagedir = ResolvePath(
-            effective.document
+            PathFromUtf8(effective.document
                 .at("sliceContract")
                 .at("outputPackageDir")
-                .as_string(),
+                .as_string()),
             effectiveConfigPath.parent_path());
         if (contract.scenehash.empty()
             || contract.packagedir.empty())
@@ -314,10 +315,10 @@ api::ApiResult<api::SliceResult> RunTransferProductionEntry(
         }
 
         const std::filesystem::path profilePath = ResolvePath(
-            effective.document
+            PathFromUtf8(effective.document
                 .at("sliceContract")
                 .at("profileConfigPath")
-                .as_string(),
+                .as_string()),
             sliceRequest.scene_config_path.parent_path());
         SliceRunOptions options;
         options.progress_callback =

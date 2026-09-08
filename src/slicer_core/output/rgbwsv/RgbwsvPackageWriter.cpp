@@ -1,5 +1,5 @@
 #include "slicer_core/output/rgbwsv/RgbwsvPackageWriter.h"
-
+#include "slicer_core/system/Utf8Path.h"
 #include "slicer_core/api/artifacts/PackageArtifactSafety.h"
 #include "slicer_core/json_value.h"
 #include "slicer_core/output/rgbwsv/RgbwsvCapabilitySummary.h"
@@ -88,7 +88,7 @@ api::artifacts::PackageArtifactIdentity MakeWriterArtifactIdentity(
 
     static std::atomic<std::uint64_t> directAttemptCounter{0U};
     const std::string correlation =
-        packageDir.generic_string()
+        slicer_core::PathToUtf8(packageDir)
         + ":"
         + std::to_string(
             WriterClock::now().time_since_epoch().count())
@@ -274,9 +274,8 @@ void ValidateRequest(
     if (compositionReady && request.scene.has_value())
     {
         const std::string expectedPackagePath =
-            std::filesystem::absolute(request.packageDir)
-                .lexically_normal()
-                .generic_string();
+            PathToUtf8(std::filesystem::absolute(request.packageDir)
+                .lexically_normal());
         const MultiModelSceneReportDocument& scene =
             *request.scene;
         if (!scene.IsValid()
@@ -883,8 +882,8 @@ std::vector<PackageFileIdentity> CollectPackageFileIdentity(
         files.end(),
         [](const PackageFileIdentity& lhs, const PackageFileIdentity& rhs)
         {
-            return lhs.relativePath.generic_string()
-                < rhs.relativePath.generic_string();
+            return slicer_core::PathToUtf8(lhs.relativePath)
+                < slicer_core::PathToUtf8(rhs.relativePath);
         });
     return files;
 }
@@ -963,7 +962,7 @@ void ValidatePersistedSceneExtension(
         || persisted.report.dump(0)
             != request.scene->report.dump(0)
         || manifest.at("reports").at("scene").as_string()
-            != MultiModelSceneReportRelativePath().generic_string())
+            != slicer_core::PathToUtf8(MultiModelSceneReportRelativePath()))
     {
         throw std::runtime_error(
             "staged RGBWSV scene report failed persistence validation");
@@ -1393,7 +1392,7 @@ RgbwsvProductionPackageWriteResult RgbwsvProductionPackageSession::Finish()
             if (request.scene.has_value())
             {
                 reportLinks["scene"] =
-                    MultiModelSceneReportRelativePath().generic_string();
+                    slicer_core::PathToUtf8(MultiModelSceneReportRelativePath());
             }
             Json::Object manifestObject{
                 {"schema", protocol.schema},
@@ -1405,8 +1404,8 @@ RgbwsvProductionPackageWriteResult RgbwsvProductionPackageSession::Finish()
                 {"fallbackApplied", false},
                 {"source",
                  Json::object({
-                     {"configPath", request.sourceConfigPath.generic_string()},
-                     {"modelPath", request.sourceModelPath.generic_string()},
+                     {"configPath", slicer_core::PathToUtf8(request.sourceConfigPath)},
+                     {"modelPath", slicer_core::PathToUtf8(request.sourceModelPath)},
                      {"format", request.sourceFormat},
                      {"engine", request.effectivePipelineMode},
                  })},

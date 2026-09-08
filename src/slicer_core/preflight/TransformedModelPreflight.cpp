@@ -1,5 +1,5 @@
 #include "slicer_core/preflight/TransformedModelPreflight.h"
-
+#include "slicer_core/system/Utf8Path.h"
 #include "slicer_core/geometry/MeshScaleTolerance.h"
 #include "slicer_core/geometry/SceneModelTriangleMeshAdapter.h"
 #include "slicer_core/geometry/TransformedModelAdapter.h"
@@ -446,7 +446,7 @@ TransformedModelPreflightService::RunGeometry(
         MeshRepairPreflightRequest preflightRequest;
         preflightRequest.mesh = &adapted;
         preflightRequest.input.sourcePath =
-            diagnosticModel.model_path.generic_string();
+            PathToUtf8(diagnosticModel.model_path);
         preflightRequest.input.inputFormat = diagnosticModel.format;
         preflightRequest.options.mode = "strict_closed";
         preflightRequest.options.analyzeCompleteSelfIntersections = true;
