@@ -962,6 +962,15 @@ if(MSVC)
     )
 endif()
 
+add_executable(unicode_path_contract_tests tests/unit/unicode_paths/Main.cpp)
+target_include_directories(unicode_path_contract_tests PRIVATE ${CMAKE_CURRENT_SOURCE_DIR})
+target_link_libraries(unicode_path_contract_tests PRIVATE slicer_module slicer_base)
+if(MSVC)
+    target_compile_options(unicode_path_contract_tests PRIVATE /W4 /WX /utf-8)
+    target_sources(unicode_path_contract_tests PRIVATE tests/unit/unicode_paths/LegacyCodePage.manifest)
+endif()
+add_test(NAME unicode_path_contract_tests COMMAND unicode_path_contract_tests ${CMAKE_SOURCE_DIR})
+
 add_executable(hostflow_ha04_grid_layout_tests
     tests/hostflow/SceneLayoutAdapterTests.cpp
 )
