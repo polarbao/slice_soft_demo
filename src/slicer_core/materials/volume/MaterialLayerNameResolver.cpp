@@ -1,5 +1,7 @@
 #include "slicer_core/materials/volume/MaterialLayerNameResolver.h"
 
+#include "slicer_core/model/FrameGeometry.h"
+
 #include <algorithm>
 #include <cctype>
 #include <map>
@@ -148,6 +150,18 @@ MaterialLayerNaming ResolveMaterialLayerNaming(
 
     for (const MaterialInfo& material : materialInfos)
     {
+        // 非打印画幅定位保留名不是打印材质：它的面在导入期已由
+        // ExtractFrameGeometry 从网格里剥离，但 MTL 的材质表仍然带着它
+        // （materialInfos 来自 MTL 解析，不来自面绑定）。故必须在此跳过 ——
+        // 否则它会因为没有 -L<n> 后缀被判违规，整份资产被拒。
+        //
+        // 跳过意味着它既不计入 max_layer、也不产生 overlap 规则，这与
+        // DOC_SPEC_MATERIAL_NAMING §6.3「nail-Default 不参与最大层号或
+        // priority 计算」一致；它的面已不在网格中，故不需要规则。
+        if (IsFrameMaterial(material.name))
+        {
+            continue;
+        }
         MaterialLayerName entry;
         entry.material_name = material.name;
         std::string base;
@@ -197,20 +211,31 @@ MaterialLayerNaming ResolveMaterialLayerNaming(
         if (existing != byPriority.end())
         {
             if (existing->second.layer == entry.layer
-                && existing->second.material_class == entry.material_class
-                && existing->second.base_name == entry.base_name)
+                && existing->second.material_class == entry.material_class)
             {
-// 同层、同类、【同素材名】：这正是 `<素材名>-<序号>-L<层号>` 要表达的
-                // 「同一素材在该层的多块」，不是撞号。二者若在空间上真有重叠，
-                // 由 MATVOL 自身的同级重叠阻断兜住；此处硬分先后反而会凭序号
-                // 臆造出工艺上并不存在的覆盖关系。
+                // 同层同类共享同一 priority，不是撞号 —— 与素材名是否相同无关。
                 //
-                // 素材名【不同】的同层同类（如 a-L1 与 b-L1）仍判撞号：
-                // 序号规则是「同一素材的多块」，不是「同层可放任意多种素材」，
-                // 放宽到不同素材名会让两种本应各自裁决的素材静默共享优先级。
+                // 【2026-09-08 放宽】本判据原先还要求「基名相同」，只承认
+                // `<素材名>-<序号>-L<层号>` 那种「同一素材的多块」。用户裁定：
+                // 除特殊素材外，需要贴图的素材命名权归设计侧，故同一层里出现
+                // 两个【不同名】的常规素材是正常情形（实测 gubao-xin：每层两块
+                // 共用同一份贴图数据、仅 UV 不同，被命名为 lcb-L1/cb-L1、
+                // lsg-L2/sg-L2、Isg-L3/sg-L3）。原判据会把这三对全判撞号、
+                // 整份资产被拒。
+                //
+                // 放宽不会引入静默错误：同层同类在工艺上等价，若它们在空间上
+                // 真有重叠，MaterialVolumePlan 在构建期逐列阻断并点名两个材质
+                // （MaterialVolumeErrorCode::OverlapUnresolved，"overlap with
+                // equal priority at ..."）。兜底在 MATVOL，不在命名层 ——
+                // 这一条是读过该实现后确认的，不是推断。
                 continue;
             }
-// MATVOL 对同级优先级 fail-closed，故真撞号必须在此暴露而非留到切片期。
+            // 保留该守卫作为公式改动的绊线。
+            //
+            // 注意：当前公式下它【不可达】—— priority = (max+1-layer)*100 + rank，
+            // rank ∈ {10,20,30}，故 |rank 差| <= 20 < 100，两个 priority 相等
+            // 必然意味着层号与类别都相同，而那一支已在上面 continue。
+            // 若日后改小层步长或增设类别，撞号才会重新可能发生，此时这里会拦住。
             naming.collisions.push_back(
                 "materials '" + existing->second.material_name + "' and '"
                 + entry.material_name + "' resolve to the same priority "

@@ -108,12 +108,72 @@ bool MalformedSuffixesAreRejected()
 }
 
 /// @brief 名字主体不约束，但仍参与唯一性——同层同类重名会撞号并被回报。
-bool SameLayerSameClassCollisionIsReported()
+/// @brief 【2026-09-08 规则变更】同层同类【不同素材名】共享优先级，不再判撞号。
+///
+/// 本函数原名 SameLayerSameClassCollisionIsReported，断言的是被推翻的旧规则：
+/// 只承认「同一素材的多块」（`<素材名>-<序号>-L<层号>`）共享优先级，素材名不同
+/// 就报撞号。用户裁定：除特殊素材外，需要贴图的素材命名权归设计侧，故同层出现
+/// 两个不同名的常规素材是正常情形（gubao-xin 每层两块共用同一份贴图、仅 UV 不同）。
+///
+/// 安全性不依赖此处：若二者空间上真有重叠，MaterialVolumePlan 在构建期逐列
+/// 阻断（OverlapUnresolved，"overlap with equal priority at ..."）。
+bool SameLayerDifferentNamesShareOnePriority()
 {
     const auto naming = ResolveMaterialLayerNaming(Materials({"a-L1", "b-L1"}));
     return ExpectTrue(naming.violations.empty(), "both names satisfy the suffix rule")
-        && ExpectTrue(naming.collisions.size() == 1U,
-               "two regular materials in one layer collide on priority");
+        && ExpectTrue(naming.collisions.empty(),
+               "two differently named regular materials in one layer no longer collide")
+        && ExpectTrue(naming.priorities.at(0U) == naming.priorities.at(1U),
+               "they share one priority")
+        && ExpectTrue(naming.priorities.at(0U) == 110, "single-layer regular is 110");
+}
+
+/// @brief 非打印定位保留名被整体跳过：不报违规、不计入层号、不产生条目。
+///
+/// materialInfos 来自 MTL 解析而非面绑定，故即使 ExtractFrameGeometry 已把
+/// 定位面从网格剥离，`nail-Default` 仍会出现在这里。它没有 -L<n> 后缀，
+/// 若不跳过就会被判违规、整份资产被拒（实测 gubao-xin 首个报错即此）。
+bool FrameReservedNameIsSkippedEntirely()
+{
+    const auto naming =
+        ResolveMaterialLayerNaming(Materials({"nail-Default", "cb-L1", "trans-L1"}));
+    return ExpectTrue(naming.violations.empty(),
+               "nail-Default must not be reported as a suffix violation")
+        && ExpectTrue(naming.names.size() == 2U,
+               "the reserved name produces no naming entry")
+        && ExpectTrue(naming.max_layer == 1, "the reserved name does not raise max layer")
+        && ExpectTrue(naming.collisions.empty(), "no collision among the printable pair")
+        && ExpectTrue(naming.names.at(0U).material_name == "cb-L1",
+               "entries keep source order minus the reserved name")
+        && ExpectTrue(naming.priorities.at(0U) == 110, "cb-L1 is regular 110")
+        && ExpectTrue(naming.priorities.at(1U) == 120, "trans-L1 is transparent 120");
+}
+
+/// @brief gubao-xin 新版导出的真实材质集整体解析（本次问题的回归用例）。
+///
+/// 每层两块共用同一份贴图数据、仅 UV 不同，设计侧自行命名为
+/// lcb/cb、lsg/sg、Isg/sg；另有 trans-L1/L2 与 nail-Default。
+/// 注意 Isg-L3 首字母是大写 I 而 lsg-L2 是小写 l，两者肉眼难辨但语义不同。
+bool GubaoXinNewExportResolves()
+{
+    const auto naming = ResolveMaterialLayerNaming(Materials({
+        "trans-L2", "lsg-L2", "trans-L1", "lcb-L1", "Isg-L3",
+        "sg-L2", "cb-L1", "sg-L3", "nail-Default"}));
+    const auto& p = naming.priorities;
+    return ExpectTrue(naming.violations.empty(), "the new export has no naming violation")
+        && ExpectTrue(naming.collisions.empty(), "same-layer pairs no longer collide")
+        && ExpectTrue(naming.names.size() == 8U, "nail-Default is excluded, eight remain")
+        && ExpectTrue(naming.max_layer == 3, "max layer is 3")
+        && ExpectTrue(p.at(2U) == 320, "trans-L1 is 320")
+        && ExpectTrue(p.at(3U) == 310 && p.at(6U) == 310,
+               "lcb-L1 and cb-L1 share 310")
+        && ExpectTrue(p.at(0U) == 220, "trans-L2 is 220")
+        && ExpectTrue(p.at(1U) == 210 && p.at(5U) == 210,
+               "lsg-L2 and sg-L2 share 210")
+        && ExpectTrue(p.at(4U) == 110 && p.at(7U) == 110,
+               "Isg-L3 and sg-L3 share 110")
+        && ExpectTrue(p.at(2U) > p.at(0U) && p.at(0U) > p.at(4U),
+               "layer order still dominates across the three layers");
 }
 
 /// @brief 同层同类【同素材名】带序号：共享同一 priority，且不报撞号。
@@ -253,7 +313,9 @@ int main()
         && SameLayerClassOrderIsElasticityTransparentRegular()
         && SingleLayerStillRequiresSuffix()
         && MalformedSuffixesAreRejected()
-        && SameLayerSameClassCollisionIsReported()
+        && SameLayerDifferentNamesShareOnePriority()
+        && FrameReservedNameIsSkippedEntirely()
+        && GubaoXinNewExportResolves()
         && SameLayerIndexedMaterialsShareOnePriority()
         && IndexStrippedBeforeClassMatching()
         && OmittedIndexIsZeroAndMatchesIndexedForm()
