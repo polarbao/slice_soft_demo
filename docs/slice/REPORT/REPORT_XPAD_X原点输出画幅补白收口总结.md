@@ -105,4 +105,10 @@ T Scene 走既有 admitted Facade 路径，在最终七通道层合成之后补�
 | slicer_worker.exe | AE6A6CA37AAB98A48A08E8CF676392A20B0540AA2D406D1971441AC9424A621B |
 | slicer_cli.exe | B88A2AECBE894223F9D11364840471189F589EE6A29E38734D3225D5C1DE7009 |
 
-启动 T 兼容版：`runtime/slicesoft-xpad-t/Release/slicer_ui_host_sim.exe`。GUI 人工交互和物理打印未验证。提交和合入按用户授权执行，最终 Git 记录在任务清单收口。
+启动 T 兼容版：`runtime/slicesoft-xpad-t/Release/slicer_ui_host_sim.exe`。GUI 人工交互和物理打印未验证。
+
+### Git 收口
+
+五项拆分提交：`dd6f3d0d` 六通道核心、`735af5c0` T 输出、`c82ecc25` 宿主开关、`9b49b10c` 回归/测时、`a4ad4d70` 文档。已使用 `git merge --ff-only codex/x-origin-canvas-padding` 合入 `product/packaged-slicer`；`git merge-base --is-ancestor a4ad4d70 HEAD` 成功，随后 `git branch -d codex/x-origin-canvas-padding` 删除本地开发分支。没有推送或重写已有历史。
+
+工作树余留的 gubao05-dingwei OBJ/MTL、其他模型目录、analysis、cache、docs/team-collaboration 均为无关内容，保持原状，不属于 XPAD 提交。合入后仅追加任务状态与 Git 收口记录，不改已测试代码。

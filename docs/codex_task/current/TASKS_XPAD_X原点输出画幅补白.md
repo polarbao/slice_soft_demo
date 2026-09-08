@@ -23,7 +23,7 @@ FRAME 输出画幅与打印几何分离设计、TIFFVIEW 朝向统一合同、�
 `MultiModelSliceOrchestrator` 从可见实例 Raster 的最小 originX/Y 求并集，丢弃并集外原点空白。用户十个 OBJ 的源顶点 XY 并集为 `(20.07984,1.506456)..(194.0495,59.67867)` mm，禁用定向/排版并且批次 XY 偏移为零时，X=0 到主体左端确有约 20.08 mm 空白。
 
 ### Current State
-XPAD-00..04 已完成，覆盖 RGBWSV 与 RGBWSVT Scene；XPAD-05 测时完成，提交/合入处理中。分支基点 `97afc31d3745`。实际验证见 `docs/slice/REPORT/REPORT_XPAD_X原点输出画幅补白收口总结.md`；现用程序重新启动导致部署保护拒绝覆盖，已另交付 `runtime/slicesoft-xpad-t/Release`。
+XPAD-00..05 已完成，覆盖 RGBWSV 与 RGBWSVT Scene。五项拆分提交已快进合入 `product/packaged-slicer`，开发分支 `codex/x-origin-canvas-padding` 已删除，未推送。实际验证见 `docs/slice/REPORT/REPORT_XPAD_X原点输出画幅补白收口总结.md`；现用程序重新启动导致部署保护拒绝覆盖，已另交付 `runtime/slicesoft-xpad-t/Release`。无关模型/缓存/团队文档仍留在工作树，未覆盖或混入提交。
 
 ### Target State
 增加默认关闭的“补齐至 X=0”选项，仅扩大所有输出层左侧空白；模型变换、Y/Z/层数、主体字节和通道工艺不变。Profile 明确携带 scene 专用可选字段，旧配置缺省不变。
@@ -69,7 +69,7 @@ OutputConfig 及解析、MultiModelLayerComposeRequest/Orchestrator、Production
 | 追加任务 | 状态 | 完成日期 | 验证 |
 | --- | --- | --- | --- |
 | XPAD-04 T 通道输出补白 | COMPLETE | 2026-09-08 | 合成盒 3 层、真实 03.obj 32 层四对包均 PASS；七通道主体/补列/strict Reader/报告/PPM 一致，T 打印量不变；定向回归 21/22，唯一既有 adapter 失败 |
-| XPAD-05 耗时实测/提交合入 | IN_PROGRESS | - | 两组均热身一对后交替测三对：六通道增量中位 0.648 s，T 样本 0.484 s；Git 提交/合入待收口 |
+| XPAD-05 耗时实测/提交合入 | COMPLETE | 2026-09-08 | 两组均热身一对后交替测三对：六通道增量中位 0.648 s，T 样本 0.484 s；五项拆分提交已快进合入 product，祖先关系核查通过，开发分支已删除，未推送 |
 
 ## 历史修订
 
@@ -77,3 +77,4 @@ OutputConfig 及解析、MultiModelLayerComposeRequest/Orchestrator、Production
 - 2026-09-08：完成核心与宿主接线；600 DPI 半像素用例发现重新取整的一列漂移，改为保留旧 offset 再加整列数，回归通过。RGBWSVT 独立路由本期不支持，UI 与核心显式拒绝。
 - 2026-09-08：真实十模型 127 DPI/0.5 mm 与 600 DPI/0.2 mm 对照 PASS；600 DPI 扩宽 475 列，主体字节全层一致。源码规模门禁 PASS（60 项既有警告）；交付 `runtime/slicesoft-xpad/Release`，旧运行时不替换。GUI 人工交互和物理打印未验证。
 - 2026-09-08：追加 T 支持完成，Release 构建、21/22 定向回归及两组重复测时收口。运行中的原软件未终止；T 兼容独立测试版部署、自检、四个二进制 SHA256 对照 PASS，原 output 文件数/总字节保持 3689 / 6751741933。
+- 2026-09-08：完成拆分提交：`dd6f3d0d` 六通道核心、`735af5c0` T 输出、`c82ecc25` 宿主开关、`9b49b10c` 回归/测时、`a4ad4d70` 文档；`product/packaged-slicer` 从 `97afc31d` 快进至 `a4ad4d70`，祖先检查退出码 0，`git branch -d` 已删除开发分支。随后仅追加本次 Git 收口记录，不改已测代码。

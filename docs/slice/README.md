@@ -20,11 +20,11 @@ Barrier、Sparse Candidate 依次通过零漂移 Gate 后才可接入。
 16C-04/07..09 保留后续排期，16C-10 正式设备 SLA 保持 `INPUT_OPEN`，16B-04/16D-05 仍需
 用户独立授权。
 
-## XPAD 独立开发入口（2026-09-08）
+## XPAD 收口入口（2026-09-08）
 
 [X 原点输出画幅补白](DOC/DOC_DESIGN_XPAD_X原点输出画幅补白.md)。默认关闭，仅扩展 Scene 空白画幅，不移动模型；任务状态见 Codex XPAD 清单。
 
-软件实现及独立测试版已交付，实际验证与限制见 [XPAD 收口总结](REPORT/REPORT_XPAD_X原点输出画幅补白收口总结.md)。未合入生产分支。
+六/七通道软件实现已合入 `product/packaged-slicer`，开发分支已删除；实际验证、耗时与独立运行时交付见 [XPAD 收口总结](REPORT/REPORT_XPAD_X原点输出画幅补白收口总结.md)。未推送。
 
 ## UNIPATH 收口入口（2026-09-08）
 

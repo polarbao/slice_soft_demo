@@ -34,4 +34,4 @@ RGBWSVT Scene 保持现有单可见实例准入，使用相同 `output.scenePadT
 
 补白只在全局合成阶段增加空列，不扩大各模型几何采样域；仍增加每层输出缓存、TIFF 写盘及校验成本。默认未压缩时额外 RGBWSV 字节近似为 `N * height * layers * 6`；不为节省空间擅改压缩默认。
 
-开发与验证在 `codex/x-origin-canvas-padding` 隔离完成，按本轮授权拆分提交并合入 product；Git 最终状态见任务清单。T 兼容测试版部署于 `runtime/slicesoft-xpad-t/Release`，旧版 `runtime/slicesoft-xpad/Release` 为第一阶段六通道证据，不作为 T 兼容交付。现用 `runtime/slicesoft/Release` 因程序运行而被部署保护阻止覆盖，未终止用户进程。最终定向 CTest 21/22，唯一既有 adapter 失败及两组真实模型测时详见 [收口总结](../REPORT/REPORT_XPAD_X原点输出画幅补白收口总结.md)。物理打印及 GUI 人工交互未验证。
+开发与验证在 `codex/x-origin-canvas-padding` 隔离完成，五项拆分提交已按本轮授权快进合入 `product/packaged-slicer`，开发分支已删除，未推送；Git 记录见任务清单。T 兼容测试版部署于 `runtime/slicesoft-xpad-t/Release`，旧版 `runtime/slicesoft-xpad/Release` 为第一阶段六通道证据，不作为 T 兼容交付。现用 `runtime/slicesoft/Release` 因程序运行而被部署保护阻止覆盖，未终止用户进程。最终定向 CTest 21/22，唯一既有 adapter 失败及两组真实模型测时详见 [收口总结](../REPORT/REPORT_XPAD_X原点输出画幅补白收口总结.md)。物理打印及 GUI 人工交互未验证。

@@ -9,11 +9,11 @@
 
 本目录存放 Codex 操作任务、执行提示词和历史任务归档。`current` 表示文件仍需保留或可能继续执行，不表示其中每份任务都是当前入口。
 
-## XPAD 独立开发入口（2026-09-08）
+## XPAD 收口入口（2026-09-08）
 
-[X 原点输出画幅补白](current/TASKS_XPAD_X原点输出画幅补白.md)，仅在 `codex/x-origin-canvas-padding` 开发分支推进；状态以任务表为准，不重开 FRAME/MEMFLOW。
+[X 原点输出画幅补白](current/TASKS_XPAD_X原点输出画幅补白.md)，六/七通道实现已合入 `product/packaged-slicer`，开发分支已删除；状态以任务表为准，不重开 FRAME/MEMFLOW。
 
-XPAD-00..03 软件交付完成，见 [验证与收口总结](../slice/REPORT/REPORT_XPAD_X原点输出画幅补白收口总结.md)；生产分支未合入。
+XPAD-00..05 完成，见 [验证与收口总结](../slice/REPORT/REPORT_XPAD_X原点输出画幅补白收口总结.md)；未推送。现用程序运行中未覆盖，T 兼容版位于 `runtime/slicesoft-xpad-t/Release`。
 
 ## UNIPATH 已完成专项（2026-09-08）
 
