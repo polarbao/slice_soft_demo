@@ -22,7 +22,8 @@ void WritePpm(
                 cancelToken,
                 "preview_ppm_write");
         }
-        const auto& pixel = pixels.at(index);
+        const std::size_t width = static_cast<std::size_t>(widthPx);
+        const auto& pixel = pixels.at((static_cast<std::size_t>(heightPx) - 1U - index / width) * width + index % width);
         output.write(
             reinterpret_cast<const char*>(pixel.data()),
             static_cast<std::streamsize>(pixel.size()));
@@ -49,7 +50,7 @@ void WritePng(
         for (int x{0}; x < widthPx; ++x)
         {
             const auto& pixel = pixels.at(
-                static_cast<std::size_t>(y)
+                static_cast<std::size_t>(heightPx - 1 - y)
                     * static_cast<std::size_t>(widthPx)
                 + static_cast<std::size_t>(x));
             raw.insert(raw.end(), pixel.begin(), pixel.end());

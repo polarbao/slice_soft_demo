@@ -4,6 +4,7 @@
 #include "slicer_core/materials/transfer/TransferChannelError.h"
 #include "slicer_core/output/rgbwsvt/RgbwsvtTiffIo.h"
 #include "slicer_core/rip_reader.h"
+#include "slicer_core/output/tiff/TiffRowManifest.h"
 #include "slicer_core/system/Sha256.h"
 
 #include <algorithm>
@@ -254,7 +255,7 @@ RgbwsvtPackageLayer ValidateLayer(
     const int width,
     const int height,
     const TiffStorageMode storage,
-    const TiffCompressionMode compression)
+    const TiffCompressionMode compression, const Json& tiff)
 {
     if (!layer.is_object())
     {
@@ -300,10 +301,13 @@ RgbwsvtPackageLayer ValidateLayer(
     }
     result.storage = storage;
     result.compression = compression;
+    result.rowOrder = ReadManifestTiffRowOrder(tiff);
     RgbwsvtTiffReadResult decoded;
     try
     {
         decoded = ReadRgbwsvtTiff(result.path);
+        if (decoded.spec.row_order != result.rowOrder)
+            Fail(ValidationErrorCode::TiffReadFailed, "TIFF rowOrder does not match manifest");
     }
     catch (const TransferChannelError& error)
     {
@@ -416,7 +420,7 @@ RgbwsvtPackageValidation ValidateRgbwsvtPackage(
     {
         RgbwsvtPackageLayer validated = ValidateLayer(
             layer, result.packageDirectory, result.widthPx, result.heightPx,
-            storageMode, compressionMode);
+            storageMode, compressionMode, tiff);
         if (!indices.insert(validated.index).second
             || !paths.insert(validated.path).second)
         {
@@ -460,7 +464,7 @@ RgbwsvtDecodedPackageLayer ReadRgbwsvtPackageLayer(
         const RgbwsvtTiffReadResult decoded = ReadRgbwsvtTiff(layer.path);
         if (decoded.spec.width != layer.width || decoded.spec.height != layer.height
             || decoded.spec.storage_mode != layer.storage
-            || decoded.spec.compression_mode != layer.compression)
+            || decoded.spec.compression_mode != layer.compression || decoded.spec.row_order != layer.rowOrder)
         {
             Fail(
                 ValidationErrorCode::TiffStorageMismatch,

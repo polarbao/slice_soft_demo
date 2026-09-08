@@ -2,6 +2,7 @@
 
 #include "slicer_core/TiffPackBitsReadInternal.h"
 #include "slicer_core/TiffReadStructureInternal.h"
+#include "slicer_core/TiffRowReadInternal.h"
 
 #include <algorithm>
 #include <array>
@@ -253,7 +254,7 @@ void DecodeTile(
                     continue;
                 }
                 const std::size_t targetIndex =
-                    (static_cast<std::size_t>(imageY) * result.spec.width
+                    (static_cast<std::size_t>(TiffCanonicalRow(result.spec, imageY)) * result.spec.width
                      + imageX)
                         * result.spec.samples_per_pixel
                     + channel;
@@ -285,10 +286,7 @@ void DecodeStrip(
     }
     if (retainPixels)
     {
-        std::copy(
-            strip.begin(),
-            strip.end(),
-            result.pixels.begin() + static_cast<std::ptrdiff_t>(targetOffset));
+        CopyTiffStripToCanonical(result.spec, strip, startRow, rows, result.pixels);
     }
     AccumulateContiguousChannelStats(result, strip);
 }
@@ -358,6 +356,7 @@ TiffReadResult ReadTiledFromBuffer(
     const auto sampleFormats =
         ReadU16Array(data, FindRequiredEntry(entries, 339U), 339U);
     ValidateCommonSpec(result, bitsPerSample, sampleFormats, path);
+    result.spec.row_order = tiff_read_internal::ReadRowOrder(data, entries);
     InitializeReadPixels(result, true);
 
     const auto tileOffsets =
@@ -439,6 +438,7 @@ TiffReadResult ReadStrippedFromBuffer(
     const auto sampleFormats =
         ReadU16Array(data, FindRequiredEntry(entries, 339U), 339U);
     ValidateCommonSpec(result, bitsPerSample, sampleFormats, path);
+    result.spec.row_order = tiff_read_internal::ReadRowOrder(data, entries);
     InitializeReadPixels(result, retainPixels);
     if (result.spec.rows_per_strip == 0U)
     {

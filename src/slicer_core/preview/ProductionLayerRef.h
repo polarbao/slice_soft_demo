@@ -27,6 +27,7 @@ struct ProductionLayerRef
     std::uint32_t height{0U};
     TiffStorageMode storage{TiffStorageMode::Stripped};
     TiffCompressionMode compression{TiffCompressionMode::None};
+    TiffRowOrder rowOrder{TiffRowOrder::MinYFirst};
     std::string checksum;
     int dpiX{0};
     int dpiY{0};
@@ -65,6 +66,7 @@ struct ProductionPackageIndex
     std::uint64_t scenerevision{0U};
     TiffStorageMode storage{TiffStorageMode::Stripped};
     TiffCompressionMode compression{TiffCompressionMode::None};
+    TiffRowOrder rowOrder{TiffRowOrder::MinYFirst};
     std::vector<ProductionLayerRef> layers;
 };
 

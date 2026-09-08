@@ -2,6 +2,7 @@
 
 #include "slicer_core/output/tiff/HandwrittenTiffStructureInternal.h"
 #include "slicer_core/output/tiff/TiffPackBitsWriteInternal.h"
+#include "slicer_core/output/tiff/TiffRowLayout.h"
 
 #include <algorithm>
 #include <cstddef>
@@ -59,7 +60,8 @@ void ValidateImage(
 
 std::vector<IfdEntry> CommonEntries(const TiffImageSpec& spec)
 {
-    return {
+    const std::string description = TiffImageDescription(spec);
+    std::vector<IfdEntry> entries{
         {256U, TiffFieldType::Long, 1U, Longs({spec.width})},
         {257U, TiffFieldType::Long, 1U, Longs({spec.height})},
         {258U, TiffFieldType::Short, spec.samples_per_pixel,
@@ -67,7 +69,7 @@ std::vector<IfdEntry> CommonEntries(const TiffImageSpec& spec)
         {259U, TiffFieldType::Short, 1U,
          Shorts({CompressionTagValue(spec.compression_mode)})},
         {262U, TiffFieldType::Short, 1U, Shorts({2U})},
-        {270U, TiffFieldType::Ascii, 7U, Ascii("RGBWSV")},
+        {270U, TiffFieldType::Ascii, static_cast<std::uint32_t>(description.size() + 1U), Ascii(description)},
         {277U, TiffFieldType::Short, 1U,
          Shorts({spec.samples_per_pixel})},
         {284U, TiffFieldType::Short, 1U, Shorts({spec.planar_config})},
@@ -76,6 +78,9 @@ std::vector<IfdEntry> CommonEntries(const TiffImageSpec& spec)
         {339U, TiffFieldType::Short, spec.samples_per_pixel,
          Shorts({1U, 1U, 1U, 1U, 1U, 1U})},
     };
+    if (spec.row_order == TiffRowOrder::MaxYFirst)
+        entries.push_back({274U, TiffFieldType::Short, 1U, Shorts({1U})});
+    return entries;
 }
 
 std::vector<std::uint8_t> EncodeStorageBlock(
@@ -155,7 +160,7 @@ void write_rgbwsv_tiled_tiff(
                         continue;
                     }
                     const std::size_t source =
-                        (static_cast<std::size_t>(imageY) * spec.width + imageX)
+                        (static_cast<std::size_t>(TiffCanonicalRow(spec, imageY)) * spec.width + imageX)
                         * spec.samples_per_pixel;
                     const std::size_t target =
                         (static_cast<std::size_t>(y) * spec.tile_width + x)
@@ -206,20 +211,17 @@ void write_rgbwsv_stripped_tiff(
     std::vector<std::uint32_t> byteCounts;
     offsets.reserve(stripCount);
     byteCounts.reserve(stripCount);
+    TiffStoredStrip storedStrip;
     for (std::uint32_t index{0U}; index < stripCount; ++index)
     {
         const std::uint32_t startRow{index * spec.rows_per_strip};
         const std::uint32_t rows = std::min(
             spec.rows_per_strip,
             static_cast<std::uint32_t>(spec.height - startRow));
-        const std::size_t byteCount = static_cast<std::size_t>(rows)
-            * spec.width * spec.samples_per_pixel;
-        const std::size_t sourceOffset = static_cast<std::size_t>(startRow)
-            * spec.width * spec.samples_per_pixel;
         offsets.push_back(
             kTiffHeaderSize + static_cast<std::uint32_t>(payload.size()));
         const std::vector<std::uint8_t> encoded = EncodeStorageBlock(
-            pixels.subspan(sourceOffset, byteCount),
+            storedStrip.Get(spec, pixels, startRow, rows),
             static_cast<std::size_t>(spec.width) * spec.samples_per_pixel,
             rows,
             spec.compression_mode);

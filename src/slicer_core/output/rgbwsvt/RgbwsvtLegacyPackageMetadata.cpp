@@ -32,6 +32,7 @@ TiffImageSpec MakeTiffSpec(
         ThrowProtocolError("layer dimensions must be positive");
     }
     TiffImageSpec spec;
+    spec.row_order = TiffRowOrder::MaxYFirst;
     spec.width = static_cast<std::uint32_t>(layer.widthPx);
     spec.height = static_cast<std::uint32_t>(layer.heightPx);
     spec.samples_per_pixel = static_cast<std::uint16_t>(kRgbwsvtChannelCount);
@@ -410,6 +411,7 @@ Json BuildLegacyTiffManifestMetadata(
         {"storage", output.storage_mode},
         {"storageMode", output.storage_mode},
         {"compression", output.tiff_compression},
+        {"rowOrder", "max_y_first"},
         {"polarity", "black_is_print"},
         {"printValue", 0},
         {"emptyValue", 255},

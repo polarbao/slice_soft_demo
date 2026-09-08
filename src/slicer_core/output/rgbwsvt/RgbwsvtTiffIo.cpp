@@ -1,6 +1,7 @@
 #include "slicer_core/output/rgbwsvt/RgbwsvtTiffIo.h"
 
 #include "slicer_core/materials/transfer/TransferChannelError.h"
+#include "slicer_core/output/tiff/TiffRowLayout.h"
 
 #include <algorithm>
 #include <cstddef>
@@ -123,10 +124,14 @@ RgbwsvtTiffReadResult ReadRgbwsvtTiff(const std::filesystem::path& path)
         }
     }
     if (TIFFGetField(handle.get(), TIFFTAG_IMAGEDESCRIPTION, &description) != 1
-        || description == nullptr || std::string{description} != "RGBWSVT")
+        || description == nullptr)
     {
         ThrowReadError("ImageDescription must be RGBWSVT");
     }
+    std::uint16_t orientation = ORIENTATION_TOPLEFT;
+    (void)TIFFGetFieldDefaulted(handle.get(), TIFFTAG_ORIENTATION, &orientation);
+    try { result.spec.row_order = ReadTiffRowDescription(description, 7U, orientation); }
+    catch (const std::exception& error) { ThrowReadError(error.what()); }
     if (compression == COMPRESSION_NONE)
     {
         result.spec.compression_mode = TiffCompressionMode::None;
@@ -173,7 +178,7 @@ RgbwsvtTiffReadResult ReadRgbwsvtTiff(const std::filesystem::path& path)
                     const std::size_t source =
                         static_cast<std::size_t>(row) * result.spec.tile_width * 7U;
                     const std::size_t target =
-                        (static_cast<std::size_t>(y + row) * result.spec.width + x) * 7U;
+                        (static_cast<std::size_t>(TiffCanonicalRow(result.spec, y + row)) * result.spec.width + x) * 7U;
                     std::copy_n(
                         tile.data() + source,
                         static_cast<std::size_t>(copyWidth) * 7U,
@@ -200,7 +205,7 @@ RgbwsvtTiffReadResult ReadRgbwsvtTiff(const std::filesystem::path& path)
             }
             std::copy_n(
                 scanline.data(), rowBytes,
-                result.pixels.data() + static_cast<std::size_t>(row) * rowBytes);
+                result.pixels.data() + static_cast<std::size_t>(TiffCanonicalRow(result.spec, row)) * rowBytes);
         }
     }
     AccumulateStats(result);

@@ -52,6 +52,8 @@ TiffCompressionMode ParseTiffCompressionMode(std::string_view name);
 /**
  * @brief 描述一幅 RGBWSV/RGBWSVT TIFF 图像及其存储布局。
  */
+enum class TiffRowOrder { MinYFirst, MaxYFirst };
+
 struct TiffImageSpec
 {
     std::uint32_t width{0};
@@ -64,6 +66,8 @@ struct TiffImageSpec
     std::uint16_t planar_config{1};
     TiffStorageMode storage_mode{TiffStorageMode::Stripped};
     TiffCompressionMode compression_mode{TiffCompressionMode::None};
+    // On-disk row order. Reader pixels and Writer inputs are always minY-first.
+    TiffRowOrder row_order{TiffRowOrder::MinYFirst};
 };
 
 /**

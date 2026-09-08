@@ -443,8 +443,8 @@ void write_ppm(
         throw std::runtime_error("failed to write preview image: " + path.string());
     }
     output << "P6\n" << grid.width_px << ' ' << grid.height_px << "\n255\n";
-    for (const auto& pixel : rgb_pixels) {
-        output.write(reinterpret_cast<const char*>(pixel.data()), static_cast<std::streamsize>(pixel.size()));
+    for (int y = grid.height_px - 1; y >= 0; --y) {
+        output.write(reinterpret_cast<const char*>(rgb_pixels.data() + static_cast<std::size_t>(y) * grid.width_px), static_cast<std::streamsize>(grid.width_px) * 3);
     }
 }
 
@@ -537,7 +537,7 @@ void write_png(
     for (int y{0}; y < grid.height_px; ++y) {
         raw.push_back(0U);
         for (int x{0}; x < grid.width_px; ++x) {
-            const auto& pixel = rgb_pixels.at(static_cast<std::size_t>(y) * grid.width_px + x);
+            const auto& pixel = rgb_pixels.at(static_cast<std::size_t>(grid.height_px - 1 - y) * grid.width_px + x);
             raw.insert(raw.end(), pixel.begin(), pixel.end());
         }
     }

@@ -430,8 +430,7 @@ TiffImageSpec MakeTiffSpec(
     spec.width = static_cast<std::uint32_t>(widthPx);
     spec.height = static_cast<std::uint32_t>(heightPx);
     spec.samples_per_pixel = static_cast<std::uint16_t>(kChannelCount);
-    spec.bits_per_sample = 8U;
-    spec.planar_config = 1U;
+    spec.row_order = TiffRowOrder::MaxYFirst;
     spec.rows_per_strip = static_cast<std::uint32_t>(storage.rowsPerStrip);
     spec.tile_width = static_cast<std::uint32_t>(storage.tileWidth);
     spec.tile_height = static_cast<std::uint32_t>(storage.tileHeight);
@@ -768,6 +767,7 @@ Json MakeTiffJson(
     result["storage"] = storage.storageMode;
     result["storageMode"] = storage.storageMode;
     result["compression"] = storage.compression;
+    result["rowOrder"] = "max_y_first";
     result["polarity"] = protocol.polarity;
     result["printValue"] = static_cast<int>(protocol.print_value);
     result["emptyValue"] = static_cast<int>(protocol.empty_value);

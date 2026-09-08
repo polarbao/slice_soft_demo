@@ -5,6 +5,7 @@
 #include "slicer_core/config/OutputResolution.h"
 #include "slicer_core/json_value.h"
 #include "slicer_core/TiffReadApi.h"
+#include "slicer_core/output/tiff/TiffRowManifest.h"
 
 #include <algorithm>
 #include <atomic>
@@ -886,16 +887,15 @@ RipValidationResult ValidateSlicePackageImpl(
 
         TiffReadResult tiff_result;
         try {
-            // MF-13c：本函数只用 spec / channel_stats / channel_checksums，
-            // 故用不物化像素的版本，省掉每层整幅面的分配与拷贝。
-            // MF-13d：正常情况下这一层已由并行段读好，此处只取结果；
-            // 未读到（路径当时不存在等）才就地补读，保证语义不变。
+            // Stats-only decoding keeps publication validation bounded.
+            // Reuse parallel reads, falling back only when not attempted.
             if (job.failure) {
                 std::rethrow_exception(job.failure);
             }
             tiff_result = job.attempted
                 ? std::move(job.read)
                 : read_rgbwsv_tiff_stats(layer_path);
+            ValidateTiffRowOrder(tiff, tiff_result.spec);
         } catch (const ValidationError&) {
             throw;
         } catch (const std::exception& error) {

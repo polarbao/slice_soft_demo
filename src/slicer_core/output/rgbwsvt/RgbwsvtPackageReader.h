@@ -20,6 +20,7 @@ struct RgbwsvtPackageLayer
     std::string fileIdentity;
     TiffStorageMode storage{TiffStorageMode::Stripped};
     TiffCompressionMode compression{TiffCompressionMode::None};
+    TiffRowOrder rowOrder{TiffRowOrder::MinYFirst};
     std::vector<std::uint64_t> checksums;
     std::vector<TiffChannelStats> channelStats;
 };

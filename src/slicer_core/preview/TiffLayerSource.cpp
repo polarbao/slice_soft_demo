@@ -3,6 +3,7 @@
 #include "slicer_core/json_value.h"
 #include "slicer_core/system/Sha256.h"
 #include "slicer_core/TiffReadApi.h"
+#include "slicer_core/output/tiff/TiffRowManifest.h"
 
 #include <algorithm>
 #include <array>
@@ -825,7 +826,8 @@ ProductionPackageIndex TiffLayerSource::IndexPackage(
     }
     package.storage = ParseStorage(tiff, absoluteManifest);
     package.compression = ParseCompression(tiff, absoluteManifest);
-
+    try { package.rowOrder = ReadManifestTiffRowOrder(tiff); }
+    catch (const std::exception& error) { Fail(TiffLayerErrorCode::ManifestInvalid, error.what()); }
     const Json& layers =
         RequireArray(manifest, "layers", absoluteManifest);
     const Json& tiffLayers =
@@ -920,6 +922,7 @@ ProductionPackageIndex TiffLayerSource::IndexPackage(
 
         layer.storage = package.storage;
         layer.compression = package.compression;
+        layer.rowOrder = package.rowOrder;
         layer.checksum = ComputeFileMetadataIdentity(layer.path);
         layer.dpiX = package.dpiX;
         layer.dpiY = package.dpiY;
@@ -1110,16 +1113,12 @@ TiffLayerLoadResult TiffLayerSource::LoadLayer(
     try
     {
         decoded = read_rgbwsv_tiff(indexedLayer.path);
+        if (decoded.spec.row_order != indexedLayer.rowOrder) throw std::runtime_error("TIFF rowOrder mismatch");
     }
     catch (const std::exception& error)
     {
-        Fail(
-            TiffLayerErrorCode::ReadFailed,
-            "RGBWSV TIFF decoding failed",
-            indexedLayer.packageIdentity,
-            indexedLayer.layerIndex,
-            indexedLayer.path,
-            error.what());
+        Fail(TiffLayerErrorCode::ReadFailed, "RGBWSV TIFF decoding failed",
+            indexedLayer.packageIdentity, indexedLayer.layerIndex, indexedLayer.path, error.what());
     }
     CheckControl(control, indexedLayer);
 

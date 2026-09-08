@@ -347,8 +347,8 @@ ApiResult<PreviewResult> PackageQueryFacadeService::RenderLayerPreview(
             resolvedLayerIndex = layer.layerIndex;
             canonicalChannels = CanonicalChannels(request.channels);
         }
-        // 生产 TIFF 的第 0 行对应最小 Y；显示图像的第 0 行位于顶部。
-        // 垂直翻转只改变预览表达，使结果页与工作区统一为 +Y 向上。
+        // Readers normalize both legacy and maxY-first TIFFs to minY-first buffers.
+        // Display maxY at the top, matching new stored TIFF rows and workspace +Y.
         preview = OrientPreviewPositiveYUp(std::move(preview));
         preview = ResizePreview(
             std::move(preview),

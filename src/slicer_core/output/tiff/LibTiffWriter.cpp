@@ -1,6 +1,7 @@
 #include "slicer_core/output/tiff/TiffWriterImplementations.h"
 
 #include "slicer_core/output/tiff/TiffWriterError.h"
+#include "slicer_core/output/tiff/TiffRowLayout.h"
 
 #include <algorithm>
 #include <atomic>
@@ -318,8 +319,7 @@ void SetFixedTags(
         static_cast<std::uint16_t>(spec.samples_per_pixel - 3U);
     std::vector<std::uint16_t> extraSamples(
         extraSampleCount, EXTRASAMPLE_UNSPECIFIED);
-    const char* imageDescription =
-        spec.samples_per_pixel == 7U ? "RGBWSVT" : "RGBWSV";
+    const std::string imageDescription = TiffImageDescription(spec);
     bool configured =
         TIFFSetField(handle, TIFFTAG_IMAGEWIDTH, spec.width) == 1
         && TIFFSetField(handle, TIFFTAG_IMAGELENGTH, spec.height) == 1
@@ -347,7 +347,8 @@ void SetFixedTags(
                extraSampleCount,
                extraSamples.data())
             == 1
-        && TIFFSetField(handle, TIFFTAG_IMAGEDESCRIPTION, imageDescription) == 1
+        && TIFFSetField(handle, TIFFTAG_IMAGEDESCRIPTION, imageDescription.c_str()) == 1
+        && (spec.row_order == TiffRowOrder::MinYFirst || TIFFSetField(handle, TIFFTAG_ORIENTATION, ORIENTATION_TOPLEFT) == 1)
         && TIFFSetField(handle, TIFFTAG_SOFTWARE, "slice_soft_demo p0") == 1;
 
     if (spec.storage_mode == TiffStorageMode::Tiled)
@@ -383,6 +384,7 @@ void WriteStrips(
     const std::uint32_t stripCount =
         (spec.height + spec.rows_per_strip - 1U)
         / spec.rows_per_strip;
+    TiffStoredStrip storedStrip;
     for (std::uint32_t stripIndex{0U};
          stripIndex < stripCount;
          ++stripIndex)
@@ -392,14 +394,8 @@ void WriteStrips(
         const std::uint32_t rows = std::min(
             spec.rows_per_strip,
             spec.height - startRow);
-        const std::size_t sourceOffset =
-            static_cast<std::size_t>(startRow)
-            * spec.width
-            * spec.samples_per_pixel;
-        const std::size_t byteCount =
-            static_cast<std::size_t>(rows)
-            * spec.width
-            * spec.samples_per_pixel;
+        const auto payload = storedStrip.Get(spec, pixels, startRow, rows);
+        const std::size_t byteCount = payload.size();
         if (byteCount
             > static_cast<std::size_t>(
                 std::numeric_limits<tmsize_t>::max()))
@@ -413,7 +409,7 @@ void WriteStrips(
         const tmsize_t writtenBytes = TIFFWriteEncodedStrip(
             handle,
             stripIndex,
-            const_cast<std::uint8_t*>(pixels.data() + sourceOffset),
+            const_cast<std::uint8_t*>(payload.data()),
             requestedBytes);
         if (writtenBytes < 0)
         {
@@ -465,7 +461,7 @@ void WriteTiles(
             for (std::uint32_t row{0U}; row < copyHeight; ++row)
             {
                 const std::size_t sourceOffset =
-                    (static_cast<std::size_t>(tileY + row) * spec.width
+                    (static_cast<std::size_t>(TiffCanonicalRow(spec, tileY + row)) * spec.width
                      + tileX)
                     * spec.samples_per_pixel;
                 const std::size_t destinationOffset =
