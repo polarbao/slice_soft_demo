@@ -20,6 +20,10 @@ Barrier、Sparse Candidate 依次通过零漂移 Gate 后才可接入。
 16C-04/07..09 保留后续排期，16C-10 正式设备 SLA 保持 `INPUT_OPEN`，16B-04/16D-05 仍需
 用户独立授权。
 
+## UNIPATH 收口入口（2026-09-08）
+
+[中文路径跨代码页兼容修复总结](REPORT/REPORT_UNIPATH_中文路径跨代码页兼容修复总结.md)：导入/场景/Worker/预览的 UTF-8 与 native path 边界、三代码页端到端证据、已更新的 Release 及未覆盖项。
+
 ## TIFFVIEW 收口入口（2026-09-08）
 
 生产 TIFF 与场景俯视朝向统一专项已完成；下列入口仅更新 TIFFVIEW，不重判其他专项状态。
