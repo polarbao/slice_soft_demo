@@ -300,6 +300,13 @@ void HostSliceSettingsPanel::BuildInterface()
     processForm->addRow(QStringLiteral("输出画幅"), m_padToOriginXCheck);
     connect(m_padToOriginXCheck, &QCheckBox::toggled,
         this, &HostSliceSettingsPanel::OnSettingsEdited);
+    m_padToOriginYCheck = new QCheckBox(QStringLiteral("补齐至 Y=0"), processGroup);
+    m_padToOriginYCheck->setObjectName(QStringLiteral("hostScenePadToOriginYCheck"));
+    m_padToOriginYCheck->setToolTip(QStringLiteral(
+        "仅补全场景下侧空白，不移动模型；可与 X 同时勾选，支持六通道和 T 工艺。"));
+    processForm->addRow(QString(), m_padToOriginYCheck);
+    connect(m_padToOriginYCheck, &QCheckBox::toggled,
+        this, &HostSliceSettingsPanel::OnSettingsEdited);
     layout->addWidget(processGroup);
 
     auto* materialGroup = new QGroupBox(
@@ -496,6 +503,8 @@ void HostSliceSettingsPanel::SetPersistentSettings(
     const QSignalBlocker outputBlocker(m_outputEdit);
     const QSignalBlocker paddingBlocker(m_padToOriginXCheck);
     m_padToOriginXCheck->setChecked(settings.scenepadtooriginx);
+    const QSignalBlocker paddingYBlocker(m_padToOriginYCheck);
+    m_padToOriginYCheck->setChecked(settings.scenepadtooriginy);
     const QSignalBlocker widthBlocker(m_buildWidthSpin);
     const QSignalBlocker heightBlocker(m_buildHeightSpin);
     const QSignalBlocker zBlocker(m_buildZSpin);
@@ -552,6 +561,7 @@ hostslicesettings HostSliceSettingsPanel::Settings() const
     settings.modelformat = QFileInfo(m_modelPath).suffix().toLower();
     settings.outputdirectory = m_outputEdit->text().trimmed();
     settings.scenepadtooriginx = m_padToOriginXCheck->isChecked();
+    settings.scenepadtooriginy = m_padToOriginYCheck->isChecked();
     settings.dpix = m_dpiXSpin->value();
     settings.dpiy = m_dpiYSpin->value();
     settings.layerthicknessmm = m_layerThicknessSpin->value();

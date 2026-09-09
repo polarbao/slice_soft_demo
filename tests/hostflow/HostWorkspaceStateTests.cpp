@@ -90,6 +90,7 @@ int main(int argc, char* argv[])
     expected.dpix = 720;
     expected.dpiy = 600;
     expected.scenepadtooriginx = true;
+    expected.scenepadtooriginy = true;
     expected.layerthicknessmm = 0.05;
     expected.geometrysamplingstrategy = HostGeometrySamplingStrategy::
         LayerSlabSupersample2x2AtLeastTwoCandidate;
@@ -180,6 +181,7 @@ int main(int argc, char* argv[])
                       && actual.dpix == expected.dpix
                       && actual.dpiy == expected.dpiy
                       && actual.scenepadtooriginx == expected.scenepadtooriginx
+                      && actual.scenepadtooriginy == expected.scenepadtooriginy
                       && std::abs(actual.layerthicknessmm
                                    - expected.layerthicknessmm) < 1.0e-9
                       && actual.geometrysamplingstrategy
@@ -277,6 +279,7 @@ int main(int argc, char* argv[])
         settings.remove(QStringLiteral("packageProtocol"));
         settings.remove(QStringLiteral("transferChannel"));
         settings.remove(QStringLiteral("scenePadToOriginX"));
+        settings.remove(QStringLiteral("scenePadToOriginY"));
         settings.endGroup();
         settings.sync();
     }
@@ -297,6 +300,7 @@ int main(int argc, char* argv[])
     if (!Check(
             migratedLoaded
                 && !migratedPreferences.slicesettings.scenepadtooriginx
+                && !migratedPreferences.slicesettings.scenepadtooriginy
                 && migratedPreferences.slicesettings.packageprotocol
                     == HostPackageProtocol::Rgbwsv
                 && !migratedPreferences.slicesettings.transferchannel.enabled
@@ -307,6 +311,18 @@ int main(int argc, char* argv[])
             errors))
     {
         return 5;
+    }
+
+    {
+        QSettings settings(v7Path, QSettings::IniFormat);
+        settings.beginGroup(QStringLiteral("hostflow/workspace"));
+        settings.setValue(QStringLiteral("scenePadToOriginX"), true);
+        settings.endGroup();
+        hostworkspacepreferences xOnly;
+        if (!Check(HostWorkspaceState::Restore(settings, &migrated.window, migrated.splitter,
+                migrated.workspacetabs, migrated.inspectortabs, &xOnly)
+                && xOnly.slicesettings.scenepadtooriginx && !xOnly.slicesettings.scenepadtooriginy,
+                QStringLiteral("Old X-only workspace must not implicitly enable Y padding."), errors)) return 5;
     }
 
     const QString badV7IdentityPath = QDir(temporaryRoot.path()).filePath(

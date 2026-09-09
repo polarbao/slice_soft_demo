@@ -18,6 +18,19 @@ inline bool VerifyXOriginPadding(const QString& model, const QString& output, QT
     QString error;
     hosteffectiveprofile base, padded, disabled;
     if (!HostEffectiveProfileBuilder::Build(settings, &base, &error)) return false;
+    for (const bool x : {false, true})
+        for (const bool y : {false, true})
+        {
+            settings.scenepadtooriginx = x;
+            settings.scenepadtooriginy = y;
+            hosteffectiveprofile result;
+            if (!HostEffectiveProfileBuilder::Build(settings, &result, &error)) return false;
+            const auto outputJson = result.profile.value(QStringLiteral("output")).toObject();
+            if (outputJson.contains(QStringLiteral("scenePadToOriginX")) != x
+                || outputJson.contains(QStringLiteral("scenePadToOriginY")) != y
+                || (result.profilehash == base.profilehash) != (!x && !y)) return false;
+        }
+    settings.scenepadtooriginy = false;
     settings.scenepadtooriginx = true;
     if (!HostEffectiveProfileBuilder::Build(settings, &padded, &error)) return false;
     const auto bytes = QJsonDocument(padded.profile).toJson(QJsonDocument::Compact);
@@ -27,12 +40,18 @@ inline bool VerifyXOriginPadding(const QString& model, const QString& output, QT
     if (!HostEffectiveProfileBuilder::Build(settings, &disabled, &error)) return false;
     HostSliceSettingsPanel panel;
     auto* check = panel.findChild<QCheckBox*>(QStringLiteral("hostScenePadToOriginXCheck"));
+    auto* yCheck = panel.findChild<QCheckBox*>(QStringLiteral("hostScenePadToOriginYCheck"));
+    if (!yCheck || yCheck->isChecked()) return false;
+    yCheck->setChecked(true);
+    if (!panel.Settings().scenepadtooriginy || panel.Settings().scenepadtooriginx) return false;
     if (!check || check->isChecked()) return false;
     check->setChecked(true);
     const bool enabled = panel.Settings().scenepadtooriginx;
     panel.SetPersistentSettings(settings);
     const bool cleared = !check->isChecked();
+    if (yCheck->isChecked()) return false;
     settings.scenepadtooriginx = true;
+    settings.scenepadtooriginy = true;
     panel.SetPersistentSettings(settings);
     settings.packageprotocol = HostPackageProtocol::Rgbwsvt;
     settings.profileid = QStringLiteral("host-reference-transfer-channel");
@@ -45,6 +64,8 @@ inline bool VerifyXOriginPadding(const QString& model, const QString& output, QT
     std::istringstream transferInput(transferBytes.toStdString());
     const auto transferHash = slicer_core::api::ComputeProfileDocumentHash(slicer_core::Json::parse(transferInput));
     const bool ok = enabled && cleared && check->isChecked() && transferAccepted
+        && yCheck->isChecked()
+        && transfer.profile.value(QStringLiteral("output")).toObject().value(QStringLiteral("scenePadToOriginY")).toBool()
         && transferHash == transfer.profilehash.toStdString()
         && transfer.profile.value(QStringLiteral("output")).toObject().value(QStringLiteral("scenePadToOriginX")).toBool()
         && base.profile == disabled.profile && base.profilehash != padded.profilehash

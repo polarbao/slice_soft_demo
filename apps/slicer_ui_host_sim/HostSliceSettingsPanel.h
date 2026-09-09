@@ -146,6 +146,7 @@ private:
     QComboBox* m_tiffCompressionCombo{nullptr};
     QLineEdit* m_outputEdit{nullptr};
     QCheckBox* m_padToOriginXCheck{nullptr};
+    QCheckBox* m_padToOriginYCheck{nullptr};
     QPushButton* m_outputBrowseButton{nullptr};
     QDoubleSpinBox* m_buildWidthSpin{nullptr};
     QDoubleSpinBox* m_buildHeightSpin{nullptr};
