@@ -238,14 +238,38 @@ add_custom_command(TARGET slicer_ui_host_sim POST_BUILD
     VERBATIM
 )
 
-if(WIN32 AND EXISTS "${CMAKE_SOURCE_DIR}/rip_project/rip_cli.exe")
+set(slicesoftRipSdkAvailable FALSE)
+if(WIN32)
+    set(slicesoftRipSourcePin "${CMAKE_SOURCE_DIR}/rip_module/source.json")
+    set_property(DIRECTORY APPEND PROPERTY CMAKE_CONFIGURE_DEPENDS
+        "${slicesoftRipSourcePin}"
+    )
+    file(READ "${slicesoftRipSourcePin}" slicesoftRipSourceJson)
+    string(JSON slicesoftRipSourceSchema GET "${slicesoftRipSourceJson}" schema)
+    string(JSON slicesoftRipSourceRelative GET "${slicesoftRipSourceJson}" sourceDirectory)
+    if(NOT slicesoftRipSourceSchema STREQUAL "slicesoft.rip.source.1"
+        OR NOT slicesoftRipSourceRelative MATCHES
+            "^rip_project/RIPDLL_[0-9][0-9][0-9][0-9][0-9][0-9][0-9][0-9]$")
+        message(FATAL_ERROR "Invalid pinned RIP SDK source: ${slicesoftRipSourcePin}")
+    endif()
+    set(slicesoftRipSourceRoot "${CMAKE_SOURCE_DIR}/${slicesoftRipSourceRelative}")
+    if(EXISTS "${slicesoftRipSourceRoot}/rip_cli.exe")
+        set(slicesoftRipSdkAvailable TRUE)
+    elseif(IS_DIRECTORY "${CMAKE_SOURCE_DIR}/rip_project")
+        message(FATAL_ERROR
+            "Pinned RIP SDK is missing its CLI: ${slicesoftRipSourceRoot}"
+        )
+    endif()
+endif()
+
+if(slicesoftRipSdkAvailable)
     find_program(slicesoftPowerShellExecutable NAMES powershell pwsh REQUIRED)
     add_custom_command(TARGET slicer_ui_host_sim POST_BUILD
         COMMAND ${slicesoftPowerShellExecutable}
             -NoProfile
             -ExecutionPolicy Bypass
             -File "${CMAKE_SOURCE_DIR}/scripts/PackageRipModule.ps1"
-            -SourceRoot "${CMAKE_SOURCE_DIR}/rip_project"
+            -SourceRoot "${slicesoftRipSourceRoot}"
             -Destination "$<TARGET_FILE_DIR:slicer_ui_host_sim>/modules/rip"
             -ReplaceOwnedDestination
         VERBATIM
@@ -382,7 +406,15 @@ if(MSVC)
     target_compile_options(ripflow_fake_cli PRIVATE /W4 /WX /utf-8)
 endif()
 
-if(WIN32 AND EXISTS "${CMAKE_SOURCE_DIR}/rip_project/rip_cli.exe")
+if(slicesoftRipSdkAvailable)
+    add_test(
+        NAME ripflow_module_package_test
+        COMMAND ${slicesoftPowerShellExecutable}
+            -NoProfile
+            -ExecutionPolicy Bypass
+            -File "${CMAKE_SOURCE_DIR}/scripts/TestRipModulePackage.ps1"
+            -ModuleDirectory "$<TARGET_FILE_DIR:slicer_ui_host_sim>/modules/rip"
+    )
     add_test(
         NAME ripflow_module_self_test
         COMMAND slicer_ui_host_sim --rip-module-self-test

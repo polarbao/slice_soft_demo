@@ -1,6 +1,6 @@
 [CmdletBinding()]
 param(
-    [string]$SourceRoot = "rip_project",
+    [string]$SourceRoot = "",
     [string]$Destination = "output/ripflow/modules/rip",
     [switch]$ReplaceOwnedDestination
 )
@@ -46,7 +46,14 @@ function Get-Sha256Hex
     }
 }
 
-$source = Resolve-AbsolutePath $SourceRoot
+$source = if ([string]::IsNullOrWhiteSpace($SourceRoot))
+{
+    & (Join-Path $PSScriptRoot "ResolveRipModuleSource.ps1")
+}
+else
+{
+    Resolve-AbsolutePath $SourceRoot
+}
 $destinationPath = Resolve-AbsolutePath $Destination
 Assert-SafeDestination $destinationPath
 if (-not (Test-Path -LiteralPath $source -PathType Container))
@@ -96,9 +103,10 @@ foreach ($relativePath in $payload)
 $sourceCli = Join-Path $source "rip_cli.exe"
 $sourceHelp = & $sourceCli --help 2>&1
 if ($LASTEXITCODE -ne 0 -or
-    ($sourceHelp -join "`n") -notmatch '--transparent\s+<0-4>')
+    ($sourceHelp -join "`n") -notmatch '--transparent\s+<0-4>' -or
+    ($sourceHelp -join "`n") -notmatch '--ripmode\s+<0\|1>')
 {
-    throw "RIP SDK does not expose the required --transparent <0-4> contract."
+    throw "RIP SDK does not expose the required --transparent <0-4> and --ripmode <0|1> contracts."
 }
 
 $repoRoot = Split-Path -Parent $PSScriptRoot
@@ -128,6 +136,12 @@ try
     }
     Copy-Item -LiteralPath (Join-Path $metadataRoot "rip_settings.default.json") -Destination $staging
     Copy-Item -LiteralPath (Join-Path $metadataRoot "runtime_dependencies.json") -Destination $staging
+    [ordered]@{
+        schema = "slicesoft.rip.source.provenance.1"
+        sourceDirectory = Split-Path -Leaf $source
+        explicitSourceOverride = -not [string]::IsNullOrWhiteSpace($SourceRoot)
+    } | ConvertTo-Json | Set-Content `
+        -LiteralPath (Join-Path $staging "source_provenance.json") -Encoding UTF8
     New-Item -ItemType Directory -Path (Join-Path $staging "licenses") -Force | Out-Null
     @(
         "LOCAL_ENGINEERING_ONLY",
@@ -147,7 +161,7 @@ try
     $manifest = [ordered]@{
         schema = "slicesoft.rip.module.1"
         moduleId = "slicesoft.external_rip"
-        version = "1.1.0"
+        version = "1.2.0"
         status = "LOCAL_ENGINEERING_ONLY"
         architecture = "x86_64-windows"
         entrypoint = "rip_cli.exe"

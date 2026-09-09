@@ -1167,16 +1167,20 @@ try
             -RepoRoot $repoRoot `
             -StagingDir $stagingDir
 
-        $ripSourceRoot = Join-Path $repoRoot "rip_project"
+        $ripSourceRoot = & (Join-Path $repoRoot "scripts/ResolveRipModuleSource.ps1")
         $ripModuleRelativePath = "modules/rip"
         $ripModuleDestination = Join-Path $stagingDir $ripModuleRelativePath
         $ripModuleAvailable = Test-Path `
             -LiteralPath (Join-Path $ripSourceRoot "rip_cli.exe") `
             -PathType Leaf
+        if (-not $ripModuleAvailable -and
+            (Test-Path -LiteralPath (Join-Path $repoRoot "rip_project") -PathType Container))
+        {
+            throw "Pinned RIP SDK is missing its CLI; refusing to silently omit the module: $ripSourceRoot"
+        }
         if ($ripModuleAvailable)
         {
             & (Join-Path $repoRoot "scripts/PackageRipModule.ps1") `
-                -SourceRoot $ripSourceRoot `
                 -Destination $ripModuleDestination
             if ($LASTEXITCODE -ne 0)
             {

@@ -21,7 +21,7 @@ if (-not (Test-Path -LiteralPath $manifestPath -PathType Leaf))
 $manifest = Get-Content -LiteralPath $manifestPath -Raw | ConvertFrom-Json
 if ($manifest.schema -ne "slicesoft.rip.module.1" -or
     $manifest.moduleId -ne "slicesoft.external_rip" -or
-    $manifest.version -ne "1.1.0" -or
+    $manifest.version -ne "1.2.0" -or
     $manifest.status -ne "LOCAL_ENGINEERING_ONLY" -or
     $manifest.externalValidation -ne "EXTERNAL_VALIDATION_DEFERRED")
 {
@@ -29,6 +29,20 @@ if ($manifest.schema -ne "slicesoft.rip.module.1" -or
 }
 
 $rootPrefix = $moduleRoot.TrimEnd('\', '/') + [System.IO.Path]::DirectorySeparatorChar
+$requiredPayload = @(
+    "rip_cli.exe", "RipSlicer.dll", "tiff.dll",
+    "CmykFiles/0.matrix", "CmykFiles/1.matrix", "CmykFiles/2.matrix", "CmykFiles/3.matrix",
+    "CmykFiles/linear.csv", "CmykFiles/CIERGB.icc", "CmykFiles/CMYK.icc",
+    "CmykFiles/JapanColor2001Coated.icc"
+)
+foreach ($requiredPath in $requiredPayload)
+{
+    $entries = @($manifest.files | Where-Object { $_.path -eq $requiredPath })
+    if ($entries.Count -ne 1)
+    {
+        throw "RIP module inventory must contain exactly one entry for: $requiredPath"
+    }
+}
 $verified = 0
 foreach ($entry in @($manifest.files))
 {
@@ -42,7 +56,18 @@ foreach ($entry in @($manifest.files))
         throw "RIP module file is missing: $path"
     }
     $file = Get-Item -LiteralPath $path
-    $actualHash = (Get-FileHash -LiteralPath $path -Algorithm SHA256).Hash.ToLowerInvariant()
+    $algorithm = [System.Security.Cryptography.SHA256]::Create()
+    $stream = [System.IO.File]::OpenRead($path)
+    try
+    {
+        $actualHash = ([System.BitConverter]::ToString(
+            $algorithm.ComputeHash($stream))).Replace("-", "").ToLowerInvariant()
+    }
+    finally
+    {
+        $stream.Dispose()
+        $algorithm.Dispose()
+    }
     if ([long]$entry.size -ne [long]$file.Length -or [string]$entry.sha256 -ne $actualHash)
     {
         throw "RIP module file identity mismatch: $($entry.path)"
@@ -65,7 +90,8 @@ if (-not $SkipExecutableProbe)
     $output = & $entrypoint --help 2>&1
     if ($LASTEXITCODE -ne 0 -or
         ($output -join "`n") -notmatch "RipSlicer" -or
-        ($output -join "`n") -notmatch '--transparent\s+<0-4>')
+        ($output -join "`n") -notmatch '--transparent\s+<0-4>' -or
+        ($output -join "`n") -notmatch '--ripmode\s+<0\|1>')
     {
         throw "RIP CLI help probe failed with exit code $LASTEXITCODE."
     }
