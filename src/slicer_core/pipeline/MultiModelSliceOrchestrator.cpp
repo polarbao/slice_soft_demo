@@ -309,17 +309,22 @@ SceneLayerComposeResult ComposeAdmittedSceneRastersImpl(
     }
 
     // Retain the old origin for offset rounding, including half-pixel ties.
-    std::optional<SceneCanvasXPadding> padding;
-    if (request.padtooriginx && global.originxmm > 0.0)
+    std::optional<SceneCanvasAxisPadding> xpadding, ypadding;
+    for (const bool isY : {false, true})
     {
-        const double columns = std::ceil(global.originxmm / global.pitchxmm);
-        if (!std::isfinite(columns) || columns > std::numeric_limits<int>::max())
+        double& origin = isY ? global.originymm : global.originxmm;
+        const double pitch = isY ? global.pitchymm : global.pitchxmm;
+        const bool enabled = isY ? request.padtooriginy : request.padtooriginx;
+        if (!enabled || origin <= 0.0) continue;
+        const double pixels = std::ceil(origin / pitch);
+        if (!std::isfinite(pixels) || pixels > std::numeric_limits<int>::max())
         {
             return BlockOrchestrator(request, SceneRasterErrorCode::GridInvalid,
-                "output.scenePadToOriginX", "X-origin padding exceeds supported integer extent");
+                isY ? "output.scenePadToOriginY" : "output.scenePadToOriginX",
+                "origin padding exceeds supported integer extent");
         }
-        padding = SceneCanvasXPadding{global.originxmm, static_cast<int>(columns)};
-        global.originxmm -= columns * global.pitchxmm;
+        (isY ? ypadding : xpadding) = SceneCanvasAxisPadding{origin, static_cast<int>(pixels)};
+        origin -= pixels * pitch;
     }
     for (const SceneInstanceRaster* raster : visible)
     {
@@ -336,17 +341,18 @@ SceneLayerComposeResult ComposeAdmittedSceneRastersImpl(
         int offsetZ{0};
         if (!QuantizeOffset(
                 raster->localgrid.originxmm,
-                padding ? padding->originaloriginxmm : global.originxmm,
+                xpadding ? xpadding->originaloriginmm : global.originxmm,
                 global.pitchxmm,
                 request.quantizationtolerance,
                 offsetX)
-            || (padding && !padding->AddToOffset(offsetX))
+            || (xpadding && !xpadding->AddToOffset(offsetX))
             || !QuantizeOffset(
                 raster->localgrid.originymm,
-                global.originymm,
+                ypadding ? ypadding->originaloriginmm : global.originymm,
                 global.pitchymm,
                 request.quantizationtolerance,
                 offsetY)
+            || (ypadding && !ypadding->AddToOffset(offsetY))
             || !QuantizeOffset(
                 raster->localgrid.originzmm,
                 global.originzmm,
@@ -401,7 +407,8 @@ SceneLayerComposeResult ComposeAdmittedSceneRastersImpl(
     compose.effectivepipelinemode =
         request.effectivepipelinemode;
     compose.globalgrid = global;
-    compose.xpadding = padding;
+    compose.xpadding = xpadding;
+    compose.ypadding = ypadding;
     compose.protocol = FixedSceneRasterProtocol();
     // The orchestration call is synchronous. Borrow the authoritative raster
     // buffers instead of copying every RGBWSV byte into a second vector.

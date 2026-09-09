@@ -14,9 +14,10 @@
 #include <fstream>
 #include <iostream>
 #include <stdexcept>
+#include "RawRows.h"
 
 slicer_core::Json MakeXPaddingTransferProfile(const std::filesystem::path& source,
-    const std::filesystem::path& model, const std::filesystem::path& package, bool pad);
+    const std::filesystem::path& model, const std::filesystem::path& package, bool pad, bool padY);
 void CompareXPaddingTransfer(const std::filesystem::path& off, const std::filesystem::path& on);
 void CheckXPaddingTransferHelper();
 
@@ -44,7 +45,7 @@ std::string Digest(const std::filesystem::path& path)
     std::ifstream in(path, std::ios::binary);
     return ComputeSha256(std::string(std::istreambuf_iterator<char>(in), {}));
 }
-Json Profile(const std::filesystem::path& source, const std::filesystem::path& model, bool pad, int dpi, double thickness)
+Json Profile(const std::filesystem::path& source, const std::filesystem::path& model, bool pad, int dpi, double thickness, bool padY = false)
 {
     auto doc = Read(source / "samples/configs/golden/material_process_top2_fixture.json").as_object();
     auto input = doc.at("input").as_object();
@@ -56,6 +57,7 @@ Json Profile(const std::filesystem::path& source, const std::filesystem::path& m
     output["dpiY"] = dpi;
     output["layerThicknessMm"] = thickness;
     if (pad) output["scenePadToOriginX"] = true;
+    if (padY) output["scenePadToOriginY"] = true;
     doc["output"] = Json{output};
     auto orient = doc.at("autoOrient").as_object();
     orient["enabled"] = false;
@@ -178,16 +180,25 @@ void ComparePackages(const std::filesystem::path& left, const std::filesystem::p
     const auto pm = Read(right / "manifest.json");
     const double x = bm.at("grid").at("originMm").at(0U).as_double();
     const double px = pm.at("grid").at("originMm").at(0U).as_double();
-    const int n = static_cast<int>(std::ceil(x / base.pixel_size_x_mm));
-    Require(n > 0 && padded.width_px == base.width_px + n, "production width/padding");
+    const double y = bm.at("grid").at("originMm").at(1U).as_double();
+    const double py = pm.at("grid").at("originMm").at(1U).as_double();
+    const int n = padded.width_px - base.width_px;
+    const int m = padded.height_px - base.height_px;
+    Require((n > 0 || m > 0) && n >= 0 && m >= 0, "production padding dimensions");
+    // Manifest decimal serialization can round a pitch at an integral boundary.
+    // Verify coverage and subpixel remainder rather than re-ceiling the rounded pitch.
+    Require(n == 0 || (px <= 1e-9 && px > -base.pixel_size_x_mm - 1e-9), "production X coverage");
+    Require(m == 0 || (py <= 1e-9 && py > -base.pixel_size_y_mm - 1e-9), "production Y coverage");
     Require(std::abs(px + n * base.pixel_size_x_mm - x) < 1e-8, "production origin");
-    Require(padded.height_px == base.height_px && padded.layer_count == base.layer_count, "Y/Z extent drift");
+    Require(std::abs(py + m * base.pixel_size_y_mm - y) < 1e-8, "production Y origin");
+    Require(padded.layer_count == base.layer_count, "Z extent drift");
     for (std::size_t c = 0; c < 6; ++c)
     {
         Require(base.total_channel_stats[c].print_pixels == padded.total_channel_stats[c].print_pixels,
             "persisted print statistics drift");
         Require(padded.total_channel_stats[c].empty_pixels == base.total_channel_stats[c].empty_pixels
-            + static_cast<std::uint64_t>(n) * base.height_px * base.layer_count, "persisted empty statistics drift");
+            + (static_cast<std::uint64_t>(padded.width_px) * padded.height_px
+                - static_cast<std::uint64_t>(base.width_px) * base.height_px) * base.layer_count, "persisted empty statistics drift");
     }
     const auto& bl = bm.at("layers").as_array();
     const auto& pl = pm.at("layers").as_array();
@@ -195,19 +206,25 @@ void ComparePackages(const std::filesystem::path& left, const std::filesystem::p
     {
         const auto a = read_rgbwsv_tiff(left / PathFromUtf8(bl[z].at("path").as_string()));
         const auto b = read_rgbwsv_tiff(right / PathFromUtf8(pl[z].at("path").as_string()));
-        for (int y = 0; y < base.height_px; ++y)
+#ifdef SLICESOFT_XPAD_RAW_TIFF
+        CheckRawPaddingRows(right / PathFromUtf8(pl[z].at("path").as_string()), a.pixels,
+            base.width_px, base.height_px, n, m, 6);
+#endif
+        Require(std::all_of(b.pixels.begin(), b.pixels.begin() + static_cast<std::ptrdiff_t>(m) * padded.width_px * 6,
+            [](auto v) { return v == 255; }), "TIFF bottom rows not empty");
+        for (int row = 0; row < base.height_px; ++row)
         {
-            const auto arow = a.pixels.begin() + static_cast<std::ptrdiff_t>(y) * base.width_px * 6;
-            const auto brow = b.pixels.begin() + static_cast<std::ptrdiff_t>(y) * padded.width_px * 6;
+            const auto arow = a.pixels.begin() + static_cast<std::ptrdiff_t>(row) * base.width_px * 6;
+            const auto brow = b.pixels.begin() + static_cast<std::ptrdiff_t>(row + m) * padded.width_px * 6;
             Require(std::all_of(brow, brow + n * 6, [](auto v) { return v == 255; }), "TIFF prefix not empty");
             Require(std::equal(arow, arow + base.width_px * 6, brow + n * 6), "TIFF body byte drift");
         }
     }
     std::cout << "XPAD_PACKAGE_PASS layers=" << base.layer_count << " oldWidth=" << base.width_px
-        << " newWidth=" << padded.width_px << " columns=" << n << " originX=" << px << '\n';
+        << " newWidth=" << padded.width_px << " columns=" << n << " rows=" << m << " originX=" << px << " originY=" << py << '\n';
 }
 }
-void RunXPaddingProduction(bool real, int dpi, double thickness, bool benchmark)
+void RunXPaddingProduction(bool real, int dpi, double thickness, bool benchmark, bool padY, bool padX)
 {
     const auto source = std::filesystem::path(SLICESOFT_SOURCE_DIR);
     const auto root = source / "output/xpad" / std::to_string(std::chrono::steady_clock::now().time_since_epoch().count());
@@ -225,12 +242,15 @@ void RunXPaddingProduction(bool real, int dpi, double thickness, bool benchmark)
     const auto off = root / "off/profile.json";
     const auto on = root / "on/profile.json";
     Write(off, Profile(source, paths.front(), false, dpi, thickness));
-    Write(on, Profile(source, paths.front(), true, dpi, thickness));
-    Require(!load_slice_config(off).output.scene_pad_to_origin_x && load_slice_config(on).output.scene_pad_to_origin_x,
+    Write(on, Profile(source, paths.front(), padX, dpi, thickness, padY));
+    Require(!load_slice_config(off).output.scene_pad_to_origin_x
+        && !load_slice_config(off).output.scene_pad_to_origin_y
+        && load_slice_config(on).output.scene_pad_to_origin_x == padX
+        && load_slice_config(on).output.scene_pad_to_origin_y == padY,
         "config roundtrip");
     auto invalid = Profile(source, paths.front(), false, dpi, thickness).as_object();
     auto invalidOutput = invalid.at("output").as_object();
-    invalidOutput["scenePadToOriginX"] = "true";
+    invalidOutput[padY ? "scenePadToOriginY" : "scenePadToOriginX"] = "true";
     invalid["output"] = Json{invalidOutput};
     Write(root / "invalid.json", Json{invalid});
     bool rejected = false;
@@ -257,11 +277,17 @@ void RunXPaddingProduction(bool real, int dpi, double thickness, bool benchmark)
         const auto pair = benchmark ? root / ("r" + std::to_string(round)) : root;
         ComparePackages(benchmark ? std::filesystem::path(pair.string() + "off") / "package" : root / "off/package",
             benchmark ? std::filesystem::path(pair.string() + "on") / "package" : root / "on/package");
+        if (padY && !benchmark)
+        {
+            const auto a = validate_slice_package(root / "off/package");
+            const auto b = validate_slice_package(root / "on/package");
+            Require(b.height_px > a.height_px && (padX || b.width_px == a.width_px), "Y option not wired into production");
+        }
         Write(root / "timings.json", Json{timings});
     }
 }
 
-void RunXPaddingTransfer(bool real, bool benchmark)
+void RunXPaddingTransfer(bool real, bool benchmark, bool padY, bool padX)
 {
     CheckXPaddingTransferHelper();
     const auto source = std::filesystem::path(SLICESOFT_SOURCE_DIR);
@@ -293,7 +319,7 @@ void RunXPaddingTransfer(bool real, bool benchmark)
             const auto run = pair / (pad ? "on" : "off");
             std::filesystem::create_directories(run);
             const auto path = run / "profile.json";
-            Write(path, MakeXPaddingTransferProfile(source, model, run / "package", pad));
+            Write(path, MakeXPaddingTransferProfile(source, model, run / "package", pad && padX, pad && padY));
             const auto scene = Scene(load_slice_config(path), {model});
             auto timing = RunPackage(run, path, scene).as_object();
             timing["pad"] = pad;

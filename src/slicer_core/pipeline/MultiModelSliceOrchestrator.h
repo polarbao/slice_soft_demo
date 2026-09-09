@@ -22,6 +22,7 @@ struct MultiModelLayerComposeRequest
     std::vector<SceneInstanceRaster> instances;
     double quantizationtolerance{1.0e-6};
     bool padtooriginx{false}; // Preserve raster phase, extend only the left empty canvas.
+    bool padtooriginy{false}; // Extend the lower empty canvas independently of X.
 
     /**
      * @brief MF-05：逐层出入口，原样透传给 SceneLayerComposeRequest。

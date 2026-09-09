@@ -121,7 +121,7 @@ struct SceneLayerComposeRequest
     SlicePipelineMode effectivepipelinemode{
         SlicePipelineMode::Legacy};
     SceneRasterGrid globalgrid;
-    std::optional<SceneCanvasXPadding> xpadding;
+    std::optional<SceneCanvasAxisPadding> xpadding, ypadding;
     RgbwsvProtocol protocol;
     std::vector<SceneInstanceRaster> instances;
     double quantizationtolerance{1.0e-6};

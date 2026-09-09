@@ -1218,13 +1218,13 @@ MultiModelProductionResult RunMultiModelProductionServiceImpl(
     phaseStart = ProductionClock::now();
     MultiModelLayerComposeRequest composeRequest;
     composeRequest.admission = admission;
-    composeRequest.currentscenerevision =
-        scene.scenerevision;
+    composeRequest.currentscenerevision = scene.scenerevision;
     composeRequest.effectivepipelinemode =
         SlicePipelineMode::Legacy;
     composeRequest.instances = std::move(rasters);
     composeRequest.quantizationtolerance = kRasterQuantizationTolerance;
     composeRequest.padtooriginx = profile.output.scene_pad_to_origin_x;
+    composeRequest.padtooriginy = profile.output.scene_pad_to_origin_y;
     composeRequest.canceltoken = request.canceltoken;
     // 流式：合成按 (实例, 本地层号) 现取层。offsetz 全为 0（对齐判定已保证），
     // 故本地层号即全局层号，屏障可直接按它推进。

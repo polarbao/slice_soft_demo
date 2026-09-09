@@ -4247,8 +4247,8 @@ SliceRunResult run_slicer(const std::filesystem::path& config_path, const SliceR
         LiftModelForSupportBase(model_report, supportBaseProjectionPreparation.model_lift_mm);
     }
     const GridSpec grid = make_grid_spec(config, model_report.bbox_mm);
-    const LegacyTransferCanvas transferCanvas(grid, config.output.scene_pad_to_origin_x
-        && config.transfer_channel_policy.enabled && options.instanceoverride.has_value());
+    const LegacyTransferCanvas transferCanvas(grid, config.output.scene_pad_to_origin_x, config.output.scene_pad_to_origin_y,
+        config.transfer_channel_policy.enabled && options.instanceoverride.has_value());
     const GridSpec outputGrid = transferCanvas.OutputGrid(grid);
     const MaterialVolumeGrid materialVolumeGrid{
         grid.width_px, grid.height_px, grid.origin_x_mm, grid.origin_y_mm,
@@ -5167,7 +5167,7 @@ SliceRunResult run_slicer(const std::filesystem::path& config_path, const SliceR
             {"zMm", diagnostics.z_mm},
             {"path", relative_path},
             {"widthPx", outputGrid.width_px},
-            {"heightPx", grid.height_px},
+            {"heightPx", outputGrid.height_px},
             {"modelPixels", layer_model_pixels},
             {"supportPixels", layer_support_pixels},
             {"textureSurfacePixels", diagnostics.semantic.texture_surface_pixels},
@@ -5262,14 +5262,14 @@ SliceRunResult run_slicer(const std::filesystem::path& config_path, const SliceR
     }
     Json material_process_report = BuildMaterialProcessReport(MaterialProcessReportRequest{
         &config, model_report.format, model_report.model_path,
-        outputGrid.width_px, grid.height_px, grid.layer_count,
+        outputGrid.width_px, outputGrid.height_px, grid.layer_count,
         grid.pixel_size_x_mm, grid.pixel_size_y_mm,
         materialProcessLayers, reportChannelTotals});
     Json transfer_channel_report;
     if (transferSession && options.write_tiff_layers)
     {
         const std::uint64_t totalPixels = static_cast<std::uint64_t>(outputGrid.width_px)
-            * static_cast<std::uint64_t>(grid.height_px) * static_cast<std::uint64_t>(grid.layer_count);
+            * static_cast<std::uint64_t>(outputGrid.height_px) * static_cast<std::uint64_t>(grid.layer_count);
         material_process_report = BuildRgbwsvtMaterialProcessReport(
             material_process_report, config.material_process_profile,
             transferLayerStatistics, totalTransferMaterialStatistics, totalPixels);
@@ -5339,7 +5339,7 @@ SliceRunResult run_slicer(const std::filesystem::path& config_path, const SliceR
         {"grid",
          Json::object({
              {"widthPx", outputGrid.width_px},
-             {"heightPx", grid.height_px},
+             {"heightPx", outputGrid.height_px},
              {"layerCount", grid.layer_count},
              {"pixelSizeMm", Json::array({grid.pixel_size_x_mm, grid.pixel_size_y_mm})},
              {"layerThicknessMm", config.output.layer_thickness_mm},
@@ -5758,7 +5758,7 @@ SliceRunResult run_slicer(const std::filesystem::path& config_path, const SliceR
         {"grid",
          Json::object({
              {"widthPx", outputGrid.width_px},
-             {"heightPx", grid.height_px},
+             {"heightPx", outputGrid.height_px},
              {"layerCount", grid.layer_count},
              {"dpiX", config.output.dpi_x},
              {"dpiY", config.output.dpi_y},
@@ -5767,7 +5767,7 @@ SliceRunResult run_slicer(const std::filesystem::path& config_path, const SliceR
              {"pixelSizeYmm", grid.pixel_size_y_mm},
              {"pixelSizeMm", Json::array({grid.pixel_size_x_mm, grid.pixel_size_y_mm})},
              {"layerThicknessMm", config.output.layer_thickness_mm},
-             {"originMm", Json::array({outputGrid.origin_x_mm, grid.origin_y_mm, 0.0})},
+             {"originMm", Json::array({outputGrid.origin_x_mm, outputGrid.origin_y_mm, 0.0})},
          })},
         {"slicing",
          Json::object({
@@ -5877,7 +5877,7 @@ SliceRunResult run_slicer(const std::filesystem::path& config_path, const SliceR
     result.package_dir = package_dir;
     result.effective_pipeline_mode = "legacy";
     result.width_px = outputGrid.width_px;
-    result.height_px = grid.height_px;
+    result.height_px = outputGrid.height_px;
     result.layer_count = grid.layer_count;
     result.model_pixel_count = total_model_pixels;
     result.support_pixel_count = total_support_pixels;
