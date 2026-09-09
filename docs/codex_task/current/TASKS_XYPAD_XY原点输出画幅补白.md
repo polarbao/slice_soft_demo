@@ -1,6 +1,6 @@
 # XYPAD XY 原点输出画幅补白
 
-日期：2026-09-09。用户先授权分析、文档、隔离分支与直接实施，后授权覆盖运行版及同步 Git 功能分支；未授权合入或推送。
+日期：2026-09-09。用户先授权分析、文档、隔离分支与直接实施，后授权覆盖运行版、同步 Git，以及合入对应 product 分支并删除已合入的本地功能分支；未授权推送。
 
 ## Implementation Plan
 
@@ -15,9 +15,9 @@ XPAD 设计与任务卡、TIFFVIEW max_y_first 行序合同。设计见 `docs/sl
 ### AI Workspace Evidence
 从 product/packaged-slicer 创建 codex/xy-origin-canvas-padding。保留先前未提交的用户手册/RIP配图、analysis、cache、团队文档及 gubao-xin-2D 素材；不回退、不混合提交。
 ### Current Code Reality
-X 已按原栅格相位补空列；Y 仍取 Raster 并集的 originY。六通道借用/消费/流式合成共享 offset；T 独立最终输出 helper 目前只扩宽。
+X/Y 均已按原栅格相位补空列/空行；六通道借用/消费/流式合成共享双轴 offset；T 独立最终输出 helper 同步扩宽与扩高，默认 Y=false。
 ### Current State
-本地实现与定向验证完成；2026-09-09 用户确认覆盖后，已从独立验证版更新 runtime/slicesoft/Release 并通过宿主自检；按后续授权拆分提交至功能分支，未合入 product、未推送。真实十模型实际新增左 475 列、下 36 行，原模型像素保持不变；补白量以实际 Raster 为准。
+本地实现与定向验证完成；2026-09-09 用户确认覆盖后，已从独立验证版更新 runtime/slicesoft/Release 并通过宿主自检；三个拆分提交已按后续授权快进合入 product/packaged-slicer，本地功能分支已删除，未推送。真实十模型实际新增左 475 列、下 36 行，原模型像素保持不变；补白量以实际 Raster 为准。
 ### Target State
 保留原 X 开关，新增默认关闭的独立 Y 开关及 output.scenePadToOriginY。可 X-only/Y-only/XY/全关。保留模型变换、采样相位、Z、层数、所有打印字节；同步六/七通道输出、预览和统计。
 ### Historical State
@@ -48,3 +48,4 @@ Release 定向构建后运行双轴矩阵（正/负/零/分数、各向异性 DP
 - 2026-09-09 r2：XY-01..03 本地范围收口，记录 9 项定向回归及真实六/七通道全层证据，交付独立验证版、文档和实际界面配图；不声明全仓回归或物理打印通过。
 - 2026-09-09 r3：用户确认覆盖，原 Release 目录更新完成；86 个部署文件哈希一致，宿主自检通过；不涉及 Git 提交或分支合并。
 - 2026-09-09 r4：用户授权同步 Git 分支，核心与测试提交 12bca48d，宿主与兼容测试提交 e4cb2d27；文档及图 21 单独收口提交。提交前定向 CTest 再次 9/9 PASS（9.21 s）。其他手册/RIP/素材改动保留未提交，不合并或推送。
+- 2026-09-09 r5：用户授权合并及清理，product/packaged-slicer 从 88f087ed 快进至 e87052fc，完整保留三个拆分提交；确认可达后用 git branch -d 删除 codex/xy-origin-canvas-padding。其他专项分支未删除，原有未提交文件内容哈希和状态核对保持不变；未推送远端。

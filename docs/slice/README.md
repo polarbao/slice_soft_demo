@@ -22,7 +22,7 @@ Barrier、Sparse Candidate 依次通过零漂移 Gate 后才可接入。
 
 ## XYPAD Y 轴补白扩展（2026-09-09）
 
-[XY 原点输出画幅补白设计](DOC/DOC_DESIGN_XYPAD_XY原点输出画幅补白.md)：在独立功能分支增加默认关闭的 Y 开关，与现有 X 可组合；不移动模型、不改 Z、不重写旧包。进度以 [XYPAD 任务卡](../codex_task/current/TASKS_XYPAD_XY原点输出画幅补白.md) 为准。
+[XY 原点输出画幅补白设计](DOC/DOC_DESIGN_XYPAD_XY原点输出画幅补白.md)：默认关闭的 Y 开关已实现并合入 `product/packaged-slicer`，与现有 X 可组合；不移动模型、不改 Z、不重写旧包。功能分支已删除，验证与交付以 [XYPAD 任务卡](../codex_task/current/TASKS_XYPAD_XY原点输出画幅补白.md) 为准。
 
 ## XPAD 收口入口（2026-09-08）
 

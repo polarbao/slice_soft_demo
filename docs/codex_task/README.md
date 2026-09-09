@@ -11,7 +11,7 @@
 
 ## XYPAD Y 轴补白扩展（2026-09-09）
 
-[XY 原点输出画幅补白任务](current/TASKS_XYPAD_XY原点输出画幅补白.md)：独立 X/Y 开关、六/七通道下侧补空白与全层对照已完成，原 Release 已按授权更新；拆分提交在 `codex/xy-origin-canvas-padding`，未合入 product。
+[XY 原点输出画幅补白任务](current/TASKS_XYPAD_XY原点输出画幅补白.md)：独立 X/Y 开关、六/七通道下侧补空白与全层对照已完成，原 Release 已按授权更新；拆分提交已合入 `product/packaged-slicer`，本地功能分支已删除，未推送。
 
 ## XPAD 收口入口（2026-09-08）
 
