@@ -9,6 +9,8 @@ param(
     [string]$OutputRoot = "output/ripflow/local_gate",
     [ValidateRange(0, 4)]
     [int]$TransparentMode = 0,
+    [ValidateSet(0, 1)]
+    [int]$RipMode = 0,
     [ValidateSet(1, 2)]
     [int]$GrayBits = 2
 )
@@ -73,6 +75,7 @@ $before = Get-LayerIdentity -Package $package
     --package $package `
     --rip-module $modulePath `
     --transparent-mode $TransparentMode `
+    --ripmode $RipMode `
     --gray-bits $GrayBits
 if ($LASTEXITCODE -ne 0)
 {
@@ -94,7 +97,8 @@ $publishedLayers = @(
     Get-ChildItem -LiteralPath (Join-Path $package "rip") `
         -Filter "rip_*.tif" -File
 )
-if ($result.schema -ne "slicesoft.rip.result.2" -or
+if ($result.schema -ne "slicesoft.rip.result.3" -or
+    $result.settings.ripMode -ne $RipMode -or
     $result.status -ne "succeeded" -or
     $result.externalValidation -ne "EXTERNAL_VALIDATION_DEFERRED" -or
     $publishedLayers.Count -ne [int]$result.output.layerCount)
@@ -103,8 +107,9 @@ if ($result.schema -ne "slicesoft.rip.result.2" -or
 }
 
 Write-Host (
-    "RIPFLOW_LOCAL_GATE_PASS package={0} layers={1} mode={2} grayBits={3}" -f `
+    "RIPFLOW_LOCAL_GATE_PASS package={0} layers={1} mode={2} grayBits={3} ripMode={4}" -f `
         $package,
         $publishedLayers.Count,
         $TransparentMode,
-        $GrayBits)
+        $GrayBits,
+        $RipMode)
