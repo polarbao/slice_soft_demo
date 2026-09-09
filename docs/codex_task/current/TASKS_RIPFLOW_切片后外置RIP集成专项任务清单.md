@@ -1,7 +1,7 @@
 # TASKS_RIPFLOW 切片后外置 RIP 集成专项任务清单
 
 > 文档状态：**SLICER_SIDE_COMPLETE / EXTERNAL_VALIDATION_DEFERRED**
-> 版本：v2.3 ｜ 日期：2026-08-25 ｜ 用户授权：2026-08-17、2026-08-18、2026-08-25
+> 版本：v2.4 ｜ 日期：2026-09-09 ｜ 用户授权：2026-08-17、2026-08-18、2026-08-25、2026-09-09
 > 定位：独立补充专项，不占 Stage 编号
 > 权威决策：`docs/slice/DOC/DOC_DECISION_RIPFLOW_切片后外置RIP模块与自动处理边界.md`
 > 准备文档：`docs/slice/DOC/DOC_PREP_RIPFLOW_外置模块设置与自动后处理准备.md`
@@ -450,6 +450,34 @@ Package 对 0..4 五档逐一运行，均为 `exitCode=0`、3/3 输出；宿主�
 其中的宿主进程未覆盖，已另外完整部署并验证 `runtime/slicesoft-rip-v1.1/Release`；未强制终止
 用户进程。外部分发和打印侧生产验收仍保持 `BLOCKED_EXTERNAL`。
 
+### RIPFLOW-D-08 日期版本源与双 RIP 墨量适配
+
+**状态：COMPLETE / PASS（2026-09-09）**
+
+**依赖：** D-07；用户 2026-09-09 授权更新，编译环境优化暂缓。
+
+**内容：** 固定本次来源 `rip_project/RIPDLL_20260909`，整套同步 EXE/DLL、ICC、线性化表、
+矩阵；后续日期目录通过显式版本选择更新，不自动跟随最新目录。模块版本 1.2.0；新增
+`ripMode=0/1`，UI 分别显示正常 RIP / 3 倍墨量 RIP，命令显式传入 `--ripmode`。
+新设置默认 0，已有 v1/v2 设置迁移为第二档 1，保留其余设置及原有 follow_manifest 安全迁移。
+settings/result/diagnostic 升级 v3，旧版 schema 留存。严格/诊断仅将 UI 名称改为单色/彩色，
+原校验规则、输出目录、S2 发布资格和外部延期状态不变。
+
+**风险边界：** 供应方称 0 为直通、1 为完整流程，不能解释为每个通道简单乘 3；0 不走肤色、
+补光油和白墨挂网分支。新 CMYK.icc 与 linear.csv 均变化，禁止只更新二进制。
+
+**验收：** 旧设置迁移与两档持久化、非法值拒绝、手动/自动同一参数通路、模块能力探测及
+11 文件哈希、真实两档输出、诊断隔离及源输入不变；Release 构建和定向回归。
+
+**实际结果：** Release 目标构建 PASS；RIP 定向 CTest 8/8 PASS（含旧设置迁移、非法值、
+UI 接线、模块包和生命周期安全单测），合同正例 8 / 负例 13 PASS。真实新版 CLI 与宿主
+各完成两档墨量 x 五档颜色的 10/10 测试，输入为 3 层 16x16 测试 Package，不代表生产模型
+或特殊墨工艺全覆盖。默认部署 Runtime 上手动目录两档 2/2、单色严格 Package 两档 2/2 PASS；
+14 份真实结果通过 v3 JSON Schema；取消、超时、exit1/exit2 四项生命周期 Gate PASS。
+`runtime/slicesoft/Release` 已部署，宿主与构建产物、模块 11 文件与新版源 SHA-256 一致。
+未更改源层文件、原 S2 校验或诊断发布规则，未进行实物打印验收。证据及环境异常说明见
+`docs/slice/REPORT/REPORT_RIPFLOW_D08_20260909双墨量适配与部署验证.md`。
+
 ## 9. RIPFLOW-E 外部阻塞
 
 ### RIPFLOW-E-01 二进制、lcms2、ICC 与私有 LibTIFF 分发闭合
@@ -508,3 +536,4 @@ E-01/E-02 未完成不阻止本地专项标记 `SLICER_SIDE_COMPLETE`，但阻�
 | 2026-08-18 | v2.1 | D-06 完成：新增默认关闭的隔离诊断保存；真实 175 层 RIP exitCode=0、175/175 输出保存到 `rip_diagnostic`，记录 W/S/V 各 10,875,980 个超限样本且不生成严格 `rip`；S2 语义修订继续等待供应方/打印侧解释 |
 | 2026-08-18 | v2.2 | D-06 最终复验：合同门禁、Release Hostx64 构建与 RIP 定向 CTest 6/6 PASS；记录默认 Runtime 被运行中 PID 8244 锁定，未强制终止用户进程，关闭后再同步最新自测断言构建 |
 | 2026-08-25 | v2.3 | D-07 完成：接入新版 RIP 模块与 `--transparent 0..4` 五档颜色模式；合同 v2、旧设置迁移、模块版本/能力探测、Release 全构建、7/7 定向 CTest、真实五档运行与隔离 Runtime 部署 PASS；外部状态不升级 |
+| 2026-09-09 | v2.4 | D-08 完成：日期源固定选择、整套新版 SDK、双墨量与旧设置迁移、单色/彩色仅更名、v3 合同；Release 目标构建、8/8 CTest、10 档宿主矩阵、双档手动/严格运行和默认 Runtime 哈希复验 PASS；编译环境优化与外部验收不纳入本次 |

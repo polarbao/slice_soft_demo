@@ -15,7 +15,7 @@ package/
   rip/
     rip_result.json
     rip_000000.tif
-  rip_diagnostic/              # 仅在显式诊断模式生成，不可打印
+  rip_diagnostic/              # 彩色选项；保留原诊断合同，不取得 S2 发布资格
     rip_diagnostic_result.json
     rip_000000.tif
 ```
@@ -24,7 +24,7 @@ package/
 
 ## 2. 设置与运行
 
-在右侧“RIP 设置”页配置渲染意图、RIP 颜色模式、ICC、失败策略、输出验证、grayBits 参考阈值和超时。
+在右侧“RIP 设置”页配置渲染意图、RIP 颜色模式、RIP 墨量、ICC、失败策略、输出验证、grayBits 参考阈值和超时。
 “切片完成后自动处理”默认关闭；手动与自动模式使用同一个 QProcess 控制器和同一组前置/输出
 检查。自动模式只在切片成功且结果严格加载成功后启动。
 
@@ -45,15 +45,19 @@ RIP 颜色模式与新版 `--transparent` 参数一一对应：
 独立的“纹理/浮雕模式”对应 `--colormode`，当前仍只允许 0。grayBits 只校验真实输出范围，
 不会向当前 RIP CLI 传入算法参数。
 
-“输出验证”默认选择“严格 S2（可发布）”。只有需要采集当前 RIP 的实际通道证据时，才显式选择
-“诊断保存（不可打印）”：程序仍检查输出结构、层数、尺寸和源 Package 身份，但把 W/S/V 超限
+“RIP 墨量”对应 `--ripmode`：正常 RIP=0，3 倍墨量 RIP=1。新配置默认 0，已有 v1/v2 设置
+迁移到 1。供应方定义 0 为直通流程，不做补光油、肤色特殊处理及白墨挂网；1 为完整流程，
+不是逐通道数值简单乘以 3。设置与结果快照以 v3 保存实际参数。
+
+“输出验证”默认选择“单色”（原严格 S2），另一个选项为“彩色”（原诊断保存）。这里只更名，
+不改变校验规则，也不决定 RIP 是否生成彩色通道。“彩色”仍检查输出结构、层数、尺寸和源 Package 身份，但把 W/S/V 超限
 记入报告并保存到 `rip_diagnostic`，不会生成严格 `rip`。
 
 当前已验证的本地子集：
 
 ```text
 输入：p0.rgbwsv.2、unsigned 8bit、RGBWSV、contiguous、stripped
-设置：transparentMode=0..4、colorMode=0、deviceGrayBits=1/2（仅输出准入期望）
+设置：ripMode=0/1、transparentMode=0..4、colorMode=0、deviceGrayBits=1/2（仅输出准入期望）
 输出：至少 7 通道、unsigned 8bit、contiguous、stripped
 命名：rip_%06d.tif
 ```
@@ -78,16 +82,16 @@ RIP 进程，但每档能否形成严格 `rip` 仍以该次输出验证为准。
 2. **RIP 输出文件夹**：选择一个**尚不存在**的目标文件夹。浏览按钮选中上级目录后会自动
    补一个 `rip` 子目录名，可直接改写。目标已存在一律拒绝，不会覆盖；目标也不能与切片
    文件夹相同或嵌套在其中。
-3. 「RIP 配置」里的渲染意图、颜色模式、ICC、输出验证、设备灰阶、超时对两种运行方式通用。
+3. 「RIP 配置」里的渲染意图、颜色模式、RIP 墨量、ICC、输出验证、设备灰阶、超时对两种运行方式通用。
 4. 点「运行手动 RIP」。运行中可用同一个「取消」按钮中止。
 
 产物与包内运行一致：`rip_000000.tif` 起的连续编号，加一份 `rip_result.json`
 （诊断模式为 `rip_diagnostic_result.json`），报告里 `sourceBinding` 记为
 `manual_unbound`，并附上源切片文件夹与层数。
 
-注意：手动运行没有 manifest，因而没有切片侧的准入声明。**严格 S2** 模式下任一层
+注意：手动运行没有 manifest，因而没有切片侧的准入声明。**单色（原严格 S2）** 模式下任一层
 W/S/V 超过设备灰阶上限（2bit 为 W6/S9/V9）都会整单失败且不留下任何输出目录；需要
-拿到产物排查时改用**诊断保存**模式，它会保存输出并在报告里记录超限数量与首个超限位置，
+拿到产物排查时改用**彩色（原诊断保存）**模式，它会保存输出并在报告里记录超限数量与首个超限位置，
 但明确标记不可打印。
 
 ## 3. 迁移
@@ -112,7 +116,7 @@ LibTIFF 4.7.1。模块清单中的 11 个运行文件会逐个校验大小和 SH
 
 ```powershell
 powershell -NoProfile -ExecutionPolicy Bypass -File scripts/PackageRipModule.ps1 `
-  -SourceRoot rip_project -Destination output/ripflow/modules/rip
+  -SourceRoot rip_project/RIPDLL_20260909 -Destination output/ripflow/modules/rip
 powershell -NoProfile -ExecutionPolicy Bypass -File scripts/TestRipModulePackage.ps1 `
   -ModuleDirectory output/ripflow/modules/rip
 ```
