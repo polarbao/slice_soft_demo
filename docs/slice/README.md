@@ -20,6 +20,10 @@ Barrier、Sparse Candidate 依次通过零漂移 Gate 后才可接入。
 16C-04/07..09 保留后续排期，16C-10 正式设备 SLA 保持 `INPUT_OPEN`，16B-04/16D-05 仍需
 用户独立授权。
 
+## XYPAD Y 轴补白扩展（2026-09-09）
+
+[XY 原点输出画幅补白设计](DOC/DOC_DESIGN_XYPAD_XY原点输出画幅补白.md)：在独立功能分支增加默认关闭的 Y 开关，与现有 X 可组合；不移动模型、不改 Z、不重写旧包。进度以 [XYPAD 任务卡](../codex_task/current/TASKS_XYPAD_XY原点输出画幅补白.md) 为准。
+
 ## XPAD 收口入口（2026-09-08）
 
 [X 原点输出画幅补白](DOC/DOC_DESIGN_XPAD_X原点输出画幅补白.md)。默认关闭，仅扩展 Scene 空白画幅，不移动模型；任务状态见 Codex XPAD 清单。

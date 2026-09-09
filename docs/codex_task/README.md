@@ -9,6 +9,10 @@
 
 本目录存放 Codex 操作任务、执行提示词和历史任务归档。`current` 表示文件仍需保留或可能继续执行，不表示其中每份任务都是当前入口。
 
+## XYPAD Y 轴补白扩展（2026-09-09）
+
+[XY 原点输出画幅补白任务](current/TASKS_XYPAD_XY原点输出画幅补白.md)：独立 X/Y 开关、六/七通道下侧补空白与全层对照已完成，原 Release 已按授权更新；拆分提交在 `codex/xy-origin-canvas-padding`，未合入 product。
+
 ## XPAD 收口入口（2026-09-08）
 
 [X 原点输出画幅补白](current/TASKS_XPAD_X原点输出画幅补白.md)，六/七通道实现已合入 `product/packaged-slicer`，开发分支已删除；状态以任务表为准，不重开 FRAME/MEMFLOW。
