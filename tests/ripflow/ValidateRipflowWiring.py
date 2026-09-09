@@ -63,6 +63,14 @@ def main() -> int:
         and "manifestWhite" not in controller,
         "RIP --transparent 0..4 modes are not wired losslessly",
     )
+    require(
+        "coreSettings.rip_mode = m_settings.ripmode" in controller
+        and 'QStringLiteral("正常 RIP"), 0' in panel
+        and 'QStringLiteral("3 倍墨量 RIP"), 1' in panel
+        and 'QStringLiteral("单色"), QStringLiteral("strict_s2")' in panel
+        and 'QStringLiteral("彩色")' in panel,
+        "ink mode or monochrome/color labels are not wired",
+    )
     print(
         "RIPFLOW_WIRING_PASS strict_hook=1 shell_free=1 sibling_paths=1 "
         "diagnostic_isolated=1 transparent_modes=5"

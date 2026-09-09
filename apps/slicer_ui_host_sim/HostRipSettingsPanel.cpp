@@ -47,6 +47,16 @@ void HostRipSettingsPanel::BuildInterface()
     m_transparentCombo->addItem(QStringLiteral("肤色"), 2);
     m_transparentCombo->addItem(QStringLiteral("白色 30"), 3);
     m_transparentCombo->addItem(QStringLiteral("白色 50"), 4);
+    m_ripModeCombo = new QComboBox(processingGroup);
+    m_ripModeCombo->setObjectName(QStringLiteral("hostRipInkModeCombo"));
+    m_ripModeCombo->addItem(QStringLiteral("正常 RIP"), 0);
+    m_ripModeCombo->addItem(QStringLiteral("3 倍墨量 RIP"), 1);
+    m_ripModeCombo->setItemData(0,
+        QStringLiteral("直通流程：不执行补光油、肤色特殊处理或白墨挂网。"),
+        Qt::ToolTipRole);
+    m_ripModeCombo->setItemData(1,
+        QStringLiteral("完整流程：执行墨量控制和专色分配；不是逐通道数值乘以 3。"),
+        Qt::ToolTipRole);
     m_colorModeCombo = new QComboBox(processingGroup);
     m_colorModeCombo->setObjectName(QStringLiteral("hostRipColorModeCombo"));
     m_colorModeCombo->addItem(QStringLiteral("默认模式"), 0);
@@ -72,9 +82,9 @@ void HostRipSettingsPanel::BuildInterface()
     m_outputValidationCombo->setObjectName(
         QStringLiteral("hostRipOutputValidationCombo"));
     m_outputValidationCombo->addItem(
-        QStringLiteral("严格 S2（可发布）"), QStringLiteral("strict_s2"));
+        QStringLiteral("单色"), QStringLiteral("strict_s2"));
     m_outputValidationCombo->addItem(
-        QStringLiteral("诊断保存（不可打印）"),
+        QStringLiteral("彩色"),
         QStringLiteral("diagnostic_unvalidated"));
     m_timeoutSpin = new QSpinBox(processingGroup);
     m_timeoutSpin->setObjectName(QStringLiteral("hostRipTimeoutSpin"));
@@ -83,6 +93,7 @@ void HostRipSettingsPanel::BuildInterface()
     form->addRow(m_autoCheck);
     form->addRow(QStringLiteral("渲染意图"), m_intentCombo);
     form->addRow(QStringLiteral("RIP 颜色模式"), m_transparentCombo);
+    form->addRow(QStringLiteral("RIP 墨量"), m_ripModeCombo);
     form->addRow(QStringLiteral("纹理/浮雕模式"), m_colorModeCombo);
     form->addRow(QStringLiteral("输入 ICC"), m_inputIccCombo);
     form->addRow(QStringLiteral("输出 ICC"), m_outputIccCombo);
@@ -186,6 +197,7 @@ void HostRipSettingsPanel::BuildInterface()
     for (QComboBox* combo : {
              m_intentCombo,
              m_transparentCombo,
+             m_ripModeCombo,
              m_colorModeCombo,
              m_inputIccCombo,
              m_outputIccCombo,
@@ -255,6 +267,7 @@ hostripsettings HostRipSettingsPanel::Settings() const
     settings.autoafterslice = m_autoCheck->isChecked();
     settings.renderintent = m_intentCombo->currentData().toInt();
     settings.transparentmode = m_transparentCombo->currentData().toInt();
+    settings.ripmode = m_ripModeCombo->currentData().toInt();
     settings.colormode = m_colorModeCombo->currentData().toInt();
     settings.inputicc = m_inputIccCombo->currentData().toString();
     settings.outputicc = m_outputIccCombo->currentData().toString();
@@ -271,6 +284,7 @@ void HostRipSettingsPanel::SetSettings(const hostripsettings& settings)
     const QSignalBlocker autoBlocker(m_autoCheck);
     const QSignalBlocker intentBlocker(m_intentCombo);
     const QSignalBlocker transparentBlocker(m_transparentCombo);
+    const QSignalBlocker ripModeBlocker(m_ripModeCombo);
     const QSignalBlocker colorModeBlocker(m_colorModeCombo);
     const QSignalBlocker inputIccBlocker(m_inputIccCombo);
     const QSignalBlocker outputIccBlocker(m_outputIccCombo);
@@ -283,6 +297,7 @@ void HostRipSettingsPanel::SetSettings(const hostripsettings& settings)
         m_intentCombo->findData(settings.renderintent));
     m_transparentCombo->setCurrentIndex(
         m_transparentCombo->findData(settings.transparentmode));
+    m_ripModeCombo->setCurrentIndex(m_ripModeCombo->findData(settings.ripmode));
     m_colorModeCombo->setCurrentIndex(
         m_colorModeCombo->findData(settings.colormode));
     m_inputIccCombo->setCurrentIndex(
@@ -409,6 +424,7 @@ void HostRipSettingsPanel::RefreshControls()
     m_autoCheck->setEnabled(editable);
     m_intentCombo->setEnabled(editable);
     m_transparentCombo->setEnabled(editable);
+    m_ripModeCombo->setEnabled(editable);
     m_inputIccCombo->setEnabled(editable);
     m_outputIccCombo->setEnabled(editable);
     m_continueCheck->setEnabled(editable);

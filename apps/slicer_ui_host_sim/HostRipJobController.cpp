@@ -248,7 +248,7 @@ bool HostRipJobController::InspectRuntime(
         || manifest.value(QStringLiteral("moduleId")).toString()
             != QStringLiteral("slicesoft.external_rip")
         || manifest.value(QStringLiteral("version")).toString()
-            != QStringLiteral("1.1.0")
+            != QStringLiteral("1.2.0")
         || manifest.value(QStringLiteral("status")).toString()
             != QStringLiteral("LOCAL_ENGINEERING_ONLY")
         || manifest.value(QStringLiteral("externalValidation")).toString()
@@ -834,6 +834,7 @@ void HostRipJobController::StartExternalProcess()
     coreSettings.auto_run_after_slice = m_settings.autoafterslice;
     coreSettings.intent = m_settings.renderintent;
     coreSettings.transparent_mode = m_settings.transparentmode;
+    coreSettings.rip_mode = m_settings.ripmode;
     coreSettings.color_mode = m_settings.colormode;
     coreSettings.continue_on_layer_error = m_settings.continueonerror;
     coreSettings.gray_bits = m_settings.devicegraybits;
@@ -1130,10 +1131,11 @@ void HostRipJobController::FinalizeValidatedOutput(
         maxima[2] = (std::max)(maxima[2], static_cast<int>(layer.maximum_varnish));
     }
     const QJsonObject settingsObject{
-        {QStringLiteral("schema"), QStringLiteral("slicesoft.rip.settings.2")},
+        {QStringLiteral("schema"), QStringLiteral("slicesoft.rip.settings.3")},
         {QStringLiteral("autoAfterSlice"), m_settings.autoafterslice},
         {QStringLiteral("renderIntent"), m_settings.renderintent},
         {QStringLiteral("transparentMode"), m_settings.transparentmode},
+        {QStringLiteral("ripMode"), m_settings.ripmode},
         {QStringLiteral("colorMode"), m_settings.colormode},
         {QStringLiteral("inputIcc"), m_settings.inputicc},
         {QStringLiteral("outputIcc"), m_settings.outputicc},
@@ -1208,8 +1210,8 @@ void HostRipJobController::FinalizeValidatedOutput(
     }
     const QJsonObject result{
         {QStringLiteral("schema"), diagnostic
-             ? QStringLiteral("slicesoft.rip.diagnostic.2")
-             : QStringLiteral("slicesoft.rip.result.2")},
+             ? QStringLiteral("slicesoft.rip.diagnostic.3")
+             : QStringLiteral("slicesoft.rip.result.3")},
         {QStringLiteral("status"), diagnostic
              ? QStringLiteral("diagnostic_unvalidated")
              : QStringLiteral("succeeded")},

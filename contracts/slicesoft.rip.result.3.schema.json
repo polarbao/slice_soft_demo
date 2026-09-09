@@ -1,0 +1,218 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "slicesoft.rip.result.3",
+  "title": "SliceSoft external RIP result v3",
+  "type": "object",
+  "additionalProperties": false,
+  "required": [
+    "schema",
+    "status",
+    "externalValidation",
+    "sourcePackage",
+    "sourceManifestSha256",
+    "module",
+    "settings",
+    "process",
+    "output",
+    "sourceBinding",
+    "sourceInputDirectory",
+    "sourceLayerCount"
+  ],
+  "properties": {
+    "schema": {
+      "const": "slicesoft.rip.result.3"
+    },
+    "status": {
+      "enum": [
+        "succeeded",
+        "failed",
+        "cancelled"
+      ]
+    },
+    "externalValidation": {
+      "const": "EXTERNAL_VALIDATION_DEFERRED"
+    },
+    "sourcePackage": {
+      "type": "string"
+    },
+    "sourceManifestSha256": {
+      "type": "string"
+    },
+    "module": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "moduleId",
+        "version",
+        "manifestSha256"
+      ],
+      "properties": {
+        "moduleId": {
+          "const": "slicesoft.external_rip"
+        },
+        "version": {
+          "type": "string",
+          "minLength": 1
+        },
+        "manifestSha256": {
+          "type": "string",
+          "pattern": "^[0-9a-f]{64}$"
+        }
+      }
+    },
+    "settings": {
+      "allOf": [
+        {
+          "$ref": "slicesoft.rip.settings.3.schema.json"
+        },
+        {
+          "properties": {
+            "outputValidationMode": {
+              "const": "strict_s2"
+            }
+          }
+        }
+      ]
+    },
+    "process": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "exitCode",
+        "elapsedMs"
+      ],
+      "properties": {
+        "exitCode": {
+          "type": "integer"
+        },
+        "elapsedMs": {
+          "type": "integer",
+          "minimum": 0
+        },
+        "stdout": {
+          "type": "string"
+        },
+        "stderr": {
+          "type": "string"
+        }
+      }
+    },
+    "output": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "directory",
+        "layerCount",
+        "filePattern",
+        "minimum",
+        "maximum"
+      ],
+      "properties": {
+        "directory": {
+          "type": "string",
+          "minLength": 1
+        },
+        "layerCount": {
+          "type": "integer",
+          "minimum": 0
+        },
+        "filePattern": {
+          "const": "rip_%06d.tif"
+        },
+        "minimum": {
+          "$ref": "#/$defs/channelRange"
+        },
+        "maximum": {
+          "$ref": "#/$defs/channelRange"
+        }
+      }
+    },
+    "sourceBinding": {
+      "enum": [
+        "package_bound",
+        "manual_unbound"
+      ]
+    },
+    "sourceInputDirectory": {
+      "type": "string",
+      "minLength": 1
+    },
+    "sourceLayerCount": {
+      "type": "integer",
+      "minimum": 1
+    }
+  },
+  "$defs": {
+    "channelRange": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "W",
+        "S",
+        "V"
+      ],
+      "properties": {
+        "W": {
+          "type": "integer",
+          "minimum": 0,
+          "maximum": 255
+        },
+        "S": {
+          "type": "integer",
+          "minimum": 0,
+          "maximum": 255
+        },
+        "V": {
+          "type": "integer",
+          "minimum": 0,
+          "maximum": 255
+        }
+      }
+    }
+  },
+  "allOf": [
+    {
+      "if": {
+        "properties": {
+          "sourceBinding": {
+            "const": "package_bound"
+          }
+        }
+      },
+      "then": {
+        "properties": {
+          "sourcePackage": {
+            "minLength": 1
+          },
+          "sourceManifestSha256": {
+            "pattern": "^[0-9a-f]{64}$"
+          },
+          "output": {
+            "properties": {
+              "directory": {
+                "const": "rip"
+              }
+            }
+          }
+        }
+      },
+      "else": {
+        "properties": {
+          "sourcePackage": {
+            "const": ""
+          },
+          "sourceManifestSha256": {
+            "const": ""
+          },
+          "output": {
+            "properties": {
+              "directory": {
+                "pattern": "^(?:[A-Za-z]:[/\\\\]|[/\\\\]{2})"
+              }
+            }
+          }
+        }
+      }
+    }
+  ]
+}

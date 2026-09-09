@@ -25,6 +25,7 @@ struct RipSettings
     bool auto_run_after_slice{false};
     int intent{0};
     int transparent_mode{0};
+    int rip_mode{0};
     int color_mode{0};
     bool continue_on_layer_error{false};
     int gray_bits{2};

@@ -456,6 +456,8 @@ int RunRipUiSmoke(const QString& modulePath)
         QStringLiteral("hostRipTransparentModeCombo"));
     const auto* colorModeCombo = window.findChild<QComboBox*>(
         QStringLiteral("hostRipColorModeCombo"));
+    const auto* ripModeCombo = window.findChild<QComboBox*>(
+        QStringLiteral("hostRipInkModeCombo"));
     const auto* outputValidationCombo = window.findChild<QComboBox*>(
         QStringLiteral("hostRipOutputValidationCombo"));
     const auto* runButton = window.findChild<QPushButton*>(
@@ -486,6 +488,9 @@ int RunRipUiSmoke(const QString& modulePath)
     }
     if (autoCheck == nullptr || intentCombo == nullptr
         || transparentCombo == nullptr || colorModeCombo == nullptr
+        || ripModeCombo == nullptr || ripModeCombo->count() != 2
+        || ripModeCombo->itemData(0).toInt() != 0
+        || ripModeCombo->itemData(1).toInt() != 1
         || outputValidationCombo == nullptr
         || runButton == nullptr || cancelButton == nullptr
         || runtimeStatus == nullptr || autoCheck->isChecked()
@@ -494,6 +499,8 @@ int RunRipUiSmoke(const QString& modulePath)
         || transparentCombo->itemData(4).toInt() != 4
         || colorModeCombo->count() != 1 || runButton->isEnabled()
         || outputValidationCombo->count() != 2
+        || outputValidationCombo->itemText(0) != QStringLiteral("单色")
+        || outputValidationCombo->itemText(1) != QStringLiteral("彩色")
         || outputValidationCombo->currentData().toString()
             != QStringLiteral("strict_s2")
         || cancelButton->isEnabled() || runtimeStatus->text().isEmpty())
@@ -511,6 +518,7 @@ int RunRipJobSelfTest(
     const QString& packageDirectory,
     const QString& moduleDirectory,
     const int transparentMode,
+    const int ripMode,
     const int grayBits,
     const int timeoutSeconds,
     const int cancelAfterMs,
@@ -526,6 +534,7 @@ int RunRipJobSelfTest(
     }
     hostripsettings settings = HostRipSettingsStore::Defaults();
     settings.transparentmode = transparentMode;
+    settings.ripmode = ripMode;
     settings.devicegraybits = grayBits;
     settings.timeoutseconds = timeoutSeconds;
     settings.outputvalidationmode = outputValidationMode;
@@ -608,6 +617,7 @@ int RunRipManualSelfTest(
     const QString& outputDirectory,
     const QString& moduleDirectory,
     const int transparentMode,
+    const int ripMode,
     const int grayBits,
     const int timeoutSeconds,
     const QString& outputValidationMode,
@@ -624,6 +634,7 @@ int RunRipManualSelfTest(
     }
     hostripsettings settings = HostRipSettingsStore::Defaults();
     settings.transparentmode = transparentMode;
+    settings.ripmode = ripMode;
     settings.devicegraybits = grayBits;
     settings.timeoutseconds = timeoutSeconds;
     settings.outputvalidationmode = outputValidationMode;
@@ -768,13 +779,13 @@ int main(int argc, char* argv[])
             << "--rip-module-self-test [--rip-module <path>] | "
             << "--rip-ui-self-test | "
             << "--rip-job-self-test --package <path> "
-            << "--rip-module <path> [--transparent-mode <0-4>] "
+            << "--rip-module <path> [--transparent-mode <0-4>] [--ripmode <0|1>] "
             << "[--gray-bits <1|2>] [--timeout-seconds <n>] "
             << "[--output-validation-mode <strict_s2|diagnostic_unvalidated>] "
             << "[--cancel-after-ms <n>] "
             << "[--expect <success|diagnostic|cancel|timeout|failure>] | "
             << "--rip-manual-self-test --rip-input <dir> --rip-output <dir> "
-            << "--rip-module <path> [--transparent-mode <0-4>] "
+            << "--rip-module <path> [--transparent-mode <0-4>] [--ripmode <0|1>] "
             << "[--gray-bits <1|2>] [--timeout-seconds <n>] "
             << "[--output-validation-mode <strict_s2|diagnostic_unvalidated>] "
             << "[--expect <success|diagnostic|failure|rejected>]]"
@@ -836,6 +847,21 @@ int main(int argc, char* argv[])
     {
         return RunRipUiSmoke(modulePath);
     }
+    int requestedRipMode = 0;
+    if (HasArgument(arguments, QStringLiteral("--rip-manual-self-test"))
+        || HasArgument(arguments, QStringLiteral("--rip-job-self-test")))
+    {
+        if (HasArgument(arguments, QStringLiteral("--ripmode")))
+        {
+            const QString mode = FindArgumentValue(arguments, QStringLiteral("--ripmode"));
+            if (mode != QStringLiteral("0") && mode != QStringLiteral("1"))
+            {
+                QTextStream(stderr) << "--ripmode must be 0 or 1" << Qt::endl;
+                return 16;
+            }
+            requestedRipMode = mode.toInt();
+        }
+    }
     if (HasArgument(arguments, QStringLiteral("--rip-manual-self-test")))
     {
         bool manualTransparentValid{false};
@@ -863,6 +889,7 @@ int main(int argc, char* argv[])
                 ? HostRipJobController::DefaultModuleDirectory()
                 : manualModule,
             manualTransparentValid ? manualTransparentMode : 0,
+            requestedRipMode,
             manualGrayBitsValid ? manualGrayBits : 2,
             manualTimeoutValid ? manualTimeoutSeconds : 60,
             manualValidationMode.isEmpty()
@@ -907,6 +934,7 @@ int main(int argc, char* argv[])
             FindArgumentValue(arguments, QStringLiteral("--package")),
             FindArgumentValue(arguments, QStringLiteral("--rip-module")),
             transparentModeValid ? transparentMode : 0,
+            requestedRipMode,
             grayBitsValid ? grayBits : 2,
             timeoutValid ? timeoutSeconds : 60,
             cancelValid ? cancelAfterMs : -1,

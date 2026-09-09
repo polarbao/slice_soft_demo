@@ -31,6 +31,12 @@ RipStatus ValidateRipSettings(const RipSettings& settings)
             "RIP_SETTINGS_TRANSPARENT_MODE_INVALID",
             "RIP transparent color mode must be in the inclusive range 0..4");
     }
+    if (settings.rip_mode < 0 || settings.rip_mode > 1)
+    {
+        return RipStatus::Failure(
+            "RIP_SETTINGS_RIP_MODE_INVALID",
+            "RIP ink mode must be 0 (normal) or 1 (triple ink)");
+    }
     if (settings.color_mode != 0)
     {
         return RipStatus::Failure(

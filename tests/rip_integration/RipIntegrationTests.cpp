@@ -307,6 +307,15 @@ bool TestSettingsAndCommand()
         !ValidateRipSettings(settings).ok,
         "transparent color mode outside 0..4 fails") && pass;
     settings = ValidSettings(resources);
+    settings.rip_mode = -1;
+    pass = Expect(
+        !ValidateRipSettings(settings).ok,
+        "negative RIP ink mode fails") && pass;
+    settings.rip_mode = 2;
+    pass = Expect(
+        !ValidateRipSettings(settings).ok,
+        "RIP ink mode above 1 fails") && pass;
+    settings = ValidSettings(resources);
     settings.color_mode = 1;
     pass = Expect(
         !ValidateRipSettings(settings).ok,
@@ -333,7 +342,7 @@ bool TestSettingsAndCommand()
     const auto commandStatus = BuildRipCommand(request, &command);
     pass = Expect(commandStatus.ok, "absolute contained command passes")
         && Expect(command.program.is_absolute(), "program is absolute")
-        && Expect(command.arguments.size() == 18U, "all batch arguments exist")
+        && Expect(command.arguments.size() == 20U, "all batch arguments exist")
         && pass;
     const auto transparentArgument = std::find(
         command.arguments.begin(), command.arguments.end(), "--transparent");
@@ -355,6 +364,19 @@ bool TestSettingsAndCommand()
                 && std::next(argument) != command.arguments.end()
                 && *std::next(argument) == std::to_string(mode),
             "transparent color mode maps losslessly to CLI") && pass;
+    }
+
+    for (int mode = 0; mode <= 1; ++mode)
+    {
+        request.settings.rip_mode = mode;
+        const auto modeStatus = BuildRipCommand(request, &command);
+        const auto argument = std::find(
+            command.arguments.begin(), command.arguments.end(), "--ripmode");
+        pass = Expect(
+            modeStatus.ok && argument != command.arguments.end()
+                && std::next(argument) != command.arguments.end()
+                && *std::next(argument) == std::to_string(mode),
+            "RIP ink mode maps losslessly to CLI") && pass;
     }
 
     const std::filesystem::path escaped = root.Path() / "escaped";

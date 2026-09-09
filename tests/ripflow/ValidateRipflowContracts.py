@@ -18,14 +18,14 @@ def require_exact(obj, required):
 def validate_settings(value):
     required = {
         "schema", "autoAfterSlice", "renderIntent", "transparentMode",
-        "colorMode", "inputIcc", "outputIcc", "continueOnError",
+        "ripMode", "colorMode", "inputIcc", "outputIcc", "continueOnError",
         "deviceGrayBits", "timeoutSeconds", "outputDirectoryName",
         "existingOutputPolicy",
     }
     allowed = required | {"outputValidationMode"}
     if not isinstance(value, dict) or not required.issubset(value) or not set(value).issubset(allowed):
         raise ValueError("settings fields")
-    if value["schema"] != "slicesoft.rip.settings.2":
+    if value["schema"] != "slicesoft.rip.settings.3":
         raise ValueError("settings schema")
     if not isinstance(value["autoAfterSlice"], bool) or not isinstance(value["continueOnError"], bool):
         raise ValueError("settings booleans")
@@ -35,6 +35,8 @@ def validate_settings(value):
         raise ValueError("settings numeric enum")
     if value["deviceGrayBits"] not in {1, 2}:
         raise ValueError("device gray bits")
+    if type(value["ripMode"]) is not int or value["ripMode"] not in {0, 1}:
+        raise ValueError("RIP ink mode")
     if value.get("outputValidationMode", "strict_s2") not in {
         "strict_s2", "diagnostic_unvalidated"
     }:
@@ -57,7 +59,7 @@ def validate_module(value):
     require_exact(value, required)
     if value["schema"] != "slicesoft.rip.module.1" or value["moduleId"] != "slicesoft.external_rip":
         raise ValueError("module identity")
-    if value["version"] != "1.1.0":
+    if value["version"] != "1.2.0":
         raise ValueError("module version")
     if value["status"] != "LOCAL_ENGINEERING_ONLY" or value["architecture"] != "x86_64-windows":
         raise ValueError("module status")
@@ -81,19 +83,40 @@ def validate_module(value):
         raise ValueError("module output")
 
 
+def validate_source(value, package_output):
+    if not isinstance(value["sourceInputDirectory"], str) or not value["sourceInputDirectory"]:
+        raise ValueError("source input")
+    if type(value["sourceLayerCount"]) is not int or value["sourceLayerCount"] < 1:
+        raise ValueError("source layer count")
+    if value["sourceBinding"] == "package_bound":
+        if not value["sourcePackage"] or not HEX64.fullmatch(value["sourceManifestSha256"]):
+            raise ValueError("source package identity")
+        if value["output"]["directory"] != package_output:
+            raise ValueError("package output directory")
+    elif value["sourceBinding"] == "manual_unbound":
+        if value["sourcePackage"] != "" or value["sourceManifestSha256"] != "":
+            raise ValueError("manual package identity claim")
+        if not pathlib.PureWindowsPath(value["output"]["directory"]).is_absolute():
+            raise ValueError("manual absolute output")
+    else:
+        raise ValueError("source binding")
+
+
 def validate_result(value):
     require_exact(value, {
         "schema", "status", "externalValidation", "sourcePackage",
         "sourceManifestSha256", "module", "settings", "process", "output",
+        "sourceBinding", "sourceInputDirectory", "sourceLayerCount",
     })
-    if value["schema"] != "slicesoft.rip.result.2" or value["status"] not in {"succeeded", "failed", "cancelled"}:
+    if value["schema"] != "slicesoft.rip.result.3" or value["status"] not in {"succeeded", "failed", "cancelled"}:
         raise ValueError("result identity")
-    if value["externalValidation"] != "EXTERNAL_VALIDATION_DEFERRED" or not HEX64.fullmatch(value["sourceManifestSha256"]):
+    if value["externalValidation"] != "EXTERNAL_VALIDATION_DEFERRED":
         raise ValueError("result external state")
+    validate_source(value, "rip")
     validate_settings(value["settings"])
     if value["settings"].get("outputValidationMode", "strict_s2") != "strict_s2":
         raise ValueError("strict result settings mode")
-    if value["output"]["directory"] != "rip" or value["output"]["filePattern"] != "rip_%06d.tif":
+    if value["output"]["filePattern"] != "rip_%06d.tif":
         raise ValueError("result output")
 
 
@@ -101,11 +124,13 @@ def validate_diagnostic(value):
     require_exact(value, {
         "schema", "status", "externalValidation", "sourcePackage",
         "sourceManifestSha256", "module", "settings", "process", "output",
+        "sourceBinding", "sourceInputDirectory", "sourceLayerCount",
     })
-    if value["schema"] != "slicesoft.rip.diagnostic.2" or value["status"] != "diagnostic_unvalidated":
+    if value["schema"] != "slicesoft.rip.diagnostic.3" or value["status"] != "diagnostic_unvalidated":
         raise ValueError("diagnostic identity")
-    if value["externalValidation"] != "EXTERNAL_VALIDATION_DEFERRED" or not HEX64.fullmatch(value["sourceManifestSha256"]):
+    if value["externalValidation"] != "EXTERNAL_VALIDATION_DEFERRED":
         raise ValueError("diagnostic external state")
+    validate_source(value, "rip_diagnostic")
     validate_settings(value["settings"])
     if value["settings"].get("outputValidationMode") != "diagnostic_unvalidated":
         raise ValueError("diagnostic settings mode")
@@ -119,7 +144,7 @@ def validate_diagnostic(value):
     }
     if not required_output.issubset(output) or not set(output).issubset(required_output | {"firstExceedance"}):
         raise ValueError("diagnostic output fields")
-    if output["directory"] != "rip_diagnostic" or output["filePattern"] != "rip_%06d.tif":
+    if output["filePattern"] != "rip_%06d.tif":
         raise ValueError("diagnostic output identity")
     if output["s2PublicationEligible"] is not False:
         raise ValueError("diagnostic publication claim")
@@ -151,6 +176,28 @@ def main():
     validate_module(module)
     validate_result(result)
     validate_diagnostic(diagnostic)
+    for validator, report in ((validate_result, result), (validate_diagnostic, diagnostic)):
+        case = copy.deepcopy(report)
+        case["sourceBinding"] = "manual_unbound"
+        case["sourcePackage"] = ""
+        case["sourceManifestSha256"] = ""
+        case["sourceInputDirectory"] = "C:/slices/layers"
+        case["output"]["directory"] = "C:/slices/rip_output"
+        validator(case)
+        case["sourceManifestSha256"] = "a" * 64
+        expect_failure(validator, case, "manual package identity claim")
+    for mode in (0, 1):
+        case = copy.deepcopy(settings)
+        case["ripMode"] = mode
+        validate_settings(case)
+
+    for mode in (-1, 2, True, "1"):
+        case = copy.deepcopy(settings)
+        case["ripMode"] = mode
+        expect_failure(validate_settings, case, "invalid RIP ink mode")
+    case = copy.deepcopy(settings)
+    del case["ripMode"]
+    expect_failure(validate_settings, case, "missing RIP ink mode")
 
     case = copy.deepcopy(settings)
     case["transparentMode"] = 5
@@ -171,7 +218,7 @@ def main():
     case = copy.deepcopy(diagnostic)
     case["output"]["s2PublicationEligible"] = True
     expect_failure(validate_diagnostic, case, "diagnostic print claim")
-    print("RIPFLOW_CONTRACTS_PASS positive=4 negative=6")
+    print("RIPFLOW_CONTRACTS_PASS positive=8 negative=13")
 
 
 if __name__ == "__main__":

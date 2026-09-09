@@ -232,6 +232,7 @@ RipStatus BuildRipCommand(
         "--cmyk-icc", PathArgument(outputIccPath),
         "--intent", std::to_string(request.settings.intent),
         "--transparent", std::to_string(request.settings.transparent_mode),
+        "--ripmode", std::to_string(request.settings.rip_mode),
         "--colormode", std::to_string(request.settings.color_mode)};
     if (request.settings.continue_on_layer_error)
     {

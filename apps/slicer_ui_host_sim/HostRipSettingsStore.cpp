@@ -6,9 +6,10 @@
 namespace
 {
 const QString kGroup = QStringLiteral("hostflow/rip");
-const QString kSchema = QStringLiteral("slicesoft.rip.settings.2");
+const QString kSchema = QStringLiteral("slicesoft.rip.settings.3");
+const QString kPreviousSchema = QStringLiteral("slicesoft.rip.settings.2");
 const QString kLegacySchema = QStringLiteral("slicesoft.rip.settings.1");
-constexpr int kVersion = 2;
+constexpr int kVersion = 3;
 
 bool IsModuleRelativePath(const QString& value)
 {
@@ -36,6 +37,7 @@ bool HostRipSettingsStore::Validate(
             == QStringLiteral("diagnostic_unvalidated");
     if (settings.renderintent < 0 || settings.renderintent > 3
         || settings.transparentmode < 0 || settings.transparentmode > 4
+        || settings.ripmode < 0 || settings.ripmode > 1
         || !validValidationMode || settings.colormode != 0
         || !IsModuleRelativePath(settings.inputicc)
         || !IsModuleRelativePath(settings.outputicc)
@@ -49,8 +51,8 @@ bool HostRipSettingsStore::Validate(
         {
             *error = QStringLiteral(
                 "RIP 设置无效：intent 仅允许 0..3，RIP 颜色模式仅允许 0..4，"
-                "纹理/浮雕模式仅允许 0，"
-                "grayBits 仅允许 1/2，输出验证仅允许严格或诊断模式。");
+                "RIP 墨量仅允许 0/1，纹理/浮雕模式仅允许 0，"
+                "grayBits 仅允许 1/2，输出验证仅允许单色或彩色模式。");
         }
         return false;
     }
@@ -92,6 +94,9 @@ bool HostRipSettingsStore::Load(
         &transparentModeIsInteger);
     loaded.colormode = settings.value(
         QStringLiteral("colorMode"), -1).toInt();
+    const QString storedRipMode = settings.value(QStringLiteral("ripMode")).toString();
+    bool ripModeIsInteger{false};
+    loaded.ripmode = storedRipMode.toInt(&ripModeIsInteger);
     loaded.inputicc = settings.value(QStringLiteral("inputIcc")).toString();
     loaded.outputicc = settings.value(QStringLiteral("outputIcc")).toString();
     loaded.continueonerror = settings.value(
@@ -132,8 +137,15 @@ bool HostRipSettingsStore::Load(
     QString validationError;
     const bool currentVersion = schema == kSchema && version == kVersion;
     const bool migratedLegacy = schema == kLegacySchema && version == 1;
-    if ((!currentVersion && !migratedLegacy)
-        || (currentVersion && !transparentModeIsInteger)
+    const bool migratedPrevious = schema == kPreviousSchema && version == 2;
+    if (migratedLegacy || migratedPrevious)
+    {
+        // Existing configurations retain the vendor's complete RIP flow.
+        loaded.ripmode = 1;
+    }
+    if ((!currentVersion && !migratedLegacy && !migratedPrevious)
+        || ((currentVersion || migratedPrevious) && !transparentModeIsInteger)
+        || (currentVersion && !ripModeIsInteger)
         || !Validate(loaded, &validationError))
     {
         value->autoafterslice = false;
@@ -168,6 +180,7 @@ bool HostRipSettingsStore::Save(
     settings.setValue(
         QStringLiteral("transparentMode"), value.transparentmode);
     settings.setValue(QStringLiteral("colorMode"), value.colormode);
+    settings.setValue(QStringLiteral("ripMode"), value.ripmode);
     settings.setValue(QStringLiteral("inputIcc"), value.inputicc);
     settings.setValue(QStringLiteral("outputIcc"), value.outputicc);
     settings.setValue(

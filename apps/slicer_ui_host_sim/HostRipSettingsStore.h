@@ -10,6 +10,7 @@ struct hostripsettings
     bool autoafterslice{false};
     int renderintent{0};
     int transparentmode{0};
+    int ripmode{0};
     int colormode{0};
     QString inputicc{QStringLiteral("CmykFiles/CIERGB.icc")};
     QString outputicc{QStringLiteral("CmykFiles/CMYK.icc")};

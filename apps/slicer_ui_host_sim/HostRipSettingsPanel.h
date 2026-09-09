@@ -53,6 +53,7 @@ private:
     QCheckBox* m_autoCheck{nullptr};
     QComboBox* m_intentCombo{nullptr};
     QComboBox* m_transparentCombo{nullptr};
+    QComboBox* m_ripModeCombo{nullptr};
     QComboBox* m_colorModeCombo{nullptr};
     QComboBox* m_inputIccCombo{nullptr};
     QComboBox* m_outputIccCombo{nullptr};

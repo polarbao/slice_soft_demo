@@ -1,8 +1,9 @@
 {
-  "schema": "slicesoft.rip.settings.2",
+  "schema": "slicesoft.rip.settings.3",
   "autoAfterSlice": false,
   "renderIntent": 0,
   "transparentMode": 0,
+  "ripMode": 0,
   "colorMode": 0,
   "inputIcc": "CmykFiles/CIERGB.icc",
   "outputIcc": "CmykFiles/CMYK.icc",

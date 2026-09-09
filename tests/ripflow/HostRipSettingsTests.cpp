@@ -28,6 +28,7 @@ int main()
     QSettings storage(path, QSettings::IniFormat);
     hostripsettings defaults = HostRipSettingsStore::Defaults();
     bool pass = Expect(!defaults.autoafterslice, "automatic RIP defaults off")
+        && Expect(defaults.ripmode == 0, "new settings use normal RIP")
         && Expect(
             defaults.outputvalidationmode == QStringLiteral("strict_s2"),
             "strict S2 publication is the default")
@@ -45,6 +46,7 @@ int main()
         && Expect(!restored.autoafterslice, "restored auto remains off")
         && Expect(restored.renderintent == 0, "intent round trips")
         && Expect(restored.transparentmode == 0, "RIP color mode round trips")
+        && Expect(restored.ripmode == 0, "normal RIP round trips")
         && Expect(restored.devicegraybits == 2, "grayBits round trips")
         && Expect(
             restored.outputvalidationmode == QStringLiteral("strict_s2"),
@@ -52,6 +54,7 @@ int main()
         && pass;
 
     hostripsettings diagnostic = defaults;
+    diagnostic.ripmode = 1;
     diagnostic.outputvalidationmode =
         QStringLiteral("diagnostic_unvalidated");
     pass = Expect(
@@ -87,6 +90,8 @@ int main()
                 == QStringLiteral("diagnostic_unvalidated"),
             "diagnostic validation mode survives a save and load")
             && pass;
+        pass = Expect(restoredDiagnostic.ripmode == 1,
+            "triple RIP survives a save and load") && pass;
         pass = Expect(
             HostRipSettingsStore::EffectiveOutputDirectoryName(
                 restoredDiagnostic) == QStringLiteral("rip_diagnostic"),
@@ -172,6 +177,7 @@ int main()
             && Expect(
                 migrated.transparentmode == 0,
                 "legacy follow-manifest migrates to mode 0")
+            && Expect(migrated.ripmode == 1, "v1 migrates to triple RIP")
             && Expect(
                 !migrated.autoafterslice,
                 "ambiguous legacy follow-manifest disables automatic RIP")
@@ -200,6 +206,41 @@ int main()
                 !rejected.autoafterslice,
                 "corrupt v2 settings keep automatic RIP disabled")
             && pass;
+    }
+    for (const QString& validationMode : {
+             QStringLiteral("strict_s2"), QStringLiteral("diagnostic_unvalidated")})
+    {
+        QSettings v2(temporary.filePath(validationMode + ".ini"), QSettings::IniFormat);
+        hostripsettings original = defaults;
+        original.autoafterslice = true;
+        original.transparentmode = 4;
+        original.outputvalidationmode = validationMode;
+        pass = Expect(HostRipSettingsStore::Save(v2, original), "migration fixture saves") && pass;
+        v2.beginGroup(QStringLiteral("hostflow/rip"));
+        v2.setValue(QStringLiteral("schema"), QStringLiteral("slicesoft.rip.settings.2"));
+        v2.setValue(QStringLiteral("schemaVersion"), 2);
+        v2.remove(QStringLiteral("ripMode"));
+        v2.endGroup();
+        hostripsettings migrated;
+        pass = Expect(HostRipSettingsStore::Load(v2, &migrated), "v2 migrates") && pass;
+        pass = Expect(migrated.ripmode == 1 && migrated.autoafterslice
+            && migrated.transparentmode == 4 && migrated.outputvalidationmode == validationMode,
+            "v2 migrates to triple RIP without changing other choices") && pass;
+        pass = Expect(HostRipSettingsStore::Save(v2, migrated), "migrated v3 saves") && pass;
+        pass = Expect(HostRipSettingsStore::Load(v2, &migrated) && migrated.ripmode == 1,
+            "migrated triple RIP stays stable after reload") && pass;
+    }
+    for (const QString& badMode : {QString{}, QStringLiteral("invalid"),
+             QStringLiteral("-1"), QStringLiteral("2"), QStringLiteral("0.5")})
+    {
+        QSettings bad(temporary.filePath("bad_rip_mode.ini"), QSettings::IniFormat);
+        pass = Expect(HostRipSettingsStore::Save(bad, defaults), "bad mode fixture saves") && pass;
+        bad.beginGroup(QStringLiteral("hostflow/rip"));
+        bad.setValue(QStringLiteral("ripMode"), badMode);
+        bad.endGroup();
+        hostripsettings rejected;
+        pass = Expect(!HostRipSettingsStore::Load(bad, &rejected) && !rejected.autoafterslice,
+            "invalid or missing v3 ink mode fails closed") && pass;
     }
     if (pass)
     {
