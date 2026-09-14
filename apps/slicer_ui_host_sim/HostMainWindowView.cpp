@@ -21,6 +21,19 @@ void HostMainWindow::InitializeViewWorkspace()
     {
         RenderThreeDView();
     });
+    m_workspace->ThreeDCanvas()->SetPickCallback([this](const QPoint& point)
+    {
+        slicer::render::PickResult hit;
+        if (!m_threeDFrame || !m_threeDBackend) return hit;
+        auto frame=m_threeDFrame->descriptor;
+        const auto size=m_workspace->ThreeDRenderSize();
+        frame.viewportWidthPx=static_cast<std::uint32_t>(size.width());
+        frame.viewportHeightPx=static_cast<std::uint32_t>(size.height());
+        frame.camera=m_workspace->ThreeDCanvas()->Camera().BuildCamera();
+        hit=m_threeDBackend->Pick(frame,point.x(),point.y());
+        if(hit.hit) m_modelListPanel->SelectInstance(QString::fromStdString(hit.instanceId));
+        return hit;
+    });
     m_workspace->TopCanvas()->SetModelDragCallbacks(
         [this](const QPointF& imagePoint)
         {
@@ -54,6 +67,7 @@ void HostMainWindow::RefreshTopView()
     }
 
     auto frame = std::make_unique<TopViewFrame>();
+    m_topViewPolicy->SetSelectedInstances(m_modelListPanel->SelectedInstanceIds());
     QString error;
     if (!m_topViewPolicy->Refresh(
             sceneHandle, sceneRevision, frame.get(), &error))
@@ -110,6 +124,7 @@ bool HostMainWindow::BeginTopViewDrag(const QPointF& imagePoint)
     }
     m_modelListPanel->SelectInstance(instanceId);
     m_dragStartWorld = worldPoint;
+    m_dragHasTranslation = false;
     m_dragCallCount = m_client.CallCount();
     return true;
 }
@@ -131,6 +146,7 @@ void HostMainWindow::UpdateTopViewDrag(const QPointF& imagePoint)
         return;
     }
     const QPointF delta = worldPoint - m_dragStartWorld;
+    m_dragHasTranslation = delta.manhattanLength() > 1e-6;
     if (!m_interactionController->UpdateTransientTranslation(
             delta.x(), delta.y(), 0.0)
         || !m_movePolicy->UpdateTranslation(delta.x(), delta.y(), 0.0)
@@ -151,6 +167,13 @@ void HostMainWindow::FinishTopViewDrag()
     if (!m_interactionController || !m_movePolicy
         || !m_interactionController->HasTransient())
     {
+        return;
+    }
+    if (!m_dragHasTranslation)
+    {
+        m_interactionController->DiscardTransient();
+        m_movePolicy->Rollback();
+        RenderTransientTopView();
         return;
     }
     QString error;
@@ -277,6 +300,9 @@ void HostMainWindow::RenderThreeDView()
     }
     const quint64 callCountBefore = m_client.CallCount();
     const QSize size = m_workspace->ThreeDRenderSize();
+    const auto selected = m_modelListPanel->SelectedInstanceIds();
+    for (auto& instance : m_threeDFrame->descriptor.instances)
+        instance.selected = selected.contains(QString::fromStdString(instance.instanceId));
     slicer::render::ImageOut output;
     const slicer::render::FrameResult result = m_threeDPolicy->Render(
         *m_threeDFrame,

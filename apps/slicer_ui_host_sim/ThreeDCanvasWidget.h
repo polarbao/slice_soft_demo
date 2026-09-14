@@ -22,6 +22,8 @@ public:
      * @param callback 不得请求新 ViewData 的宿主回调。
      */
     void SetCameraChangedCallback(std::function<void()> callback);
+    void SetPickCallback(std::function<slicer::render::PickResult(const QPoint&)> callback)
+        { m_pickCallback = std::move(callback); }
 
     /**
      * @brief 用完整的 RGBA 图像替换可见帧。
@@ -85,6 +87,10 @@ private:
     CameraController m_camera;
     CameraBounds m_sceneBounds;
     QPoint m_lastMousePosition;
+    QPoint m_pressPosition;
+    std::array<float, 3> m_orbitPivot{};
+    std::function<slicer::render::PickResult(const QPoint&)> m_pickCallback;
+    bool m_orbitMoved{false};
     std::function<void()> m_cameraChangedCallback;
     float m_panMmPerPixel{0.1F};
     bool m_hasSceneBounds{false};

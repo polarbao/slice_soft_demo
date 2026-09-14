@@ -169,6 +169,32 @@ void CameraController::Pan(const float rightMm, const float upMm)
     m_targetZ += basis.right.z * rightMm + basis.up.z * upMm;
 }
 
+void CameraController::OrbitAround(float yaw, float pitch, const std::array<float, 3>& pivot)
+{
+    const auto before = BuildCamera();
+    const float delta[3]{m_targetX-pivot[0], m_targetY-pivot[1], m_targetZ-pivot[2]};
+    float cameraDelta[3]{};
+    for (int row = 0; row < 3; ++row)
+        for (int col = 0; col < 3; ++col) cameraDelta[row] += before.viewMatrix[row*4+col] * delta[col];
+    Orbit(yaw, pitch);
+    const auto after = BuildCamera();
+    float target[3]{pivot[0], pivot[1], pivot[2]};
+    for (int col = 0; col < 3; ++col)
+        for (int row = 0; row < 3; ++row) target[col] += after.viewMatrix[row*4+col] * cameraDelta[row];
+    m_targetX=target[0]; m_targetY=target[1]; m_targetZ=target[2];
+}
+
+std::array<float, 3> CameraController::PointOnTargetPlane(float x, float y) const
+{
+    const auto camera = BuildCamera();
+    const float height = m_projection == slicer::render::Projection::Orthographic
+        ? m_orthographicHeightMm : 2*m_distanceMm*std::tan(Radians(22.5F));
+    const float dx = x*height*0.5F*m_viewportWidthPx/m_viewportHeightPx, dy=y*height*0.5F;
+    return {m_targetX+camera.viewMatrix[0]*dx+camera.viewMatrix[4]*dy,
+        m_targetY+camera.viewMatrix[1]*dx+camera.viewMatrix[5]*dy,
+        m_targetZ+camera.viewMatrix[2]*dx+camera.viewMatrix[6]*dy};
+}
+
 void CameraController::ZoomAtCursor(
     const float wheelSteps,
     const float normalizedX,

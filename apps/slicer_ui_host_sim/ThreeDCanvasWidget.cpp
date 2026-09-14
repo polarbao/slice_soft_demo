@@ -1,6 +1,7 @@
 #include "ThreeDCanvasWidget.h"
 
 #include <QMouseEvent>
+#include <QApplication>
 #include <QPainter>
 #include <QResizeEvent>
 #include <QWheelEvent>
@@ -125,7 +126,7 @@ const CameraController& ThreeDCanvasWidget::Camera() const
 
 QSize ThreeDCanvasWidget::RenderSize() const
 {
-    return {(std::max)(width(), 800), (std::max)(height(), 480)};
+    return {(std::max)(width(), 1), (std::max)(height(), 1)};
 }
 
 void ThreeDCanvasWidget::paintEvent(QPaintEvent*)
@@ -146,14 +147,54 @@ void ThreeDCanvasWidget::paintEvent(QPaintEvent*)
         fitted.height());
     painter.setRenderHint(QPainter::SmoothPixmapTransform, true);
     painter.drawImage(target, m_image);
+    const auto camera = m_camera.BuildCamera();
+    const auto project = [&](float x, float y, float z, QPointF* point)
+    {
+        const float p[4]{x,y,z,1}; float view[4]{}, clip[4]{};
+        for (int r=0;r<4;++r) for(int c=0;c<4;++c) view[r]+=camera.viewMatrix[r*4+c]*p[c];
+        for (int r=0;r<4;++r) for(int c=0;c<4;++c) clip[r]+=camera.projMatrix[r*4+c]*view[c];
+        if (clip[3]<=1e-7F) return false;
+        *point=QPointF((clip[0]/clip[3]+1)*width()*0.5, (1-clip[1]/clip[3])*height()*0.5);
+        return true;
+    };
+    QPointF origin;
+    if (project(0,0,0,&origin))
+    {
+        const QColor colors[]{QColor(255,95,95),QColor(100,235,135),QColor(100,180,255)};
+        const QString names[]{QStringLiteral("X"),QStringLiteral("Y"),QStringLiteral("Z")};
+        auto font=painter.font(); font.setBold(true); painter.setFont(font);
+        for(int axis=0;axis<3;++axis)
+        {
+            QPointF end;
+            if(!project(axis==0?10.0F:0,axis==1?10.0F:0,axis==2?10.0F:0,&end)) continue;
+            auto delta=end-origin; const double length=std::hypot(delta.x(),delta.y());
+            end=origin+(length>1e-3?delta*(48.0/length):QPointF(0,-48));
+            painter.setPen(QPen(QColor(20,25,30),5,Qt::SolidLine,Qt::RoundCap)); painter.drawLine(origin,end);
+            painter.setPen(QPen(colors[axis],3,Qt::SolidLine,Qt::RoundCap)); painter.drawLine(origin,end);
+            const QRectF label(end+QPointF(3,-10),QSizeF(22,22));
+            painter.fillRect(label,QColor(30,32,35,220)); painter.drawText(label,Qt::AlignCenter,names[axis]);
+        }
+    }
 }
 
 void ThreeDCanvasWidget::mousePressEvent(QMouseEvent* event)
 {
     m_lastMousePosition = event->pos();
+    m_pressPosition = event->pos();
+    m_orbitMoved = false;
     m_orbiting = event->button() == Qt::LeftButton;
     m_panning = event->button() == Qt::MiddleButton
         || event->button() == Qt::RightButton;
+    if (m_orbiting && HasImage())
+    {
+        m_orbitPivot = m_camera.PointOnTargetPlane(2.0F*event->x()/width()-1,
+            1-2.0F*event->y()/height());
+        if (m_pickCallback)
+        {
+            const auto hit=m_pickCallback(event->pos());
+            if(hit.hit) std::copy_n(hit.worldPosMm,3,m_orbitPivot.begin());
+        }
+    }
     if (m_orbiting || m_panning)
     {
         setCursor(Qt::ClosedHandCursor);
@@ -170,13 +211,17 @@ void ThreeDCanvasWidget::mouseMoveEvent(QMouseEvent* event)
         QWidget::mouseMoveEvent(event);
         return;
     }
+    if (m_orbiting && !m_orbitMoved
+        && (event->pos()-m_pressPosition).manhattanLength() < QApplication::startDragDistance()) return;
+    m_orbitMoved = true;
     const QPoint delta = event->pos() - m_lastMousePosition;
     m_lastMousePosition = event->pos();
     if (m_orbiting)
     {
-        Orbit(
-            OrbitDegreesForPointerDelta(delta.x(), width()),
-            OrbitDegreesForPointerDelta(delta.y(), height()));
+        m_camera.OrbitAround(
+            -OrbitDegreesForPointerDelta(delta.x(), width()),
+            -OrbitDegreesForPointerDelta(delta.y(), height()), m_orbitPivot);
+        NotifyCameraChanged();
     }
     else
     {
@@ -206,6 +251,16 @@ void ThreeDCanvasWidget::mouseReleaseEvent(QMouseEvent* event)
 
 void ThreeDCanvasWidget::wheelEvent(QWheelEvent* event)
 {
+    if(event->buttons()!=Qt::NoButton || m_panning || m_orbiting)
+    {
+        event->accept();
+        return;
+    }
+    if(!HasImage() || event->angleDelta().y()==0)
+    {
+        event->ignore();
+        return;
+    }
     const QPointF position = event->position();
     const float normalizedX = width() > 0
         ? static_cast<float>(2.0 * position.x() / width() - 1.0) : 0.0F;

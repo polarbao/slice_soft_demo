@@ -657,7 +657,7 @@ int main(int argc, char* argv[])
     dragOrbit(orbitStart, orbitStart + QPoint(kOrbitTestDragPixels, 0));
     const float actualYawDeltaDeg =
         canvas->Camera().YawDegrees() - initialYawDeg;
-    const float expectedYawDeltaDeg = 180.0F
+    const float expectedYawDeltaDeg = -180.0F
         * static_cast<float>(kOrbitTestDragPixels)
         / static_cast<float>((std::max)(canvas->width(), 1));
     Require(std::abs(actualYawDeltaDeg - expectedYawDeltaDeg) < 0.05F,
@@ -668,11 +668,11 @@ int main(int argc, char* argv[])
     dragOrbit(orbitStart, orbitStart + QPoint(0, kOrbitTestDragPixels));
     const float actualPitchDeltaDeg =
         canvas->Camera().PitchDegrees() - initialPitchDeg;
-    const float expectedPitchDeltaDeg = 180.0F
+    const float expectedPitchDeltaDeg = -180.0F
         * static_cast<float>(kOrbitTestDragPixels)
         / static_cast<float>((std::max)(canvas->height(), 1));
     Require(std::abs(actualPitchDeltaDeg - expectedPitchDeltaDeg) < 0.05F
-                && actualYawDeltaDeg < actualPitchDeltaDeg,
+                && std::abs(actualYawDeltaDeg) < std::abs(actualPitchDeltaDeg),
             QStringLiteral(
                 "wide 3D viewport did not reduce horizontal orbit sensitivity"));
 

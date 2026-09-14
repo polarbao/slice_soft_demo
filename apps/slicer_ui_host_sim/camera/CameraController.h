@@ -3,6 +3,7 @@
 #include "../render/IRenderBackend.h"
 
 #include <cstdint>
+#include <array>
 
 /** @brief 枚举七个 Stage 14E 摄像机预设。 */
 enum class CameraPreset
@@ -58,6 +59,8 @@ public:
 
     /** @brief 应用局部轨道增量（以度为单位）。 */
     void Orbit(float yawDeltaDeg, float pitchDeltaDeg);
+    void OrbitAround(float yawDeltaDeg, float pitchDeltaDeg, const std::array<float, 3>& pivot);
+    [[nodiscard]] std::array<float, 3> PointOnTargetPlane(float normalizedX, float normalizedY) const;
 
     /** @brief 应用局部相机平面平移（以毫米为单位）。 */
     void Pan(float rightMm, float upMm);

@@ -1,5 +1,6 @@
 #include "CpuRasterResources.h"
 #include "CpuRasterDecor.h"
+#include "SelectionOutline.h"
 
 #include <algorithm>
 #include <array>
@@ -195,6 +196,7 @@ void RasterTriangle(
     bool selected,
     bool outOfBounds,
     bool writeDepth,
+    std::vector<std::uint8_t>* selection,
     std::vector<float>* depth,
     slicer::render::ImageOut* output)
 {
@@ -258,12 +260,9 @@ void RasterTriangle(
                 color[1] = static_cast<std::uint8_t>(color[1] / 3U);
                 color[2] = static_cast<std::uint8_t>(color[2] / 3U);
             }
-            else if (selected)
-            {
-                color[0] = static_cast<std::uint8_t>((color[0] + 242U) / 2U);
-                color[1] = static_cast<std::uint8_t>((color[1] + 193U) / 2U);
-            }
             BlendPixel(&output->rgba8, pixel * 4U, color);
+            if (!selection->empty() && color[3] > 0)
+                selection->at(pixel) = selected || (color[3] < 255 && selection->at(pixel)) ? 1 : 0;
 // 透明片元只做深度测试、不写深度，否则近处的透明面会遮挡其后的几何。
             if (writeDepth)
             {
@@ -280,6 +279,7 @@ bool DrawInstance(
     std::vector<float>* depth,
     slicer::render::ImageOut* output,
     std::uint32_t* drawCallCount,
+    std::vector<std::uint8_t>* selection,
     std::vector<DeferredTriangle>* deferred)
 {
     const auto mesh = resources.meshes.find(instance.meshIdentity);
@@ -356,7 +356,7 @@ bool DrawInstance(
             RasterTriangle(
                 triangle, resources, material->second,
                 instance.selected, instance.outOfBuildVolume,
-                true, depth, output);
+                true, selection, depth, output);
         }
     }
     return true;
@@ -407,10 +407,13 @@ bool Rasterize(
 // 第一趟只画不透明几何，绘制顺序与深度写入行为与引入透明 pass 之前完全一致；
 // 透明三角形被跨实例收集下来，留给第二趟处理。
     std::vector<DeferredTriangle> deferred;
+    std::vector<std::uint8_t> selection;
+    if (std::any_of(frame.instances.begin(), frame.instances.end(), [](const auto& i) { return i.selected; }))
+        selection.resize(depth.size());
     for (const slicer::render::InstanceDraw& instance : frame.instances)
     {
         if (!DrawInstance(
-                resources, frame, instance, &depth, output, drawCallCount,
+                resources, frame, instance, &depth, output, drawCallCount, &selection,
                 &deferred))
         {
             *errorCode = "HOST-RENDER-RESOURCE-MISSING";
@@ -429,8 +432,10 @@ bool Rasterize(
     {
         RasterTriangle(
             entry.vertices, resources, *entry.material,
-            entry.selected, entry.outOfBounds, false, &depth, output);
+            entry.selected, entry.outOfBounds, false, &selection, &depth, output);
     }
+    slicer::render::DrawSelectionOutline(output->rgba8.data(), static_cast<int>(output->widthPx),
+        static_cast<int>(output->heightPx), selection);
     return true;
 }
 
@@ -440,52 +445,64 @@ slicer::render::PickResult Pick(
     const int xPx,
     const int yPx)
 {
-    (void)resources;
+    slicer::render::PickResult result;
+    if (xPx < 0 || yPx < 0 || xPx >= static_cast<int>(frame.viewportWidthPx)
+        || yPx >= static_cast<int>(frame.viewportHeightPx)) return result;
+    float nearest = std::numeric_limits<float>::infinity();
     const Matrix viewProjection = Multiply(
         ReadMatrix(frame.camera.projMatrix),
         ReadMatrix(frame.camera.viewMatrix));
     for (auto item = frame.instances.rbegin(); item != frame.instances.rend(); ++item)
     {
-        const Matrix transform = Multiply(
-            viewProjection,
-            ReadMatrix(item->worldMatrix));
-        RasterVertex corners[4];
-        const bool projected = Project(transform, item->localBoundsMm[0],
-            item->localBoundsMm[1], 0.0F, 0.0F, 0.0F,
-            frame.viewportWidthPx, frame.viewportHeightPx, &corners[0])
-            && Project(transform, item->localBoundsMm[2],
-                item->localBoundsMm[1], 0.0F, 0.0F, 0.0F,
-                frame.viewportWidthPx, frame.viewportHeightPx, &corners[1])
-            && Project(transform, item->localBoundsMm[2],
-                item->localBoundsMm[3], 0.0F, 0.0F, 0.0F,
-                frame.viewportWidthPx, frame.viewportHeightPx, &corners[2])
-            && Project(transform, item->localBoundsMm[0],
-                item->localBoundsMm[3], 0.0F, 0.0F, 0.0F,
-                frame.viewportWidthPx, frame.viewportHeightPx, &corners[3]);
-        if (!projected)
+        const auto mesh = resources.meshes.find(item->meshIdentity);
+        if (mesh == resources.meshes.end()) continue;
+        const auto world = ReadMatrix(item->worldMatrix);
+        const auto transform = Multiply(viewProjection, world);
+        const auto& m = mesh->second;
+        for (const auto& part : m.submeshes)
         {
-            continue;
-        }
-        float minX = corners[0].x;
-        float maxX = corners[0].x;
-        float minY = corners[0].y;
-        float maxY = corners[0].y;
-        for (const RasterVertex& corner : corners)
-        {
-            minX = (std::min)(minX, corner.x);
-            maxX = (std::max)(maxX, corner.x);
-            minY = (std::min)(minY, corner.y);
-            maxY = (std::max)(maxY, corner.y);
-        }
-        if (xPx >= minX && xPx <= maxX && yPx >= minY && yPx <= maxY)
-        {
-            slicer::render::PickResult result;
-            result.hit = true;
-            result.instanceId = item->instanceId;
-            return result;
+            const auto material = resources.materials.find(MaterialKey(item->appearanceIdentity, part.materialId));
+            if (material == resources.materials.end()) continue;
+            for (std::size_t i = part.firstIndex; i + 2 < static_cast<std::size_t>(part.firstIndex) + part.indexCount; i += 3)
+            {
+                RasterVertex v[3];
+                Vector4 p[3];
+                bool valid = true;
+                for (std::size_t k = 0; k < 3; ++k)
+                {
+                    const auto n = m.indices.at(i + k);
+                    p[k] = {m.positions.at(n * 3), m.positions.at(n * 3 + 1), m.positions.at(n * 3 + 2), 1};
+                    valid &= Project(transform, p[k].x, p[k].y, p[k].z, m.texcoord0.at(n * 2),
+                        m.texcoord0.at(n * 2 + 1), frame.viewportWidthPx, frame.viewportHeightPx, &v[k]);
+                }
+                if (!valid || v[0].inverseW <= 0 || v[1].inverseW <= 0 || v[2].inverseW <= 0) continue;
+                const float area = Edge(v[0], v[1], v[2].x, v[2].y);
+                if (std::abs(area) < 1e-6F) continue;
+                float w[3]{Edge(v[1], v[2], xPx + 0.5F, yPx + 0.5F) / area,
+                    Edge(v[2], v[0], xPx + 0.5F, yPx + 0.5F) / area,
+                    Edge(v[0], v[1], xPx + 0.5F, yPx + 0.5F) / area};
+                const float z = w[0] * v[0].z + w[1] * v[1].z + w[2] * v[2].z;
+                if (w[0] < 0 || w[1] < 0 || w[2] < 0 || z < -1 || z > 1 || z >= nearest) continue;
+                const float inverse = w[0]*v[0].inverseW + w[1]*v[1].inverseW + w[2]*v[2].inverseW;
+                if (inverse <= 1e-8F) continue;
+                const auto color = Sample(resources, material->second,
+                    (w[0]*v[0].uOverW + w[1]*v[1].uOverW + w[2]*v[2].uOverW) / inverse,
+                    (w[0]*v[0].vOverW + w[1]*v[1].vOverW + w[2]*v[2].vOverW) / inverse);
+                if (color[3] == 0 || (material->second.alphaMode == "mask"
+                    && color[3] / 255.0F < material->second.alphaCutoff)) continue;
+                Vector4 local{0,0,0,1};
+                for (int k = 0; k < 3; ++k)
+                {
+                    const float weight = w[k] * v[k].inverseW / inverse;
+                    local.x += weight * p[k].x; local.y += weight * p[k].y; local.z += weight * p[k].z;
+                }
+                const auto hit = Transform(world, local);
+                nearest = z;
+                result = {true, item->instanceId, {hit.x, hit.y, hit.z}};
+            }
         }
     }
-    return {};
+    return result;
 }
 
 }  // namespace cpu_raster_detail

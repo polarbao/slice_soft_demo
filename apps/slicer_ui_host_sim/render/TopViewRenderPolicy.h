@@ -8,6 +8,7 @@
 #include <QPolygonF>
 #include <QSize>
 #include <QString>
+#include <QStringList>
 #include <QVector>
 
 #include <array>
@@ -67,6 +68,7 @@ public:
      * @param client 运行时加载的公共 ABI 客户端。
      */
     explicit TopViewRenderPolicy(ModuleClient& client);
+    void SetSelectedInstances(const QStringList& ids) { m_selectedInstances = ids; }
 
     /**
      * @brief 为权威场景修订刷新 top ViewData。
@@ -143,6 +145,7 @@ public:
         const QPointF& imagePoint);
 
 private:
+    QStringList m_selectedInstances;
     bool ExecuteJson(
         const QJsonObject& request,
         QJsonObject* result,

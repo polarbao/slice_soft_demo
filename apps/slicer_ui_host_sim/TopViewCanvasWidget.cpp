@@ -142,8 +142,13 @@ void TopViewCanvasWidget::paintEvent(QPaintEvent*)
 
 void TopViewCanvasWidget::wheelEvent(QWheelEvent* event)
 {
+    if(event->buttons()!=Qt::NoButton || m_panning || m_draggingModel)
+    {
+        event->accept();
+        return;
+    }
     const int delta = event->angleDelta().y();
-    if (delta == 0)
+    if (!HasImage() || delta == 0)
     {
         event->ignore();
         return;
