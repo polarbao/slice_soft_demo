@@ -418,6 +418,7 @@ function AssertRuntimeDirectoryNotInUse
         [System.IO.Path]::GetFullPath($RuntimeDir).TrimEnd('\', '/') +
         [System.IO.Path]::DirectorySeparatorChar
     foreach ($processName in @(
+        "slice_soft_test",
         "slicer_ui_host_sim",
         "slicer_cli",
         "slicer_worker",
@@ -854,8 +855,8 @@ try
     $hostUiExecutable = ResolveBuiltExecutable `
         -BuildRoot $resolvedConfigBuildDir `
         -Candidates @(
-            "apps/slicer_ui_host_sim/$Config/slicer_ui_host_sim.exe",
-            "apps/slicer_ui_host_sim/slicer_ui_host_sim.exe"
+            "apps/slicer_ui_host_sim/$Config/slice_soft_test.exe",
+            "apps/slicer_ui_host_sim/slice_soft_test.exe"
         )
     $moduleLibrary = ResolveBuiltExecutable `
         -BuildRoot $resolvedConfigBuildDir `
@@ -1044,6 +1045,8 @@ try
     {
         Copy-Item -LiteralPath $slicerCli -Destination (Join-Path $stagingDir "slicer_cli.exe")
         Copy-Item -LiteralPath $ripReader -Destination (Join-Path $stagingDir "rip_reader_test.exe")
+        Copy-Item -LiteralPath $hostUiExecutable -Destination (Join-Path $stagingDir "slice_soft_test.exe")
+        # Keep existing shortcuts and integration scripts working during the rename.
         Copy-Item -LiteralPath $hostUiExecutable -Destination (Join-Path $stagingDir "slicer_ui_host_sim.exe")
         Copy-Item -LiteralPath $moduleLibrary -Destination (Join-Path $stagingDir "slicer_module.dll")
         Copy-Item -LiteralPath $workerExecutable -Destination (Join-Path $stagingDir "slicer_worker.exe")
@@ -1098,6 +1101,20 @@ try
         Copy-Item `
             -LiteralPath $userGuideSource `
             -Destination $userGuideDestination
+        foreach ($guide in @('SLICE_HOST_鼠标滚轮交互规则.md', 'SLICE_RIPFLOW_切片后RIP设置与迁移说明.md'))
+        {
+            Copy-Item -LiteralPath (Join-Path $repoRoot "docs/user_guides/$guide") `
+                -Destination (Join-Path (Split-Path -Parent $userGuideDestination) $guide)
+        }
+        foreach ($reference in @(
+            'docs/slice/DOC/DOC_SPEC_MATERIAL_NAMING_多图层素材命名与语义标识规范.md',
+            'docs/slice/REPORT/REPORT_XPAD_X原点输出画幅补白收口总结.md',
+            'docs/slice/REPORT/REPORT_XYPAD_XY原点补白验证与交付.md'))
+        {
+            $destination = Join-Path $stagingDir $reference
+            New-Item -ItemType Directory -Path (Split-Path -Parent $destination) -Force | Out-Null
+            Copy-Item -LiteralPath (Join-Path $repoRoot $reference) -Destination $destination
+        }
         Copy-Item `
             -Path (Join-Path $userGuideAssetSource "*") `
             -Destination $userGuideAssetDestination `
@@ -1203,7 +1220,7 @@ try
                 "--compiler-runtime",
                 "--no-translations",
                 "--dir", $stagingDir,
-                (Join-Path $stagingDir "slicer_ui_host_sim.exe")
+                (Join-Path $stagingDir "slice_soft_test.exe")
             )
 
         @(
@@ -1215,7 +1232,7 @@ try
         $expectedApplicationVersionOutput =
             "SliceSoft $buildAppVersion`n" +
             "build $([string]$buildVersionSnapshot.components.application.fullBuildVersion)"
-        foreach ($applicationBinary in @("slicer_cli.exe", "slicer_ui_host_sim.exe"))
+        foreach ($applicationBinary in @("slicer_cli.exe", "slice_soft_test.exe"))
         {
             $actualVersionOutput =
                 (& (Join-Path $stagingDir $applicationBinary) --version) -join "`n"
@@ -1233,7 +1250,7 @@ try
                 fullVersion = [string]$buildVersionSnapshot.components.application.fullBuildVersion
             },
             [pscustomobject]@{
-                path = Join-Path $stagingDir "slicer_ui_host_sim.exe"
+                path = Join-Path $stagingDir "slice_soft_test.exe"
                 version = $buildAppVersion
                 fullVersion = [string]$buildVersionSnapshot.components.application.fullBuildVersion
             },
@@ -1340,7 +1357,7 @@ try
         }
 
         $hostSelfTestOutput =
-            & (Join-Path $stagingDir "slicer_ui_host_sim.exe") --self-test
+            & (Join-Path $stagingDir "slice_soft_test.exe") --self-test
         if ($LASTEXITCODE -ne 0)
         {
             throw "Packaged host module self-test failed with exit code $LASTEXITCODE."
@@ -1349,7 +1366,7 @@ try
         if ($ripModuleAvailable)
         {
             $ripModuleSelfTestOutput = & `
-                (Join-Path $stagingDir "slicer_ui_host_sim.exe") `
+                (Join-Path $stagingDir "slice_soft_test.exe") `
                 --rip-module-self-test `
                 --rip-module $ripModuleDestination
             if ($LASTEXITCODE -ne 0)
@@ -1397,7 +1414,7 @@ try
                 license = $tiffLicenseRelativePath
             }
             tools = [ordered]@{
-                ui = "slicer_ui_host_sim.exe"
+                ui = "slice_soft_test.exe"
                 slicerCli = "slicer_cli.exe"
                 ripReader = "rip_reader_test.exe"
             }

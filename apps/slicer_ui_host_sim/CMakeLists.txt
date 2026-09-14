@@ -177,7 +177,7 @@ slicesoft_add_windows_version_resource(
     slicer_ui_host_sim
     application
     "SliceSoft Packaged Slicer"
-    "slicer_ui_host_sim.exe"
+    "slice_soft_test.exe"
 )
 slicesoft_copy_version_manifests(slicer_ui_host_sim)
 
@@ -193,6 +193,12 @@ set_source_files_properties(
 
 set_target_properties(slicer_ui_host_sim PROPERTIES
     AUTOMOC ON
+    OUTPUT_NAME slice_soft_test
+)
+add_custom_command(TARGET slicer_ui_host_sim POST_BUILD
+    COMMAND ${CMAKE_COMMAND} -E copy_if_different
+        $<TARGET_FILE:slicer_ui_host_sim> $<TARGET_FILE_DIR:slicer_ui_host_sim>/slicer_ui_host_sim.exe
+    COMMENT "Preserving the legacy host executable entry point"
 )
 
 target_include_directories(slicer_ui_host_sim PRIVATE
@@ -261,6 +267,20 @@ add_custom_command(TARGET slicer_ui_host_sim POST_BUILD
     COMMAND ${CMAKE_COMMAND} -E copy_if_different
         "${slicesoftPackagedUserGuide}"
         "$<TARGET_FILE_DIR:slicer_ui_host_sim>/docs/user_guides/SLICE_PRODUCT_PACKAGED_新版切片软件使用手册.md"
+    COMMAND ${CMAKE_COMMAND} -E copy_if_different
+        "${CMAKE_SOURCE_DIR}/docs/user_guides/SLICE_HOST_鼠标滚轮交互规则.md"
+        "${CMAKE_SOURCE_DIR}/docs/user_guides/SLICE_RIPFLOW_切片后RIP设置与迁移说明.md"
+        "$<TARGET_FILE_DIR:slicer_ui_host_sim>/docs/user_guides"
+    COMMAND ${CMAKE_COMMAND} -E make_directory
+        "$<TARGET_FILE_DIR:slicer_ui_host_sim>/docs/slice/DOC"
+        "$<TARGET_FILE_DIR:slicer_ui_host_sim>/docs/slice/REPORT"
+    COMMAND ${CMAKE_COMMAND} -E copy_if_different
+        "${CMAKE_SOURCE_DIR}/docs/slice/DOC/DOC_SPEC_MATERIAL_NAMING_多图层素材命名与语义标识规范.md"
+        "$<TARGET_FILE_DIR:slicer_ui_host_sim>/docs/slice/DOC"
+    COMMAND ${CMAKE_COMMAND} -E copy_if_different
+        "${CMAKE_SOURCE_DIR}/docs/slice/REPORT/REPORT_XPAD_X原点输出画幅补白收口总结.md"
+        "${CMAKE_SOURCE_DIR}/docs/slice/REPORT/REPORT_XYPAD_XY原点补白验证与交付.md"
+        "$<TARGET_FILE_DIR:slicer_ui_host_sim>/docs/slice/REPORT"
     COMMAND ${CMAKE_COMMAND} -E copy_directory
         "${slicesoftPackagedUserGuideAssets}"
         "$<TARGET_FILE_DIR:slicer_ui_host_sim>/docs/user_guides/assets/packaged_slicer"
