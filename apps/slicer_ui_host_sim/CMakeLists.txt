@@ -285,6 +285,7 @@ add_custom_command(TARGET slicer_ui_host_sim POST_BUILD
     COMMAND ${CMAKE_COMMAND} -E copy_if_different
         "${CMAKE_SOURCE_DIR}/docs/user_guides/SLICE_HOST_鼠标滚轮交互规则.md"
         "${CMAKE_SOURCE_DIR}/docs/user_guides/SLICE_RIPFLOW_切片后RIP设置与迁移说明.md"
+        "${CMAKE_SOURCE_DIR}/docs/user_guides/SLICE_更新公告_2026-09-14.md"
         "$<TARGET_FILE_DIR:slicer_ui_host_sim>/docs/user_guides"
     COMMAND ${CMAKE_COMMAND} -E make_directory
         "$<TARGET_FILE_DIR:slicer_ui_host_sim>/docs/slice/DOC"

@@ -1101,7 +1101,7 @@ try
         Copy-Item `
             -LiteralPath $userGuideSource `
             -Destination $userGuideDestination
-        foreach ($guide in @('SLICE_HOST_鼠标滚轮交互规则.md', 'SLICE_RIPFLOW_切片后RIP设置与迁移说明.md'))
+        foreach ($guide in @('SLICE_HOST_鼠标滚轮交互规则.md', 'SLICE_RIPFLOW_切片后RIP设置与迁移说明.md', 'SLICE_更新公告_2026-09-14.md'))
         {
             Copy-Item -LiteralPath (Join-Path $repoRoot "docs/user_guides/$guide") `
                 -Destination (Join-Path (Split-Path -Parent $userGuideDestination) $guide)
