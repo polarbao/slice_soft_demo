@@ -480,6 +480,9 @@ void HostMainWindow::OnModelSelectionChanged(
 {
     m_workspace->SetSelectedInstances(instanceIds);
     m_transformLayoutPanel->SetSelectedInstances(instanceIds);
+    if (m_topViewPolicy) m_topViewPolicy->SetSelectedInstances(instanceIds);
+    RenderTransientTopView();
+    RenderThreeDView();
 }
 
 void HostMainWindow::SaveViewSettings()

@@ -201,6 +201,7 @@ private:
     QString m_ripModuleDirectory;
     QString m_ripManualOutputDirectory;
     QPointF m_dragStartWorld;
+    bool m_dragHasTranslation{false};
     quint64 m_dragCallCount{0U};
     bool m_textureWhiteWarning{false};
     bool m_resultLoadActive{false};
