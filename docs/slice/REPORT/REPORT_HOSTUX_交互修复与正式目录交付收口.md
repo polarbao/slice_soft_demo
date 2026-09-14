@@ -83,3 +83,11 @@ RIP文件出现不等于写完或校验通过；供应方DLL内部算法百分�
 - module SHA256：`CB53401D79B63B029A4B2C01C21BE878BA3E79C71331357312C088B40008177F`；Worker SHA256：`0066270904F56B59030F7498C471DF95AF07916D4CD799B8AE56DAAB3E8E845A`。
 - 正式目录原生Windows平台 `--self-test`、`--rip-module-self-test`、`--rip-ui-self-test` 均退出0；日志前缀 `output/hostux-ux14-formal--`。
 - 最终源码门禁PASS（74项既有warning）：`output/hostux-ux14-final-size.log`。使用手册与 `SLICE_更新公告_2026-09-14.md` 随包同步；没有删除输出或改写用户设置。
+
+## Git 交付收口
+
+UX-14按任务分为三个提交：`51281a1e`（工艺参数保存恢复）、`618c75ce`（就绪提示与真实流程回归）、`2704ee3e`（手册、公告与部署证据）。
+
+2026-09-14已将 `product/packaged-slicer` 从 `e2546797` 快进至 `2704ee3e`，并成功推送到 `origin/product/packaged-slicer`；`git ls-remote` 确认远端为 `2704ee3e053b8c81b8fba1cda53347783f0be3ee`。推送包含产品分支此前尚未推送的4个提交，没有改写历史或强制推送。
+
+原 `codex/host-visibility-navigation` 已全部合入，具备删除条件；按用户允许的另一方案，将其更名为本地 `codex/feature-host-ui` 供后续界面任务复用，没有删除其他分支或工作树。本节文档收口提交随后一并快进同步到product并推送。无关未跟踪目录仍保留，不纳入本次提交。
