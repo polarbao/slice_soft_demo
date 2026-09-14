@@ -30,6 +30,21 @@ foreach(scale IN ITEMS 1 1.5 2)
     endif()
 endforeach()
 
+set(hostuxPresetModel "${CMAKE_SOURCE_DIR}/model/obj/multi-material/gubao05/gubao05-dingwei.obj")
+if(EXISTS "${hostuxPresetModel}")
+    foreach(flow IN ITEMS preset restored_preset)
+        set(restoreArgument)
+        if(flow STREQUAL "restored_preset")
+            set(restoreArgument --restore-multilayer)
+        endif()
+        add_test(NAME hostux_${flow}_after_import
+            COMMAND slicer_ui_host_sim --hostux-scene-self-test --preset-after-import ${restoreArgument}
+                --model "${hostuxPresetModel}" --evidence-root "${CMAKE_SOURCE_DIR}/output/ux14")
+        set_tests_properties(hostux_${flow}_after_import PROPERTIES RUN_SERIAL TRUE TIMEOUT 180
+            ENVIRONMENT "QT_QPA_PLATFORM=offscreen;QT_QPA_FONTDIR=$ENV{WINDIR}/Fonts")
+    endforeach()
+endif()
+
 add_executable(slicer_ui_host_sim
     camera/CameraController.cpp
     camera/CameraController.h

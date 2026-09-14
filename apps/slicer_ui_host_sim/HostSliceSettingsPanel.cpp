@@ -597,6 +597,11 @@ bool HostSliceSettingsPanel::IsReady() const
     return !m_effectiveProfile.profile.isEmpty();
 }
 
+QString HostSliceSettingsPanel::ReadinessMessage() const
+{
+    return m_validationLabel->text();
+}
+
 hosteffectiveprofile HostSliceSettingsPanel::EffectiveProfile() const
 {
     return m_effectiveProfile;
