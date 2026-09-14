@@ -1,3 +1,35 @@
+add_executable(hostux_interaction_tests
+    ${CMAKE_SOURCE_DIR}/tests/hostflow/HostUxInteractionTests.cpp
+    ${CMAKE_SOURCE_DIR}/tests/hostflow/HostWheelPolicyTests.cpp
+    TopViewCanvasWidget.cpp
+    camera/CameraController.cpp ThreeDCanvasWidget.cpp ModuleClient.cpp
+    render/CpuRasterBackend.cpp render/CpuRasterizer.cpp render/CpuRasterDecor.cpp
+    render/TopViewRenderPolicy.cpp render/TopViewRenderPolicyData.cpp
+    HostRipSettingsPanel.cpp HostRipSettingsPanel.h HostRipSettingsStore.cpp
+)
+set_target_properties(hostux_interaction_tests PROPERTIES AUTOMOC ON)
+target_include_directories(hostux_interaction_tests PRIVATE ${CMAKE_CURRENT_SOURCE_DIR} ${CMAKE_SOURCE_DIR})
+target_link_libraries(hostux_interaction_tests PRIVATE Qt5::Widgets bcrypt)
+if(MSVC)
+    target_compile_options(hostux_interaction_tests PRIVATE /W4 /WX /utf-8)
+    if(MSVC_VERSION GREATER_EQUAL 1950)
+        target_compile_options(hostux_interaction_tests PRIVATE "/FI${CMAKE_CURRENT_SOURCE_DIR}/Qt515MsvcCompatibility.h")
+    endif()
+endif()
+foreach(scale IN ITEMS 1 1.5 2)
+    add_test(NAME hostux_interaction_scale_${scale}
+        COMMAND hostux_interaction_tests ${CMAKE_BINARY_DIR}/hostux-evidence/${scale})
+    add_test(NAME hostux_full_ui_scale_${scale}
+        COMMAND slicer_ui_host_sim --hostux-ui-self-test
+            --evidence-root ${CMAKE_BINARY_DIR}/hostux-full-ui-evidence/${scale})
+    set_tests_properties(hostux_interaction_scale_${scale} hostux_full_ui_scale_${scale} PROPERTIES
+        ENVIRONMENT "QT_QPA_PLATFORM=offscreen;QT_SCALE_FACTOR=${scale}" RUN_SERIAL TRUE TIMEOUT 90)
+    if(WIN32)
+        set_property(TEST hostux_interaction_scale_${scale} hostux_full_ui_scale_${scale} APPEND PROPERTY
+            ENVIRONMENT "QT_QPA_FONTDIR=$ENV{WINDIR}/Fonts")
+    endif()
+endforeach()
+
 add_executable(slicer_ui_host_sim
     camera/CameraController.cpp
     camera/CameraController.h

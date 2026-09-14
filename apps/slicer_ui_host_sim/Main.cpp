@@ -4,6 +4,8 @@
 #include "HostRipJobController.h"
 #include "HostWorkspaceState.h"
 #include "HostVersionInfo.h"
+#include "HostUxUiSmoke.h"
+#include "HostUxSceneSmoke.h"
 #include "ModuleClient.h"
 
 #include <QApplication>
@@ -769,6 +771,8 @@ int main(int argc, char* argv[])
         return RunSelfTest(modulePath);
     }
 
+    QCoreApplication::setAttribute(Qt::AA_EnableHighDpiScaling);
+    QCoreApplication::setAttribute(Qt::AA_UseHighDpiPixmaps);
     QApplication application(argc, argv);
     HostVersionInfo::ApplyApplicationMetadata(application);
     const QStringList arguments = application.arguments();
@@ -806,6 +810,11 @@ int main(int argc, char* argv[])
         QStringLiteral("--module"));
     const QString modulePath = requestedPath.isEmpty()
         ? DefaultModulePath() : requestedPath;
+    if (HasArgument(arguments,QStringLiteral("--hostux-ui-self-test")))
+        return RunHostUxUiSmoke(modulePath,FindArgumentValue(arguments,QStringLiteral("--evidence-root")));
+    if (HasArgument(arguments,QStringLiteral("--hostux-scene-self-test")))
+        return RunHostUxSceneSmoke(modulePath,FindArgumentValue(arguments,QStringLiteral("--model")),
+            FindArgumentValue(arguments,QStringLiteral("--evidence-root")));
     if (HasArgument(
             arguments,
             QStringLiteral("--hostflow-import-ui-self-test")))

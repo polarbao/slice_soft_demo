@@ -57,6 +57,7 @@ public:
     ~HostMainWindow() override;
 
 private:
+    friend int RunHostUxSceneSmoke(const QString&,const QString&,const QString&);
     void BuildInterface();
     void LoadModule(const QString& modulePath);
     void ConfigureProfiles();
@@ -64,6 +65,7 @@ private:
     void RestoreWorkspaceState();
     bool SaveWorkspaceState();
     void OnImportModel();
+    void ImportModelPaths(const QStringList& modelPaths);
     void OnRemoveModels(const QStringList& instanceIds);
     void OnResetScene();
     void AttachSceneResetButton(QWidget* page, QVBoxLayout* layout);
