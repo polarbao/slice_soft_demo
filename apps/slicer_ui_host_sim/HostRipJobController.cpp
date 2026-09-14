@@ -148,6 +148,7 @@ HostRipJobController::HostRipJobController(QObject* parent)
     : QObject(parent)
 {
     m_timeoutTimer.setSingleShot(true);
+    InitializeProgress();
     m_killTimer.setSingleShot(true);
     connect(&m_timeoutTimer, &QTimer::timeout, this, &HostRipJobController::OnTimeout);
     connect(&m_killTimer, &QTimer::timeout, this, [this]()
@@ -931,7 +932,7 @@ void HostRipJobController::OnReadyStandardOutput()
     if (m_process != nullptr)
     {
         AppendCapped(&m_stdout, m_process->readAllStandardOutput());
-        PublishState(QStringLiteral("running"), QStringLiteral("RIP 正在处理切片层"));
+        if (!m_cancelRequested) UpdateProgress();
     }
 }
 
@@ -1108,7 +1109,7 @@ void HostRipJobController::FinalizeValidatedOutput(
     const int exitCode,
     const slicesoft::rip::RipOutputValidationResult& validation)
 {
-    m_phase = Phase::Publishing;
+    m_phase = Phase::Publishing; UpdateProgress();
     const bool diagnostic =
         HostRipSettingsStore::IsDiagnosticMode(m_settings);
     if (!diagnostic && !validation.s2_drop_limits_passed)
@@ -1369,11 +1370,4 @@ void HostRipJobController::ResetProcess()
         m_process->deleteLater();
         m_process = nullptr;
     }
-}
-
-void HostRipJobController::PublishState(
-    const QString& state,
-    const QString& message)
-{
-    emit SigStateChanged(state, message);
 }

@@ -2,6 +2,9 @@
 
 #include <QCheckBox>
 #include <QComboBox>
+#include <QCoreApplication>
+#include <QDateTime>
+#include <QUuid>
 #include <QDir>
 #include <QFileDialog>
 #include <QFormLayout>
@@ -11,6 +14,7 @@
 #include <QLabel>
 #include <QLineEdit>
 #include <QPushButton>
+#include <QProgressBar>
 #include <QSignalBlocker>
 #include <QSpinBox>
 #include <QStyle>
@@ -21,6 +25,7 @@ HostRipSettingsPanel::HostRipSettingsPanel(QWidget* parent)
 {
     BuildInterface();
     SetSettings(HostRipSettingsStore::Defaults());
+    ResetAutomaticManualOutput();
 }
 
 void HostRipSettingsPanel::BuildInterface()
@@ -170,6 +175,13 @@ void HostRipSettingsPanel::BuildInterface()
     m_jobStatusLabel->setWordWrap(true);
     m_jobStatusLabel->setTextInteractionFlags(Qt::TextSelectableByMouse);
     layout->addWidget(m_jobStatusLabel);
+    m_progressLabel=new QLabel(this);
+    m_progressLabel->setObjectName(QStringLiteral("hostRipProgressLabel"));
+    m_progressLabel->setWordWrap(true);
+    m_progressBar=new QProgressBar(this);
+    m_progressBar->setObjectName(QStringLiteral("hostRipProgressBar"));
+    m_progressBar->setRange(0,1); m_progressBar->setValue(0);
+    layout->addWidget(m_progressLabel); layout->addWidget(m_progressBar);
 
     auto* actions = new QHBoxLayout();
     m_runButton = new QPushButton(QStringLiteral("运行 RIP"), this);
@@ -326,7 +338,23 @@ void HostRipSettingsPanel::SetPackageDirectory(const QString& directory)
         directory.isEmpty() ? QString{} : directory + QStringLiteral("/layers"));
     UpdateOutputPath();
     m_requestValid = false;
+    if (!directory.isEmpty() && !m_jobActive
+        && (ManualInputDirectory().isEmpty() || ManualInputDirectory()==m_autoManualInput))
+    {
+        m_autoManualInput=QDir::toNativeSeparators(QDir(directory).filePath(QStringLiteral("layers")));
+        m_manualInputEdit->setText(m_autoManualInput);
+    }
     RefreshControls();
+}
+
+void HostRipSettingsPanel::ResetAutomaticManualOutput()
+{
+    // Only prepare the parent; the final job directory must not exist before RIP.
+    QDir().mkpath(QDir(QCoreApplication::applicationDirPath()).filePath(QStringLiteral("output/rip")));
+    m_autoManualOutput=QDir::toNativeSeparators(QDir(QCoreApplication::applicationDirPath()).filePath(
+        QStringLiteral("output/rip/r%1_%2").arg(QDateTime::currentDateTime().toString(QStringLiteral("yyMMddHHmmsszzz")),
+            QUuid::createUuid().toString(QUuid::Id128).left(8))));
+    m_manualOutputEdit->setText(m_autoManualOutput);
 }
 
 void HostRipSettingsPanel::UpdateOutputPath()
@@ -406,6 +434,10 @@ void HostRipSettingsPanel::ShowCompletion(
     const QString& outputDirectory)
 {
     m_jobActive = false;
+    m_progressBar->setRange(0,1);
+    m_progressBar->setValue(success ? 1 : 0);
+    m_progressBar->setFormat(success ? QStringLiteral("完成") : cancelled ? QStringLiteral("已取消") : QStringLiteral("失败"));
+    m_progressLabel->setText(message);
     if (success)
     {
         m_outputDirectory = outputDirectory;
@@ -415,7 +447,23 @@ void HostRipSettingsPanel::ShowCompletion(
         cancelled ? QStringLiteral("RIP 已取消 · %1").arg(message)
         : success ? QStringLiteral("RIP 完成 · %1").arg(message)
                   : QStringLiteral("RIP 失败 · %1").arg(message));
+    if (success && ManualOutputDirectory()==m_autoManualOutput
+        && QDir::cleanPath(QDir::fromNativeSeparators(outputDirectory))
+            ==QDir::cleanPath(QDir::fromNativeSeparators(m_autoManualOutput)))
+        ResetAutomaticManualOutput();
     RefreshControls();
+}
+
+void HostRipSettingsPanel::ShowProgress(const QString& phase,int observed,int total,qint64 elapsed)
+{
+    m_progressLabel->setText(QStringLiteral("%1 · %2 s%3").arg(phase).arg(elapsed/1000.0,0,'f',1)
+        .arg(observed>=0?QStringLiteral(" · 已出现输出文件 %1/%2（未校验，可能仍在写入）").arg(observed).arg(total):QString{}));
+    if(observed>=0 && total>0 && observed<total)
+    {
+        m_progressBar->setRange(0,total); m_progressBar->setValue(observed);
+        m_progressBar->setFormat(QStringLiteral("文件观察 %v/%m"));
+    }
+    else { m_progressBar->setRange(0,0); m_progressBar->setFormat(QString()); }
 }
 
 void HostRipSettingsPanel::RefreshControls()

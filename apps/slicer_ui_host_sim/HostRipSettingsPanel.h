@@ -17,6 +17,7 @@ class HostRipSettingsPanel final : public QWidget
     Q_OBJECT
 
 public:
+    void ShowProgress(const QString& phase, int observedFiles, int totalFiles, qint64 elapsedMs);
     explicit HostRipSettingsPanel(QWidget* parent = nullptr);
 
     [[nodiscard]] hostripsettings Settings() const;
@@ -48,6 +49,7 @@ signals:
 private:
     void BuildInterface();
     void UpdateOutputPath();
+    void ResetAutomaticManualOutput();
     void RefreshControls();
 
     QCheckBox* m_autoCheck{nullptr};
@@ -72,11 +74,15 @@ private:
     QLabel* m_manualStatusLabel{nullptr};
     QLabel* m_runtimeStatusLabel{nullptr};
     QLabel* m_jobStatusLabel{nullptr};
+    class QProgressBar* m_progressBar{nullptr};
+    QLabel* m_progressLabel{nullptr};
     QPushButton* m_runButton{nullptr};
     QPushButton* m_cancelButton{nullptr};
     QPushButton* m_openButton{nullptr};
     QString m_packageDirectory;
     QString m_outputDirectory;
+    QString m_autoManualInput;
+    QString m_autoManualOutput;
     bool m_outputExists{false};
     bool m_runtimeValid{false};
     bool m_requestValid{false};

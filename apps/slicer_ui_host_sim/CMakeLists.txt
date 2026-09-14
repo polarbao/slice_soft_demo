@@ -27,6 +27,7 @@ add_executable(slicer_ui_host_sim
     HostPackageReviewPanel.cpp
     HostPackageReviewPanel.h
     HostRipJobController.cpp
+    HostRipProgress.cpp
     HostRipJobController.h
     HostRipSafety.cpp
     HostRipSafety.h

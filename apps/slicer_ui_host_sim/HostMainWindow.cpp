@@ -238,6 +238,8 @@ void HostMainWindow::BuildInterface()
     layout->addWidget(m_pathLabel);
     layout->addWidget(m_workspaceTabs, 1);
     setCentralWidget(centralWidget);
+    connect(m_ripJobController.get(), &HostRipJobController::SigProgress,
+        m_ripSettingsPanel, &HostRipSettingsPanel::ShowProgress);
 
     connect(m_defaultViewCombo,
             qOverload<int>(&QComboBox::currentIndexChanged),

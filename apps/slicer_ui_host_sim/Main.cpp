@@ -477,7 +477,9 @@ int RunRipUiSmoke(const QString& modulePath)
     if (manualInput == nullptr || manualOutput == nullptr
         || manualRunButton == nullptr || manualStatus == nullptr
         || !manualInput->text().isEmpty()
-        || !manualOutput->text().isEmpty()
+        || manualOutput->text().isEmpty()
+        || !QFileInfo(manualOutput->text()).isAbsolute()
+        || QFileInfo::exists(manualOutput->text())
         || manualRunButton->isEnabled()
         || manualStatus->text().isEmpty())
     {
@@ -541,6 +543,12 @@ int RunRipJobSelfTest(
     HostRipJobController controller;
     QEventLoop loop;
     int result = 17;
+    QObject::connect(&controller,&HostRipJobController::SigProgress,&loop,
+        [](const QString& phase,int observed,int total,qint64 elapsed)
+        {
+            QTextStream(stdout)<<"RIP_PROGRESS phase="<<phase<<" files="<<observed
+                <<"/"<<total<<" elapsedMs="<<elapsed<<Qt::endl;
+        });
     QObject::connect(
         &controller,
         &HostRipJobController::SigCompleted,
