@@ -41,7 +41,7 @@ hosteffectiveprofile BuildProfile(
     const bool baseProjectionEnabled = false)
 {
     hostslicesettings settings;
-    settings.profileid = QStringLiteral("host-reference-default");
+    settings.profileid = QStringLiteral("host-reference-after-import");
     settings.modelpath = modelPath;
     settings.modelformat = QStringLiteral("obj");
     settings.outputdirectory = packageDirectory;
@@ -455,6 +455,12 @@ int main(int argc, char* argv[])
         return 5;
     }
 
+    if (!workflow.SetPendingSceneContext(QStringLiteral("host-reference-after-import"),
+            hostbuildvolume{},&error))
+    {
+        errors << "导入并排版后切换工艺失败：" << error << Qt::endl;
+        return 7;
+    }
     HostSliceJobController invalidController(client);
     const quint64 callsBeforeInvalid = client.CallCount();
     const QString longSessionName = QStringLiteral("host-test-")

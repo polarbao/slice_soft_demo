@@ -174,10 +174,7 @@ public:
      */
     /// @brief 解绑当前场景，释放全部已导入模型，使 Profile/buildVolume 可重新选择。
     ///
-    /// 场景在首次提交时把 Profile 与 buildVolume 钉死，此后 PrepareSceneContext
-    /// 会以「当前场景已绑定 Profile/buildVolume；请新建场景后修改」拒绝变更。
-    /// 但此前【没有任何接口能新建场景】，且 RemoveInstances 只删实例、不清 m_sceneHandle，
-    /// 于是删光模型也退不出该状态——软件要求的操作在 UI 上不存在。本方法即该出口。
+    /// 工艺切换保留模型；需要清空模型或改变设备画幅时使用本方法。
     void ResetScene();
 
     [[nodiscard]] quint64 SceneHandle() const;
@@ -192,7 +189,7 @@ public:
     [[nodiscard]] int InstanceCount() const;
 
     /**
-     * @brief 设置首次场景提交使用的宿主上下文。
+     * @brief 设置宿主上下文；已有模型时通过权威快照重绑工艺并保留摆放。
      * @param profileId 选定的宿主 Profile 标识。
      * @param buildVolume 由设备持有的构建体积。
      * @param error 接收不可变场景或验证原因。

@@ -93,18 +93,15 @@ void HostMainWindow::OnLayoutRequested(
     RefreshSceneViews();
 }
 
-// 「新建场景」出口。场景在首次提交时钉死 Profile 与 buildVolume，此后切换工艺会被
-// 「当前场景已绑定 Profile/buildVolume；请新建场景后修改」挡下——而该提示要求的操作
-// 此前在 UI 上并不存在，且删光模型也不解绑（RemoveInstances 不清 sceneHandle）。
-// 没有这个按钮，用户一旦先导入再改工艺就无路可退，只能重启软件。
+// 「新建场景」出口。用于清空模型及修改设备画幅；普通工艺切换已支持保留模型。
 void HostMainWindow::AttachSceneResetButton(QWidget* page, QVBoxLayout* layout)
 {
     auto* resetSceneButton = new QPushButton(
-        QStringLiteral("新建场景（解绑工艺后可重选）"), page);
+        QStringLiteral("新建场景（清空模型）"), page);
     resetSceneButton->setObjectName(QStringLiteral("hostResetSceneButton"));
     resetSceneButton->setToolTip(QStringLiteral(
         "释放已导入模型并解绑当前场景的 Profile 与设备构建体积，"
-        "之后可在工艺配置中改选工艺再重新导入模型。"));
+        "普通工艺切换不需要清空模型。"));
     connect(resetSceneButton, &QPushButton::clicked,
             this, &HostMainWindow::OnResetScene);
     layout->addWidget(resetSceneButton);

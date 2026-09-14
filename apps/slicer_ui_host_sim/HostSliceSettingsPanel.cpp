@@ -705,14 +705,15 @@ void HostSliceSettingsPanel::SetSingleMaterialRestriction(
         && !IsSingleMaterialStrategy(selectedPreset.materialstrategy)
         && !selectedPreset.materialvolume.enabled)
     {
-        const int whitePresetIndex = m_processPresetCombo->findData(
-            QStringLiteral("single_material_relief_white"));
+        const QString whitePresetId=m_packageProtocol==HostPackageProtocol::Rgbwsvt
+            ? QStringLiteral("single_material_relief_white_rgbwsvt") : QStringLiteral("single_material_relief_white");
+        const int whitePresetIndex = m_processPresetCombo->findData(whitePresetId);
         if (whitePresetIndex >= 0)
         {
             const QSignalBlocker blocker(m_processPresetCombo);
             m_processPresetCombo->setCurrentIndex(whitePresetIndex);
             HostProcessPresetCatalog::Resolve(
-                QStringLiteral("single_material_relief_white"),
+                whitePresetId,
                 &selectedPreset);
             m_materialPanel->SetSettings(
                 selectedPreset.materialstrategy,
