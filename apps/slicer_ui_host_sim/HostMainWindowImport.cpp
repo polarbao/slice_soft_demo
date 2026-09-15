@@ -30,6 +30,12 @@ void HostMainWindow::OnImportModel()
         return;
     }
     m_modelImportDirectory = QFileInfo(modelPaths.constFirst()).absolutePath();
+    ImportModelPaths(modelPaths);
+}
+
+void HostMainWindow::ImportModelPaths(const QStringList& modelPaths)
+{
+    if(modelPaths.isEmpty()) return;
 
     QString contextError;
     if (!ApplyPendingSceneContext(&contextError))

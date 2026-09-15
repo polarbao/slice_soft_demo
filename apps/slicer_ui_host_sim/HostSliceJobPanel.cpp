@@ -297,6 +297,7 @@ void HostSliceJobPanel::SetReady(
     const QString& reason)
 {
     m_ready = ready;
+    m_startButton->setToolTip(reason);
     if (!m_active && !m_hasCompletion)
     {
         m_statusLabel->setText(

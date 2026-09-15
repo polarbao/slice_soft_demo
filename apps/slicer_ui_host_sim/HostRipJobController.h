@@ -62,6 +62,7 @@ public:
     [[nodiscard]] bool IsActive() const;
 
 signals:
+    void SigProgress(QString phase, int observedFiles, int totalFiles, qint64 elapsedMs);
     void SigStateChanged(QString state, QString message);
     void SigCompleted(
         bool success,
@@ -146,6 +147,8 @@ private:
     [[nodiscard]] bool CleanupOwnedStaging(QString* error = nullptr);
     void ResetProcess();
     void PublishState(const QString& state, const QString& message);
+    void InitializeProgress();
+    void UpdateProgress();
 
     QProcess* m_process{nullptr};
     QTimer m_timeoutTimer;

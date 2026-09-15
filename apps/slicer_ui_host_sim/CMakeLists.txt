@@ -1,3 +1,50 @@
+add_executable(hostux_interaction_tests
+    ${CMAKE_SOURCE_DIR}/tests/hostflow/HostUxInteractionTests.cpp
+    ${CMAKE_SOURCE_DIR}/tests/hostflow/HostWheelPolicyTests.cpp
+    TopViewCanvasWidget.cpp
+    camera/CameraController.cpp ThreeDCanvasWidget.cpp ModuleClient.cpp
+    render/CpuRasterBackend.cpp render/CpuRasterizer.cpp render/CpuRasterDecor.cpp
+    render/TopViewRenderPolicy.cpp render/TopViewRenderPolicyData.cpp
+    HostRipSettingsPanel.cpp HostRipSettingsPanel.h HostRipSettingsStore.cpp
+)
+set_target_properties(hostux_interaction_tests PROPERTIES AUTOMOC ON)
+target_include_directories(hostux_interaction_tests PRIVATE ${CMAKE_CURRENT_SOURCE_DIR} ${CMAKE_SOURCE_DIR})
+target_link_libraries(hostux_interaction_tests PRIVATE Qt5::Widgets bcrypt)
+if(MSVC)
+    target_compile_options(hostux_interaction_tests PRIVATE /W4 /WX /utf-8)
+    if(MSVC_VERSION GREATER_EQUAL 1950)
+        target_compile_options(hostux_interaction_tests PRIVATE "/FI${CMAKE_CURRENT_SOURCE_DIR}/Qt515MsvcCompatibility.h")
+    endif()
+endif()
+foreach(scale IN ITEMS 1 1.5 2)
+    add_test(NAME hostux_interaction_scale_${scale}
+        COMMAND hostux_interaction_tests ${CMAKE_BINARY_DIR}/hostux-evidence/${scale})
+    add_test(NAME hostux_full_ui_scale_${scale}
+        COMMAND slicer_ui_host_sim --hostux-ui-self-test
+            --evidence-root ${CMAKE_BINARY_DIR}/hostux-full-ui-evidence/${scale})
+    set_tests_properties(hostux_interaction_scale_${scale} hostux_full_ui_scale_${scale} PROPERTIES
+        ENVIRONMENT "QT_QPA_PLATFORM=offscreen;QT_SCALE_FACTOR=${scale}" RUN_SERIAL TRUE TIMEOUT 90)
+    if(WIN32)
+        set_property(TEST hostux_interaction_scale_${scale} hostux_full_ui_scale_${scale} APPEND PROPERTY
+            ENVIRONMENT "QT_QPA_FONTDIR=$ENV{WINDIR}/Fonts")
+    endif()
+endforeach()
+
+set(hostuxPresetModel "${CMAKE_SOURCE_DIR}/model/obj/multi-material/gubao05/gubao05-dingwei.obj")
+if(EXISTS "${hostuxPresetModel}")
+    foreach(flow IN ITEMS preset restored_preset)
+        set(restoreArgument)
+        if(flow STREQUAL "restored_preset")
+            set(restoreArgument --restore-multilayer)
+        endif()
+        add_test(NAME hostux_${flow}_after_import
+            COMMAND slicer_ui_host_sim --hostux-scene-self-test --preset-after-import ${restoreArgument}
+                --model "${hostuxPresetModel}" --evidence-root "${CMAKE_SOURCE_DIR}/output/ux14")
+        set_tests_properties(hostux_${flow}_after_import PROPERTIES RUN_SERIAL TRUE TIMEOUT 180
+            ENVIRONMENT "QT_QPA_PLATFORM=offscreen;QT_QPA_FONTDIR=$ENV{WINDIR}/Fonts")
+    endforeach()
+endif()
+
 add_executable(slicer_ui_host_sim
     camera/CameraController.cpp
     camera/CameraController.h
@@ -27,6 +74,7 @@ add_executable(slicer_ui_host_sim
     HostPackageReviewPanel.cpp
     HostPackageReviewPanel.h
     HostRipJobController.cpp
+    HostRipProgress.cpp
     HostRipJobController.h
     HostRipSafety.cpp
     HostRipSafety.h
@@ -145,7 +193,7 @@ slicesoft_add_windows_version_resource(
     slicer_ui_host_sim
     application
     "SliceSoft Packaged Slicer"
-    "slicer_ui_host_sim.exe"
+    "slice_soft_test.exe"
 )
 slicesoft_copy_version_manifests(slicer_ui_host_sim)
 
@@ -161,6 +209,12 @@ set_source_files_properties(
 
 set_target_properties(slicer_ui_host_sim PROPERTIES
     AUTOMOC ON
+    OUTPUT_NAME slice_soft_test
+)
+add_custom_command(TARGET slicer_ui_host_sim POST_BUILD
+    COMMAND ${CMAKE_COMMAND} -E copy_if_different
+        $<TARGET_FILE:slicer_ui_host_sim> $<TARGET_FILE_DIR:slicer_ui_host_sim>/slicer_ui_host_sim.exe
+    COMMENT "Preserving the legacy host executable entry point"
 )
 
 target_include_directories(slicer_ui_host_sim PRIVATE
@@ -230,6 +284,21 @@ add_custom_command(TARGET slicer_ui_host_sim POST_BUILD
     COMMAND ${CMAKE_COMMAND} -E copy_if_different
         "${slicesoftPackagedUserGuide}"
         "$<TARGET_FILE_DIR:slicer_ui_host_sim>/docs/user_guides/SLICE_PRODUCT_PACKAGED_新版切片软件使用手册.md"
+    COMMAND ${CMAKE_COMMAND} -E copy_if_different
+        "${CMAKE_SOURCE_DIR}/docs/user_guides/SLICE_HOST_鼠标滚轮交互规则.md"
+        "${CMAKE_SOURCE_DIR}/docs/user_guides/SLICE_RIPFLOW_切片后RIP设置与迁移说明.md"
+        "${CMAKE_SOURCE_DIR}/docs/user_guides/SLICE_更新公告_2026-09-14.md"
+        "$<TARGET_FILE_DIR:slicer_ui_host_sim>/docs/user_guides"
+    COMMAND ${CMAKE_COMMAND} -E make_directory
+        "$<TARGET_FILE_DIR:slicer_ui_host_sim>/docs/slice/DOC"
+        "$<TARGET_FILE_DIR:slicer_ui_host_sim>/docs/slice/REPORT"
+    COMMAND ${CMAKE_COMMAND} -E copy_if_different
+        "${CMAKE_SOURCE_DIR}/docs/slice/DOC/DOC_SPEC_MATERIAL_NAMING_多图层素材命名与语义标识规范.md"
+        "$<TARGET_FILE_DIR:slicer_ui_host_sim>/docs/slice/DOC"
+    COMMAND ${CMAKE_COMMAND} -E copy_if_different
+        "${CMAKE_SOURCE_DIR}/docs/slice/REPORT/REPORT_XPAD_X原点输出画幅补白收口总结.md"
+        "${CMAKE_SOURCE_DIR}/docs/slice/REPORT/REPORT_XYPAD_XY原点补白验证与交付.md"
+        "$<TARGET_FILE_DIR:slicer_ui_host_sim>/docs/slice/REPORT"
     COMMAND ${CMAKE_COMMAND} -E copy_directory
         "${slicesoftPackagedUserGuideAssets}"
         "$<TARGET_FILE_DIR:slicer_ui_host_sim>/docs/user_guides/assets/packaged_slicer"

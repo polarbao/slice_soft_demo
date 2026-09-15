@@ -156,7 +156,7 @@
     {
       "label": "SliceSoft 14E: Run Packaged Host UI (Debug)",
       "type": "shell",
-      "command": "${workspaceFolder}/runtime/slicesoft/Debug/slicer_ui_host_sim.exe",
+      "command": "${workspaceFolder}/runtime/slicesoft/Debug/slice_soft_test.exe",
       "args": [],
       "options": {
         "cwd": "${workspaceFolder}/runtime/slicesoft/Debug"
@@ -168,7 +168,7 @@
     {
       "label": "SliceSoft 14E: Run Packaged Host UI (Release)",
       "type": "shell",
-      "command": "${workspaceFolder}/runtime/slicesoft/Release/slicer_ui_host_sim.exe",
+      "command": "${workspaceFolder}/runtime/slicesoft/Release/slice_soft_test.exe",
       "args": [],
       "options": {
         "cwd": "${workspaceFolder}/runtime/slicesoft/Release"
@@ -180,7 +180,7 @@
     {
       "label": "SliceSoft 14E: Quick Run Packaged Host UI (Release, No Build)",
       "type": "process",
-      "command": "${workspaceFolder}/runtime/slicesoft/Release/slicer_ui_host_sim.exe",
+      "command": "${workspaceFolder}/runtime/slicesoft/Release/slice_soft_test.exe",
       "args": [],
       "options": {
         "cwd": "${workspaceFolder}/runtime/slicesoft/Release"
@@ -191,7 +191,7 @@
     {
       "label": "SliceSoft 14E: Self-Test Packaged Host UI (Debug)",
       "type": "shell",
-      "command": "${workspaceFolder}/runtime/slicesoft/Debug/slicer_ui_host_sim.exe",
+      "command": "${workspaceFolder}/runtime/slicesoft/Debug/slice_soft_test.exe",
       "args": [
         "--self-test"
       ],
@@ -209,7 +209,7 @@
     {
       "label": "SliceSoft 14E: Self-Test Packaged Host UI (Release)",
       "type": "shell",
-      "command": "${workspaceFolder}/runtime/slicesoft/Release/slicer_ui_host_sim.exe",
+      "command": "${workspaceFolder}/runtime/slicesoft/Release/slice_soft_test.exe",
       "args": [
         "--self-test"
       ],

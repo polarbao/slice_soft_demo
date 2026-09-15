@@ -74,6 +74,7 @@ public:
      * @return 仅在模型、路径和场景绑定验证通过后才为 true。
      */
     [[nodiscard]] bool IsReady() const;
+    [[nodiscard]] QString ReadinessMessage() const;
 
     /**
      * @brief 返回最新验证的有效 Profile。

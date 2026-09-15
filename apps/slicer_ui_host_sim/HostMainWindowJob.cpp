@@ -36,7 +36,7 @@ void HostMainWindow::RefreshSliceJobReadiness()
     {
         m_sliceJobPanel->SetReady(
             false,
-            QStringLiteral("请先修正切片设置和有效 Profile。"));
+            m_sliceSettingsPanel->ReadinessMessage());
         return;
     }
     m_sliceJobPanel->SetReady(true, QStringLiteral("切片作业已就绪。"));

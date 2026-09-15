@@ -4,6 +4,8 @@
 #include "HostRipJobController.h"
 #include "HostWorkspaceState.h"
 #include "HostVersionInfo.h"
+#include "HostUxUiSmoke.h"
+#include "HostUxSceneSmoke.h"
 #include "ModuleClient.h"
 #include "HostDiagnostics.h"
 
@@ -478,7 +480,9 @@ int RunRipUiSmoke(const QString& modulePath)
     if (manualInput == nullptr || manualOutput == nullptr
         || manualRunButton == nullptr || manualStatus == nullptr
         || !manualInput->text().isEmpty()
-        || !manualOutput->text().isEmpty()
+        || manualOutput->text().isEmpty()
+        || !QFileInfo(manualOutput->text()).isAbsolute()
+        || QFileInfo::exists(manualOutput->text())
         || manualRunButton->isEnabled()
         || manualStatus->text().isEmpty())
     {
@@ -542,6 +546,12 @@ int RunRipJobSelfTest(
     HostRipJobController controller;
     QEventLoop loop;
     int result = 17;
+    QObject::connect(&controller,&HostRipJobController::SigProgress,&loop,
+        [](const QString& phase,int observed,int total,qint64 elapsed)
+        {
+            QTextStream(stdout)<<"RIP_PROGRESS phase="<<phase<<" files="<<observed
+                <<"/"<<total<<" elapsedMs="<<elapsed<<Qt::endl;
+        });
     QObject::connect(
         &controller,
         &HostRipJobController::SigCompleted,
@@ -762,6 +772,8 @@ int main(int argc, char* argv[])
         return RunSelfTest(modulePath);
     }
 
+    QCoreApplication::setAttribute(Qt::AA_EnableHighDpiScaling);
+    QCoreApplication::setAttribute(Qt::AA_UseHighDpiPixmaps);
     QApplication application(argc, argv);
     HostVersionInfo::ApplyApplicationMetadata(application);
     const QStringList arguments = application.arguments();
@@ -799,6 +811,11 @@ int main(int argc, char* argv[])
         QStringLiteral("--module"));
     const QString modulePath = requestedPath.isEmpty()
         ? DefaultModulePath() : requestedPath;
+    if (HasArgument(arguments,QStringLiteral("--hostux-ui-self-test")))
+        return RunHostUxUiSmoke(modulePath,FindArgumentValue(arguments,QStringLiteral("--evidence-root")));
+    if (HasArgument(arguments,QStringLiteral("--hostux-scene-self-test")))
+        return RunHostUxSceneSmoke(modulePath,FindArgumentValue(arguments,QStringLiteral("--model")),
+            FindArgumentValue(arguments,QStringLiteral("--evidence-root")));
     if (HasArgument(
             arguments,
             QStringLiteral("--hostflow-import-ui-self-test")))

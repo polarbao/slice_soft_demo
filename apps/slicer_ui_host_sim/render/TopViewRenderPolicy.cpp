@@ -1,4 +1,5 @@
 #include "TopViewRenderPolicy.h"
+#include "SelectionOutline.h"
 
 #include <QColor>
 #include <QJsonArray>
@@ -307,6 +308,9 @@ bool TopViewRenderPolicy::RenderInto(
             QRectF(platform.left(), platform.top(), platform.width(), 3.0),
             QColor(242, 193, 78));
     }
+    QImage selection(canvasSize, QImage::Format_RGBA8888);
+    selection.fill(Qt::transparent);
+    QPainter selectionPainter(&selection);
     for (int index = 0; index < frame.instances.size(); ++index)
     {
         const TopViewInstance& instance = frame.instances.at(index);
@@ -322,7 +326,21 @@ bool TopViewRenderPolicy::RenderInto(
         const double sourceHeight = instance.surfacePreview.height();
         const bool axisAligned =
             std::abs(topLeft.y() - topRight.y()) < 1.0e-9
-            && std::abs(topLeft.x() - bottomLeft.x()) < 1.0e-9;
+            && std::abs(topLeft.x() - bottomLeft.x()) < 1.0e-9
+            && topRight.x() > topLeft.x() && bottomLeft.y() > topLeft.y();
+        if (!m_selectedInstances.isEmpty())
+        {
+            selectionPainter.save();
+            selectionPainter.setCompositionMode(m_selectedInstances.contains(instance.instanceId)
+                ? QPainter::CompositionMode_SourceOver : QPainter::CompositionMode_DestinationOut);
+            selectionPainter.setTransform(QTransform(
+                (topRight.x() - topLeft.x()) / sourceWidth,
+                (topRight.y() - topLeft.y()) / sourceWidth,
+                (bottomLeft.x() - topLeft.x()) / sourceHeight,
+                (bottomLeft.y() - topLeft.y()) / sourceHeight, topLeft.x(), topLeft.y()));
+            selectionPainter.drawImage(QPointF{}, instance.surfacePreview);
+            selectionPainter.restore();
+        }
         if (axisAligned)
         {
             painter.drawImage(
@@ -346,6 +364,14 @@ bool TopViewRenderPolicy::RenderInto(
         painter.setPen(QPen(QColor(23, 25, 28), 1.5));
         painter.setBrush(Qt::NoBrush);
         painter.drawPolygon(destination);
+    }
+    selectionPainter.end();
+    painter.end();
+    if (!m_selectedInstances.isEmpty())
+    {
+        std::vector<std::uint8_t> mask(static_cast<std::size_t>(canvasSize.width()) * canvasSize.height());
+        for (std::size_t i = 0; i < mask.size(); ++i) mask[i] = selection.constBits()[i * 4 + 3] != 0;
+        slicer::render::DrawSelectionOutline(output->bits(), canvasSize.width(), canvasSize.height(), mask);
     }
     return true;
 }
@@ -412,7 +438,16 @@ QString TopViewRenderPolicy::PickInstance(
         if (WorldCorners(instance).containsPoint(
                 worldPoint, Qt::OddEvenFill))
         {
-            return instance.instanceId;
+            const auto& m=instance.worldMatrix;
+            bool invertible=false;
+            const auto inverse=QTransform(m[0],m[4],m[1],m[5],m[3],m[7]).inverted(&invertible);
+            const auto local=inverse.map(worldPoint);
+            const auto& b=instance.localBoundsMm;
+            if (!invertible || b.maxX<=b.minX || b.maxY<=b.minY || instance.surfacePreview.isNull()) continue;
+            const int x=static_cast<int>((local.x()-b.minX)/(b.maxX-b.minX)*instance.surfacePreview.width());
+            const int y=static_cast<int>((b.maxY-local.y())/(b.maxY-b.minY)*instance.surfacePreview.height());
+            if (x>=0 && y>=0 && x<instance.surfacePreview.width() && y<instance.surfacePreview.height()
+                && qAlpha(instance.surfacePreview.pixel(x,y))>0) return instance.instanceId;
         }
     }
     return {};

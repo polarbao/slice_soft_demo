@@ -1,12 +1,7 @@
 // 宿主场景工艺重绑回归。
 //
-// 本用例守的是【用户能否走到切片这一步】，而不是【切出的结果对不对】。
-// 两者都需要，但此前只有后者有守卫：
-//   - T-08 门禁走 `slicer_cli --config`，完全绕过宿主；
-//   - matvol_t_host_profile 只构造 Profile 并比对哈希，从不导入模型、不建场景。
-// 结果是「导入模型 → 切换工艺 → 开始切片」这条用户实际路径零覆盖，
-// 于是「场景一旦绑定就再也换不了工艺，且 UI 无出口」这一缺陷穿过了全部绿灯，
-// 直到用户手动点下去才暴露。本文件即该缝隙的守卫。
+// 导入并编辑后直接切换工艺必须保留模型资源与摆放；实际 Worker 切片由
+// HostSliceJobTests 覆盖。ResetScene 仍作为显式清空模型/更换画幅的出口。
 
 #include "apps/slicer_ui_host_sim/HostModelImportWorkflow.h"
 #include "apps/slicer_ui_host_sim/HostSliceSettings.h"
@@ -17,6 +12,9 @@
 #include <QFileInfo>
 #include <QStringList>
 #include <QTextStream>
+#include <QJsonDocument>
+#include <QJsonArray>
+#include <QJsonObject>
 
 namespace
 {
@@ -105,17 +103,44 @@ int main(int argc, char* argv[])
         return 6;
     }
 
-    // 3. 已绑定场景拒绝改选工艺——这正是用户遇到的阻塞，属既定设计而非缺陷。
+    // Switching the profile must preserve imported resources and edited placement.
+    hosttransformrequest transform;
+    transform.deltaxmm=12; transform.rotatezdegrees=90;
+    hostsceneeditresult edit;
+    if(!workflow.ApplyTransforms({imported.instanceid},transform,&edit,&error)) return 20;
+    const auto snapshot=[&]()
+    {
+        QByteArray bytes;
+        const QJsonObject request{
+            {QStringLiteral("capability"),QStringLiteral("scene.get_snapshot")},
+            {QStringLiteral("sceneHandle"),static_cast<qint64>(workflow.SceneHandle())}};
+        if(!client.Execute(QJsonDocument(request).toJson(QJsonDocument::Compact),&bytes,&error)) return QJsonObject{};
+        return QJsonDocument::fromJson(bytes).object().value(QStringLiteral("scene")).toObject();
+    };
+    const auto before=snapshot();
+    const auto previousHandle=workflow.SceneHandle();
     error.clear();
-    if (!Check(!workflow.SetPendingSceneContext(
+    if (!Check(workflow.SetPendingSceneContext(
                    transferProfile, buildVolume, &error),
-               QStringLiteral("已绑定场景不得静默接受新工艺。"), errors)
-        || !Check(error.contains(QStringLiteral("新建场景")),
-                  QStringLiteral("拒绝原因须指明出路，实为：%1").arg(error),
-                  errors))
+               QStringLiteral("导入后改选工艺应成功：%1").arg(error), errors))
     {
         return 7;
     }
+    const auto after=snapshot();
+    const auto oldInstance=before.value(QStringLiteral("instances")).toArray().first().toObject();
+    const auto newInstance=after.value(QStringLiteral("instances")).toArray().first().toObject();
+    for(const auto* field:{"instanceId","modelId","requestedTransform","derivedLayoutTransform","effectiveTransform","effectiveBboxMm","sourceTransformIdentity"})
+        if(!Check(oldInstance.value(field)==newInstance.value(field),QStringLiteral("切换改变实例字段 %1").arg(field),errors)) return 21;
+    if(!Check(workflow.SceneHandle()!=previousHandle && workflow.InstanceCount()==1
+        && after.value("resolvedProfileId").toString()==transferProfile
+        && newInstance.value("resolvedProfileId").toString()==transferProfile
+        && before.value("models")==after.value("models")
+        && before.value("resourceScopes")==after.value("resourceScopes"),QStringLiteral("重绑身份/资源错误"),errors)) return 22;
+    const auto currentHandle=workflow.SceneHandle();
+    auto invalidVolume=buildVolume;invalidVolume.widthmm+=1;
+    if(!Check(!workflow.SetPendingSceneContext(legacyProfile,invalidVolume,&error)
+        && workflow.SceneHandle()==currentHandle && workflow.SceneProfileId()==transferProfile,
+        QStringLiteral("非法画幅变更必须保留当前工艺/场景"),errors)) return 23;
 
     // 4. 缺陷在于此前【没有出路】：ResetScene 之前不存在，
     //    且 RemoveInstances 只删实例、不清场景绑定，删光模型也退不出该状态。

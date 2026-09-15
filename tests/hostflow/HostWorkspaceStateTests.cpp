@@ -1,4 +1,5 @@
 #include "apps/slicer_ui_host_sim/HostWorkspaceState.h"
+#include "HostWorkspaceMatvolTests.h"
 
 #include <QApplication>
 #include <QDir>
@@ -65,6 +66,7 @@ void BuildFixture(workspacefixture* fixture)
 int main(int argc, char* argv[])
 {
     QApplication application(argc, argv);
+    if(!CheckMatvolPersistence()) return 10;
     QTextStream errors(stderr);
     QTemporaryDir temporaryRoot;
     if (!Check(temporaryRoot.isValid(),

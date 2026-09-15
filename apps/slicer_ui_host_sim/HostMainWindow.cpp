@@ -2,6 +2,9 @@
 
 #include "HostTextureWhitePreflightService.h"
 #include "HostVersionInfo.h"
+#include "HostResponsiveForms.h"
+#include "HostWheelPolicy.h"
+#include "HostInspectorPages.h"
 #include "MoveOptimizationPolicy.h"
 #include "SceneInteractionController.h"
 #include "ViewWorkspaceWidget.h"
@@ -23,6 +26,7 @@
 #include <QLabel>
 #include <QPlainTextEdit>
 #include <QSplitter>
+#include <QScrollArea>
 #include <QStandardPaths>
 #include <QStringList>
 #include <QTabWidget>
@@ -115,7 +119,7 @@ void HostMainWindow::BuildInterface()
         QStringLiteral("模型与导入预检"), m_workspaceSplitter);
     importPanel->setObjectName(QStringLiteral("hostModelImportPanel"));
     importPanel->setMinimumWidth(300);
-    importPanel->setMaximumWidth(420);
+    importPanel->setMaximumWidth(720);
     auto* importLayout = new QVBoxLayout(importPanel);
     m_inspectorTabs = new QTabWidget(importPanel);
     m_inspectorTabs->setObjectName(QStringLiteral("hostSceneInspectorTabs"));
@@ -173,6 +177,10 @@ void HostMainWindow::BuildInterface()
     m_ripSettingsPanel->setObjectName(QStringLiteral("hostRipSettingsPanel"));
     m_ripSettingsPanel->SetModuleDirectory(m_ripModuleDirectory);
     m_inspectorTabs->addTab(m_ripSettingsPanel, QStringLiteral("RIP 设置"));
+    ConfigureHostForms(m_inspectorTabs);
+    GroupHostInspectorSections(m_transformLayoutPanel,{QStringLiteral("变换"),QStringLiteral("导入与排版")});
+    GroupHostInspectorSections(m_ripSettingsPanel,{QStringLiteral("参数"),QStringLiteral("路径"),QStringLiteral("手动 RIP")});
+    ConfigureHostInspectorPages(m_inspectorTabs);
     importLayout->addWidget(m_inspectorTabs, 1);
 
     m_workspaceSplitter->addWidget(m_workspace);
@@ -238,6 +246,9 @@ void HostMainWindow::BuildInterface()
     layout->addWidget(m_pathLabel);
     layout->addWidget(m_workspaceTabs, 1);
     setCentralWidget(centralWidget);
+    new HostWheelPolicy(this);
+    connect(m_ripJobController.get(), &HostRipJobController::SigProgress,
+        m_ripSettingsPanel, &HostRipSettingsPanel::ShowProgress);
 
     connect(m_defaultViewCombo,
             qOverload<int>(&QComboBox::currentIndexChanged),
@@ -480,6 +491,9 @@ void HostMainWindow::OnModelSelectionChanged(
 {
     m_workspace->SetSelectedInstances(instanceIds);
     m_transformLayoutPanel->SetSelectedInstances(instanceIds);
+    if (m_topViewPolicy) m_topViewPolicy->SetSelectedInstances(instanceIds);
+    RenderTransientTopView();
+    RenderThreeDView();
 }
 
 void HostMainWindow::SaveViewSettings()

@@ -1,14 +1,31 @@
 #include "HostMainWindow.h"
+#include "SceneInteractionController.h"
+#include "MoveOptimizationPolicy.h"
 
 #include <QLabel>
 
 bool HostMainWindow::ApplyPendingSceneContext(QString* error)
 {
     const hostslicesettings settings = m_sliceSettingsPanel->Settings();
-    return m_importWorkflow->SetPendingSceneContext(
+    if (m_selectedProfileId!=m_importWorkflow->SceneProfileId()
+        && (m_sliceJobController->IsActive() || m_ripJobController->IsActive() || m_resultLoadActive))
+    {
+        if(error) *error=QStringLiteral("作业运行期间不能切换工艺。");
+        return false;
+    }
+    const auto previousHandle=m_importWorkflow->SceneHandle();
+    if (!m_importWorkflow->SetPendingSceneContext(
         m_selectedProfileId,
         settings.buildvolume,
-        error);
+        error)) return false;
+    if(previousHandle!=m_importWorkflow->SceneHandle())
+    {
+        m_interactionController.reset();
+        m_movePolicy.reset();
+        RefreshSliceSettings();
+        RefreshSceneViews();
+    }
+    return true;
 }
 
 void HostMainWindow::RefreshSliceSettings()

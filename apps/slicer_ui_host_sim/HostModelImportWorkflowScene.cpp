@@ -1,4 +1,5 @@
 #include "HostModelImportWorkflow.h"
+#include "HostSceneProfileRebind.h"
 
 #include <QJsonArray>
 #include <QJsonObject>
@@ -121,15 +122,38 @@ bool HostModelImportWorkflow::SetPendingSceneContext(
         return false;
     }
     if (m_sceneHandle != 0U
-        && (normalizedProfile != m_sceneProfileId
-            || !BuildVolumesEqual(buildVolume, m_sceneBuildVolume)))
+        && !BuildVolumesEqual(buildVolume, m_sceneBuildVolume))
     {
         if (error != nullptr)
         {
             *error = QStringLiteral(
-                "当前场景已绑定 Profile/buildVolume；请新建场景后修改。");
+                "当前场景已绑定设备 buildVolume；请新建场景后修改画幅。");
         }
         return false;
+    }
+    if (m_sceneHandle != 0U && normalizedProfile != m_sceneProfileId)
+    {
+        if (m_instanceModels.isEmpty())
+        {
+            m_sceneHandle=0U; m_sceneRevision=0U; m_sceneProfileId.clear();
+        }
+        else
+        {
+            QJsonObject snapshot,request,response;
+            if (!ExecuteObject(QJsonObject{
+                    {QStringLiteral("capability"),QStringLiteral("scene.get_snapshot")},
+                    {QStringLiteral("sceneHandle"),static_cast<qint64>(m_sceneHandle)}},&snapshot,error)
+                || !BuildHostProfileRebindRequest(snapshot,m_sceneRevision,normalizedProfile,&request,error)
+                || !ExecuteObject(request,&response,error)) return false;
+            const auto handle=response.value(QStringLiteral("sceneHandle")).toVariant().toULongLong();
+            const auto revision=response.value(QStringLiteral("newSceneRevision")).toVariant().toULongLong();
+            if (handle==0U || revision!=m_sceneRevision+1U)
+            {
+                if(error) *error=QStringLiteral("工艺切换未返回有效场景身份，保留原场景。");
+                return false;
+            }
+            m_sceneHandle=handle; m_sceneRevision=revision; m_sceneProfileId=normalizedProfile;
+        }
     }
     m_pendingProfileId = normalizedProfile;
     m_pendingBuildVolume = buildVolume;
