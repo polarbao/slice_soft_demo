@@ -2,6 +2,7 @@
 
 > 2026-09-14，LOCAL COMPLETE / PRINTAPP ADAPTER COMPLETE / BUSINESS ENTRY DEFERRED；对应分支 `codex/feature-logging-dump`，起点 `e2546797`。本地收口保留两项既有回归失败与下文验证限制，不表示全仓或外部生产 Gate 通过。
 > 唯一任务状态源：[专项任务清单](../../codex_task/current/TASKS_LOGDUMP_日志与崩溃转储可复用模块专项任务清单.md)。
+> 2026-09-15 最新提交、产品基线整合与扩大回归见 [F 收口报告](REPORT_LOGDUMP_F_提交收口与产品合入判断.md)；本文件下方“未提交/未合入”等为前期记录。
 
 ## 1. 已实现与影响范围
 

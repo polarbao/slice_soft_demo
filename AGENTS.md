@@ -48,7 +48,9 @@ LOGDUMP   LOCAL COMPLETE：2026-09-14 LD-00..03 / A00..A03（含A01D）/ B01..02
           E01A 已完成真实 PrintAppLogging+DLL 验收1/1、父工程可选适配构建、切片兼容回归2/2。
           2026-09-15 E02-01/02 完成：23文件源码SDK独立构建、实际打印消费CTest2/2 PASS，成功3 TIFF/Reader/18条日志。
           源码交付含可选转储；F01已补齐旧模块包helper和C头，实际验包通过；超长输出路径仍为既有限制。
-          E01B 缺正式几何切片loader；PrintApp GUI/干净机器/其他ACP/物理打印未验。F任务正分组提交和产品基线验证。
+          E01B 缺正式几何切片loader；PrintApp GUI/干净机器/其他ACP/物理打印未验。
+          F01..03完成：分组提交，product基线已整合进专项；Release全目标构建通过，67项62通过/5条既有及依赖失败。
+          限定诊断功能合入CONDITIONAL GO；完整Stage14全绿仍NO-GO。product未移动、未推送；见F收口报告。
           2026-09-15 E01B-P 准备完成：MOD-22/P23入口仍未实现；原树P0FIX持续演进，集成前需重新固定SHA。
           准备 docs/slice/DOC/DOC_PREP_LOGDUMP_E01B_业务挂接与新基线交付准备.md
           交付 docs/slice/REPORT/REPORT_LOGDUMP_E02_源码SDK交付与成功切片验收.md
