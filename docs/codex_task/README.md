@@ -11,7 +11,7 @@
 
 ## LOGDUMP 开发入口（2026-09-15）
 
-最新：[F 提交收口与产品合入判断](../slice/REPORT/REPORT_LOGDUMP_F_提交收口与产品合入判断.md)。已按任务提交，并在专项分支整合product；Release全目标构建及新模块包验证通过。最终67项62通过/5失败，既有问题及外部未验收边界保留；product未移动、未推送。以下为各轮历史证据。
+最新：[G 产品合入与复用交付收口](../slice/REPORT/REPORT_LOGDUMP_G_产品合入与复用交付收口.md)。切片侧专项已完成并实际快进合入本地product；清洁源码0.2.471-dev全目标Release构建及完整包启动落盘通过，新SDK独立构建和真实打印消费2/2通过。67项62通过/5失败，既有红灯及E01B正式打印入口依赖保留；原P0FIX树不动、未推送。以下为各轮历史证据。
 
 [日志与崩溃转储可复用模块专项](current/TASKS_LOGDUMP_日志与崩溃转储可复用模块专项任务清单.md)：本地实现/验证及 LD-E01A 真实 PrintAppLogging 适配完成；E01B 尚无正式几何切片 loader。E01A 真实后端/DLL 验收1/1、父工程可选适配构建及切片兼容回归2/2通过，见 [E01A报告](../slice/REPORT/REPORT_LOGDUMP_E01A_PrintApp真实日志适配验收.md)。此前 Debug16/16、Release17/18（既有S1路径失败），独立运行包和真实模型A/B已验证；另保留既有ViewData期望失败，见 [本地报告](../slice/REPORT/REPORT_LOGDUMP_本地实现与验证状态.md)。独立切片分支 `codex/feature-logging-dump` 基于 `e2546797`，打印适配分支 `codex/slicer-logging-adapter` 基于 `22bfcd3d235d`，不包含两个原工作树未提交代码。设计见 [实施准备](../slice/DOC/DOC_PREP_LOGDUMP_日志与崩溃转储模块设计及实施准备.md) 和 [A00定案](../slice/DOC/DOC_DECISION_LOGDUMP_A00_开发准入与日志扩展定案.md)，操作见 [日志与转储使用说明](../user_guides/SLICESOFT_日志与转储使用说明.md)。
 

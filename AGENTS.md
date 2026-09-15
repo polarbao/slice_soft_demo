@@ -41,7 +41,14 @@
 
 各专项状态（均不占阶段编号，状态以各任务卡内的状态列为准）
 
-LOGDUMP   LOCAL COMPLETE：2026-09-14 LD-00..03 / A00..A03（含A01D）/ B01..02 / C01..02 本地完成。
+LOGDUMP   SLICER DELIVERY COMPLETE / MERGED TO LOCAL PRODUCT（2026-09-15，G01..03完成）。
+          product/packaged-slicer已从d28b6451快进至7354a616，后续仅提交状态文档；未推送。
+          清洁源码0.2.471-dev全目标Release重建、完整包启动落盘通过；67项62通过/5条既有及依赖失败。
+          新SDK23文件独立构建和真实打印后端消费2/2通过；E01B待打印P23入口，不等于生产全验收。
+          当前产品工作树slice_soft_demo-logdump；原slice_soft_demo仍为P0FIX，用户修改及旧运行包未覆盖。
+          最新 docs/slice/REPORT/REPORT_LOGDUMP_G_产品合入与复用交付收口.md
+          以下为G之前各轮历史证据：
+          2026-09-14 LD-00..03 / A00..A03（含A01D）/ B01..02 / C01..02 本地完成。
           独立分支 codex/feature-logging-dump 基于 e2546797，不包含原工作树未提交修改。
           DLL 回调 + 软件日志 + Worker IPC + EXE helper 已实现；Debug16/16，Release17/18（既有S1路径失败）。
           真实模型184层/fixture20层off-info字节一致；独立包中文路径/仅系统PATH验证通过，另复现既有ViewData期望失败。
@@ -50,7 +57,7 @@ LOGDUMP   LOCAL COMPLETE：2026-09-14 LD-00..03 / A00..A03（含A01D）/ B01..02
           源码交付含可选转储；F01已补齐旧模块包helper和C头，实际验包通过；超长输出路径仍为既有限制。
           E01B 缺正式几何切片loader；PrintApp GUI/干净机器/其他ACP/物理打印未验。
           F01..03完成：分组提交，product基线已整合进专项；Release全目标构建通过，67项62通过/5条既有及依赖失败。
-          限定诊断功能合入CONDITIONAL GO；完整Stage14全绿仍NO-GO。product未移动、未推送；见F收口报告。
+          F当时限定诊断功能合入CONDITIONAL GO；完整Stage14全绿仍NO-GO。当时product未移动；G已按新授权合入。
           2026-09-15 E01B-P 准备完成：MOD-22/P23入口仍未实现；原树P0FIX持续演进，集成前需重新固定SHA。
           准备 docs/slice/DOC/DOC_PREP_LOGDUMP_E01B_业务挂接与新基线交付准备.md
           交付 docs/slice/REPORT/REPORT_LOGDUMP_E02_源码SDK交付与成功切片验收.md
