@@ -176,6 +176,12 @@ function GetPeDependencies
             Sort-Object -Unique)
 }
 
+function GetVersionLine([string]$Version)
+{
+    if ($Version -notmatch '^(\d+)\.(\d+)\.\d+(-[0-9A-Za-z.-]+)?$') { return $null }
+    return $matches[1] + "." + $matches[2] + $matches[3]
+}
+
 function IsVisualCppRuntime
 {
     param([string]$Name)
@@ -236,7 +242,7 @@ if (-not $SkipBuild)
         -Arguments @(
             "--build", $resolvedBuildDir,
             "--config", $Config,
-            "--target", "slicer_module", "slicer_worker", "slicer_host_sim",
+            "--target", "slicer_module", "slicer_worker", "slicer_host_sim", "slicer_crash_reporter",
             "--parallel")
 }
 
@@ -244,6 +250,9 @@ $binaryRoot = Join-Path $resolvedBuildDir $Config
 $sourceArtifacts = [ordered]@{
     "slicer_module.dll" = Join-Path $binaryRoot "slicer_module.dll"
     "slicer_worker.exe" = Join-Path $binaryRoot "slicer_worker.exe"
+    "slicer_crash_reporter.exe" = Join-Path $binaryRoot "slicer_crash_reporter.exe"
+    "slicer_logging.h" = Join-Path $repoRoot "contracts/slicer_logging.h"
+    "print_module_spi.h" = Join-Path $repoRoot "contracts/print_module_spi.h"
     "module.json" = Join-Path $binaryRoot "module.json"
     "version-manifest.json" = Join-Path $binaryRoot "version-manifest.json"
     "slicesoft_build_manifest.json" =
@@ -288,16 +297,21 @@ if (-not [string]::IsNullOrWhiteSpace(
     $sourceSlicerVersion +=
         "-" + [string]$sourceVersionManifest.components.slicer.preRelease
 }
+$buildAppVersion = [string]$buildVersionManifest.components.application.version
+$buildSlicerVersion = [string]$buildVersionManifest.components.slicer.version
+$sourceLine = GetVersionLine $sourceApplicationVersion
+# Match the runtime packager: PATCH is derived from Git, not the source manifest.
 $versionManifestValid =
     $sourceVersionManifest.schemaVersion -eq 1 -and
     $sourceVersionManifest.releasePolicy -eq "lockstep" -and
     $buildVersionManifest.schema -eq "slicesoft.build.1" -and
     $buildVersionManifest.build.config -eq $Config -and
-    $buildVersionManifest.components.application.version -eq $sourceApplicationVersion -and
+    $null -ne $sourceLine -and
+    (GetVersionLine $buildAppVersion) -eq $sourceLine -and
     $buildVersionManifest.components.slicer.id -eq "slicer" -and
-    $buildVersionManifest.components.slicer.version -eq $sourceSlicerVersion -and
+    $buildAppVersion -eq $buildSlicerVersion -and
     $sourceApplicationVersion -eq $sourceSlicerVersion -and
-    $sourceSlicerVersion -eq $moduleManifest.version
+    $buildSlicerVersion -eq $moduleManifest.version
 if (-not $versionManifestValid)
 {
     throw "SliceSoft source/build/module version manifests are inconsistent."
@@ -331,8 +345,8 @@ $expectedSlicerFullVersion =
 foreach ($binaryName in @("slicer_module.dll", "slicer_worker.exe"))
 {
     $versionInfo = (Get-Item -LiteralPath $sourceArtifacts[$binaryName]).VersionInfo
-    if ($versionInfo.FileVersion -ne $sourceSlicerVersion -or
-        $versionInfo.ProductVersion -ne $sourceSlicerVersion -or
+    if ($versionInfo.FileVersion -ne $buildSlicerVersion -or
+        $versionInfo.ProductVersion -ne $buildSlicerVersion -or
         $versionInfo.PrivateBuild -ne $expectedSlicerFullVersion)
     {
         throw "Built slicer binary version identity drifted: $binaryName"
@@ -376,6 +390,8 @@ foreach ($path in $DependencySearchPath)
 $pending = [System.Collections.Queue]::new()
 $pending.Enqueue([pscustomobject]@{ path = $sourceArtifacts["slicer_module.dll"]; relative = "slicer_module.dll" })
 $pending.Enqueue([pscustomobject]@{ path = $sourceArtifacts["slicer_worker.exe"]; relative = "slicer_worker.exe" })
+# The Worker launches this helper dynamically; PE imports cannot discover it.
+$pending.Enqueue([pscustomobject]@{ path = $sourceArtifacts["slicer_crash_reporter.exe"]; relative = "slicer_crash_reporter.exe" })
 $processed = [System.Collections.Generic.HashSet[string]]::new([System.StringComparer]::OrdinalIgnoreCase)
 $copiedDependencies = [System.Collections.Generic.HashSet[string]]::new([System.StringComparer]::OrdinalIgnoreCase)
 $imports = [System.Collections.Generic.List[object]]::new()
