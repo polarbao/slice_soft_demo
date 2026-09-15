@@ -28,7 +28,8 @@
     "contracts": [
       "slicer-module.spi.v1",
       "file_contract_v1",
-      "p0.rgbwsv.2"
+      "p0.rgbwsv.2",
+      "p0.rgbwsvt.1"
     ]
   }
 }

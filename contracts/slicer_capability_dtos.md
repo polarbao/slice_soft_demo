@@ -1,6 +1,6 @@
 # SliceSoft 能力 DTO 合同
 
-> 合同版本：1.14
+> 合同版本：1.15
 > SPI 版本：`PM_SPI_VERSION=1`
 > 机器可读真源：`contracts/slicer_capability_dtos.json`
 > 受控修订：`DOC_DECISION_14A_04_R1_双视图纹理ViewData合同修订.md`、
@@ -18,7 +18,7 @@
 
 ## 1. 范围
 
-本合同冻结打印宿主通过 11 个 `pm_*` C ABI 导出调用的 15 项能力。ABI 只承载
+本合同冻结打印宿主通过 11 个 `pm_*` C ABI 导出调用的 16 项能力。ABI 只承载
 UTF-8 JSON、句柄和调用方缓冲，不跨边界传递 Qt、STL 或异常。能力结果统一包含
 `ok` 与 `code`，错误码以 `contracts/slicer_error_codes.json` 为准。
 
@@ -306,7 +306,7 @@ v1.7 的 `applyGridLayout` 由 H-A-04 实现，v1.8 由 R-B-00 增加顶层可�
 v1.9 由 R-B-03 冻结安全简化与历史抽稀的降级理由，v1.10 由 R-B-04 增加向后兼容的
 半精度网格属性请求与响应格式，v1.11 增加不完整 OBJ 的显式外观状态与单材料准入字段；
 v1.12 以加法方式增加 X/Y 实例旋转和显式触底操作；v1.13 增加 Z 平移与抗微小孤立标记的
-主体触底判定；v1.14 增加可选导入自动定向开关，并将该选择带入场景和 Worker 模型重载。
+主体触底判定；v1.14 增加可选导入自动定向开关，并将该选择带入场景和 Worker 模型重载；v1.15 补入 `slice.rgbwsvt` 能力与 `p0.rgbwsvt.1` 包契约——该能力自 file_contract_v1 minor 1 起即已在生产路径运行，本版是声明面补记，不是新增功能。
 既有 Z 旋转与全部生产协议保持不变。
 H-A-03 已验证权威 scene 快照可由纯 C/Qt 宿主不透明透传到生产切片。独立 `scene.layout`
 能力仍被禁止。

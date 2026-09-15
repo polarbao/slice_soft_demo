@@ -26,6 +26,30 @@ public:
     }
 
 private:
+    // 嵌套深度上限。全仓 JSON 实测最深 9 层（contracts/slicesoft_build_manifest.schema.json），
+    // 取 64 留 7 倍余量。超限必须抛异常而不是继续递归：栈溢出在 Windows 上是
+    // EXCEPTION_STACK_OVERFLOW，catch(...) 接不住，会直接带走装载本模块的宿主进程。
+    static constexpr int kMaxParseDepth{64};
+
+    class DepthGuard final {
+    public:
+        explicit DepthGuard(Parser& parser) : parser_{parser} {
+            if (parser_.depth_ >= kMaxParseDepth) {
+                throw std::runtime_error("JSON nesting depth exceeds the supported limit");
+            }
+            ++parser_.depth_;
+        }
+        ~DepthGuard() { --parser_.depth_; }
+
+        DepthGuard(const DepthGuard&) = delete;
+        DepthGuard& operator=(const DepthGuard&) = delete;
+        DepthGuard(DepthGuard&&) = delete;
+        DepthGuard& operator=(DepthGuard&&) = delete;
+
+    private:
+        Parser& parser_;
+    };
+
     Json parse_value() {
         skip_ws();
         if (pos_ >= text_.size()) {
@@ -57,6 +81,7 @@ private:
     }
 
     Json parse_object() {
+        const DepthGuard guard{*this};
         expect('{');
         Json::Object object;
         skip_ws();
@@ -80,6 +105,7 @@ private:
     }
 
     Json parse_array() {
+        const DepthGuard guard{*this};
         expect('[');
         Json::Array array;
         skip_ws();
@@ -198,6 +224,7 @@ private:
 
     std::string text_;
     std::size_t pos_{0};
+    int depth_{0};
 };
 
 std::string escape_string(const std::string& value) {

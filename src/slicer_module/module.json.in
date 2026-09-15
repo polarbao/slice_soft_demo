@@ -18,6 +18,7 @@
     "geometry.collision",
     "geometry.repair",
     "slice.rgbwsv",
+    "slice.rgbwsvt",
     "package.verify",
     "package.get_summary",
     "package.get_layer_descriptor",
@@ -28,6 +29,10 @@
   "produces": [
     {
       "contract": "p0.rgbwsv.2",
+      "kind": "package"
+    },
+    {
+      "contract": "p0.rgbwsvt.1",
       "kind": "package"
     }
   ],

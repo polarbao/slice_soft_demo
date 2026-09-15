@@ -19,6 +19,40 @@ namespace
 constexpr std::string_view ProgressPrefix{"SLICE_PROGRESS"};
 constexpr std::string_view TimingPrefix{"SLICE_TIMING"};
 
+// 诊断容器上界。一次 10 µm 作业可产生上千条逐层进度，整条作业期驻留在
+// 宿主地址空间里且只增不减；这里给出明确上界。
+constexpr std::size_t ProgressHeadKept{8};
+constexpr std::size_t ProgressTailKept{256};
+constexpr std::size_t TimingHeadKept{4};
+constexpr std::size_t TimingTailKept{64};
+constexpr std::size_t LogHeadKept{32};
+constexpr std::size_t LogTailKept{2048};
+
+/**
+ * @brief 带上界地追加一条诊断记录，超限时丢弃【中段】而非末段。
+ *
+ * 末段必须保留：`file_contract_v1` §4 规定终态成功前必须发出 percent=100，
+ * 且仓库中有三处断言 `progressEvents.back().percent == 100`。任何"丢最新"
+ * 的实现都会打断这条不变量，因此这里只从 head 之后删除最老的一条。
+ */
+template <typename T>
+void AppendBounded(
+    std::vector<T>& target,
+    std::uint64_t& dropped,
+    T value,
+    const std::size_t headKept,
+    const std::size_t tailKept)
+{
+    if (target.size() < headKept + tailKept)
+    {
+        target.push_back(std::move(value));
+        return;
+    }
+    target.erase(target.begin() + static_cast<std::ptrdiff_t>(headKept));
+    target.push_back(std::move(value));
+    ++dropped;
+}
+
 std::vector<std::string_view> SplitFields(const std::string_view body)
 {
     std::vector<std::string_view> fields;
@@ -210,7 +244,12 @@ void WorkerProtocolParser::ProcessChunk(
         }
         else
         {
-            m_result->stderrLogLines.push_back(std::move(line));
+            AppendBounded(
+                m_result->stderrLogLines,
+                m_result->droppedStderrLogLines,
+                std::move(line),
+                LogHeadKept,
+                LogTailKept);
         }
     }
 }
@@ -277,7 +316,12 @@ void WorkerProtocolParser::ProcessStdoutLine(const std::string& line)
         m_lastPhase = event.phase;
         m_lastCurrent = event.current;
         m_lastTotal = event.total;
-        m_result->progressEvents.push_back(event);
+        AppendBounded(
+        m_result->progressEvents,
+        m_result->droppedProgressEvents,
+        event,
+        ProgressHeadKept,
+        ProgressTailKept);
         if (m_progressSink)
         {
             try
@@ -300,10 +344,20 @@ void WorkerProtocolParser::ProcessStdoutLine(const std::string& line)
             m_contractError = true;
             return;
         }
-        m_result->timingEvents.push_back(event);
+        AppendBounded(
+        m_result->timingEvents,
+        m_result->droppedTimingEvents,
+        event,
+        TimingHeadKept,
+        TimingTailKept);
         return;
     }
-    m_result->stdoutLogLines.push_back(line);
+    AppendBounded(
+        m_result->stdoutLogLines,
+        m_result->droppedStdoutLogLines,
+        line,
+        LogHeadKept,
+        LogTailKept);
 }
 
 void WorkerProtocolParser::FinishPipe(const bool parseProtocol, PipeBuffer* buffer)
@@ -318,7 +372,12 @@ void WorkerProtocolParser::FinishPipe(const bool parseProtocol, PipeBuffer* buff
     }
     else
     {
-        m_result->stderrLogLines.push_back(buffer->pending);
+        AppendBounded(
+            m_result->stderrLogLines,
+            m_result->droppedStderrLogLines,
+            buffer->pending,
+            LogHeadKept,
+            LogTailKept);
     }
     buffer->pending.clear();
 }

@@ -1,4 +1,5 @@
 {
+  "slicingMode": "closed_mesh_scanline",
   "input": {
     "modelPath": "samples/models/sample.stl",
     "format": "auto"

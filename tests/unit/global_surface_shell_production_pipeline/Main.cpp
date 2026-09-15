@@ -73,6 +73,7 @@ std::filesystem::path WriteConfig(
     const std::filesystem::path packageDir = directory / "package";
     const std::filesystem::path configPath = directory / "config.json";
     const slicer_core::Json config = slicer_core::Json::object({
+        {"slicingMode", "closed_mesh_scanline"},
         {"slicePipeline",
          slicer_core::Json::object({{"mode", "global_surface_shell"}})},
         {"input",

@@ -37,6 +37,7 @@ std::filesystem::path WriteConfig(
 
     output
         << "{\n"
+        << "  \"slicingMode\": \"closed_mesh_scanline\",\n"
         << "  \"input\": {\n"
         << "    \"modelPath\": \"samples/models/sample.stl\",\n"
         << "    \"format\": \"auto\"\n"

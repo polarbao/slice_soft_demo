@@ -1,4 +1,5 @@
 {
+  "slicingMode": "closed_mesh_scanline",
   "input": {
     "modelPath": "../../models/3mf/texture2d_checker_cube.3mf",
     "format": "auto"

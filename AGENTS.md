@@ -41,6 +41,23 @@
 
 各专项状态（均不占阶段编号，状态以各任务卡内的状态列为准）
 
+P0FIX     ▶【进行中】分支 codex/feature-p0fix-contract-robustness（自 d28b6451 切出）
+          来源 analysis/ 专项 36 条发现（F-01..F-36）中的 P0 层，拆成九个原子任务 P0-00..P0-08
+          ✅ P0-00 基线固化完成（2026-09-14）：build-slicesoft/main Debug 构建退出码 0、205 个目标；
+             全量回归 246 项 / 7 既有失败 / 1335.95s，七条失败逐条记录原因作为对照基线
+          ⚠ 【本文两处旧认知已被基线更正】
+             CTest 实际注册数为 246，本文他处所记 234 已过期
+             分层门禁 slicer_stage14b_layering_feasibility_test 与宿主行数门禁
+             slicer_stage14e02_qt_host_boundary_test 均已注册进 CTest 且【当前为红】，
+             不是「只有 --self-test、全是静默债」
+          ⚠ 基线红灯 #241 slicer_stage14e04d_dual_view_contract_test：
+             「missing texture silently became a gray model」缺贴图被静默降级成灰模型，
+             性质上违反「任何失败不得静默回退」，【尚未立卡】，待用户裁定是否单独立项
+          ⏸ P0-01..P0-08 待开工。P0-07 已裁定取「slicingMode 改为必填」（不改默认值语义）
+          卡 docs/codex_task/current/TASKS_P0FIX_分析专项P0契约一致性与输入加固.md
+          分析 analysis/README.md（索引与结论摘要）｜analysis/04_问题清单与改动空间.md（F-01..F-36）
+             ｜analysis/06_改进路线图与验证方案.md（R-01..R-13 分级与验证 Gate）
+
 FRAME     COMPLETE：2026-09-07 nail-Default 非打印定位素材专项 FRAME-00..04 完成；gubao05 多图层透明核心工艺 600 DPI/0.033 mm、148 层真实包与空区/RIP strict PASS，Release 部署/自检通过；GUI 人工交互和物理打印未验证；卡 docs/codex_task/current/TASKS_FRAME_非打印定位素材与输出画幅专项任务清单.md
 
 RENDER    ✅ R-A / R-B / R-F 收口（含 meshoptimizer 1.1、平滑法线与真实资产预算重测）

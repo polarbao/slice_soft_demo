@@ -59,12 +59,19 @@ std::filesystem::path WriteConfig(const std::string& name, const std::string& bo
 
 std::string MinimalConfigBody(const std::string& experimentalBlock)
 {
+    // P0FIX/P0-07：slicingMode 已改为必填。但调用方可能已在 experimentalBlock 里
+    // 声明（stage 15 与 12E 的若干用例需要 relief_heightfield），此时不得再补一份：
+    // 重复键不会报错，实际取值由解析器的覆盖规则静默决定，会把那些用例悄悄改成
+    // 在测另一条路径。故此处按「调用方未声明才补」处理。
+    const bool declaresSlicingMode =
+        experimentalBlock.find("\"slicingMode\"") != std::string::npos;
     return std::string{
         "{\n"
         "  \"input\": {\n"
         "    \"modelPath\": \"samples/models/sample.stl\",\n"
         "    \"format\": \"auto\"\n"
         "  }\n"}
+        + (declaresSlicingMode ? "" : ",\n  \"slicingMode\": \"closed_mesh_scanline\"\n")
         + experimentalBlock
         + "\n}\n";
 }
@@ -482,6 +489,7 @@ bool Stage12EBackendUnavailableBlocksBeforePackageWrite()
     const std::filesystem::path configPath = WriteConfig(
         "stage_12e_backend_unavailable.json",
         "{\n"
+        "  \"slicingMode\": \"closed_mesh_scanline\",\n"
         "  \"input\": {\"modelPath\": \"samples/models/sample.stl\", \"format\": \"auto\"},\n"
         "  \"output\": {\"packageDir\": \"output/ExperimentalConfigUnit/stage_12e_blocked_package\"},\n"
         "  \"texture\": {\"enabled\": true, \"applyMode\": \"global_surface_shell\"},\n"
@@ -602,6 +610,9 @@ bool MaterialClosureSlicerConfig1Parses()
         "material_closure_schema_v1.json",
         "{\n"
         "  \"schema\": \"slicer.config.1\",\n"
+        // slicer.config.1 的 slicingMode 住在 pipeline 下。NormalizeSlicerConfig1
+        // 只搬运白名单键，写在顶层会被静默丢弃，配置照样被判「未声明」。
+        "  \"pipeline\": {\"slicingMode\": \"closed_mesh_scanline\"},\n"
         "  \"input\": {\"modelPath\": \"samples/models/sample.stl\", \"format\": \"auto\"},\n"
         "  \"materialClosure\": {\"enabled\": false, \"connectivity\": 4, \"failOnGap\": false}\n"
         "}\n");

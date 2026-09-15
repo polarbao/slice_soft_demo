@@ -1,5 +1,5 @@
 {
-  "contractVersion": "1.14",
+  "contractVersion": "1.15",
   "spiVersion": 1,
   "encoding": "UTF-8",
   "resultEnvelope": {
@@ -440,6 +440,48 @@
       "errors": ["PM-SLICER-PROFILE-0030", "PM-SLICER-PROFILE-0031", "PM-SLICER-RESOURCE-0040", "PM-SLICER-OUTPUT-0050", "PM-SLICER-CONTRACT-0060", "PM-SLICER-CANCELLED-0070", "PM-SLICER-INTERNAL-0099"]
     },
     {
+      "id": "slice.rgbwsvt",
+      "carrier": "worker",
+      "synchronous": false,
+      "requestFields": [
+        { "path": "capability", "type": "string", "const": "slice.rgbwsvt", "required": true },
+        { "path": "jobId", "type": "string", "required": true },
+        { "path": "correlationId", "type": "string", "required": true },
+        { "path": "sceneHash", "type": "string", "required": true },
+        { "path": "scene", "type": "object", "required": true },
+        { "path": "output.contract", "type": "string", "const": "p0.rgbwsvt.1", "required": true },
+        { "path": "output.packageDir", "type": "string", "required": true },
+        { "path": "profile", "type": "object", "required": true },
+        { "path": "profile.profileVersion", "type": "string", "required": true },
+        { "path": "profile.profileHash", "type": "string", "required": true },
+        { "path": "options.backend", "type": "enum:worker", "required": false, "default": "worker", "caseSensitive": true, "rejectedValues": ["inprocess", "auto"] },
+        { "path": "options.threads", "type": "integer", "required": false }
+      ],
+      "responseFields": [
+        { "path": "output.packageDir", "type": "string", "required": true },
+        { "path": "output.manifestPath", "type": "string", "required": true },
+        { "path": "output.layerCount", "type": "integer", "required": true },
+        { "path": "output.grid.widthPx", "type": "integer", "required": true },
+        { "path": "output.grid.heightPx", "type": "integer", "required": true },
+        { "path": "output.grid.dpiX", "type": "number", "required": true },
+        { "path": "output.grid.dpiY", "type": "number", "required": true },
+        { "path": "perInstance", "type": "array", "required": true },
+        { "path": "perInstance[].instanceId", "type": "string", "required": true },
+        { "path": "perInstance[].modelId", "type": "string", "required": true },
+        { "path": "perInstance[].layerRange", "type": "integer[2]", "required": true },
+        { "path": "perInstance[].printPixels", "type": "channel_counts", "required": true },
+        { "path": "perInstance[].emptyPixels", "type": "channel_counts", "required": true },
+        { "path": "perInstance[].bboxMm", "type": "object", "required": true },
+        { "path": "perInstance[].transformApplied", "type": "object", "required": true },
+        { "path": "reports", "type": "object", "required": true },
+        { "path": "profileEcho.profileVersion", "type": "string", "required": true },
+        { "path": "profileEcho.profileHash", "type": "string", "required": true },
+        { "path": "engineVersion", "type": "string", "required": true },
+        { "path": "elapsedMs", "type": "number", "required": true }
+      ],
+      "errors": ["PM-SLICER-PROFILE-0030", "PM-SLICER-PROFILE-0031", "PM-SLICER-RESOURCE-0040", "PM-SLICER-OUTPUT-0050", "PM-SLICER-CONTRACT-0060", "PM-SLICER-CANCELLED-0070", "PM-SLICER-INTERNAL-0099"]
+    },
+    {
       "id": "package.verify",
       "carrier": "in_process",
       "synchronous": true,
@@ -546,7 +588,7 @@
     "polarity": "black_is_print",
     "printValue": 0,
     "emptyValue": 255,
-    "workerOnly": ["slice.rgbwsv", "geometry.repair"],
+    "workerOnly": ["slice.rgbwsv", "slice.rgbwsvt", "geometry.repair"],
     "sliceBackend": {
       "field": "options.backend",
       "default": "worker",

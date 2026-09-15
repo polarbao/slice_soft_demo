@@ -58,6 +58,7 @@
         "geometry.collision",
         "geometry.repair",
         "slice.rgbwsv",
+        "slice.rgbwsvt",
         "package.verify",
         "package.get_summary",
         "package.get_layer_descriptor",
@@ -70,6 +71,10 @@
       "const": [
         {
           "contract": "p0.rgbwsv.2",
+          "kind": "package"
+        },
+        {
+          "contract": "p0.rgbwsvt.1",
           "kind": "package"
         }
       ]
@@ -111,7 +116,8 @@
           "const": [
             "geometry.preflight",
             "geometry.repair",
-            "slice.rgbwsv"
+            "slice.rgbwsv",
+            "slice.rgbwsvt"
           ],
           "uniqueItems": true
         }

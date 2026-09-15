@@ -20,6 +20,7 @@
     { "code": "PM-SLICER-CANCELLED-0070", "category": "cancelled", "message": "作业已取消且临时产物已清理" },
     { "code": "PM-SLICER-VIEWDATA-STALE", "category": "viewdata", "message": "场景版本不匹配或视图数据已失效" },
     { "code": "PM-SLICER-VIEWDATA-BUDGET", "category": "viewdata", "message": "视图数据预算不足" },
+    { "code": "PM-SLICER-VIEWDATA-SIMPLIFICATION", "category": "viewdata", "message": "视图数据网格简化失败" },
     { "code": "PM-SLICER-INTERNAL-0099", "category": "internal", "message": "内部错误" }
   ]
 }

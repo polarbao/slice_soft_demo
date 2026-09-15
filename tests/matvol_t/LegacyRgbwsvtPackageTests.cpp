@@ -52,6 +52,7 @@ slicer_core::Json MakeConfig(
 {
     const bool transferEnabled = transferColour.has_value();
     slicer_core::Json::Object root = slicer_core::Json::object({
+        {"slicingMode", "closed_mesh_scanline"},
         {"input", slicer_core::Json::object({
             {"format", "obj"},
             {"modelPath", (SourceRoot() / "model/obj/reality/finger_suoguo/03.obj").generic_string()},

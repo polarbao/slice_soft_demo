@@ -1563,6 +1563,23 @@ if(TARGET TIFF::TIFF)
     add_test(NAME tiff_row_layout_unit_tests COMMAND tiff_row_layout_unit_tests)
 endif()
 
+add_executable(json_parse_depth_unit_tests
+    tests/unit/json_parse_depth/Main.cpp
+)
+
+target_link_libraries(json_parse_depth_unit_tests PRIVATE slicer_base)
+
+add_executable(worker_protocol_bounds_unit_tests
+    tests/unit/worker_protocol_bounds/Main.cpp
+    src/slicer_module/WorkerProtocol.cpp
+    src/slicer_module/WorkerProtocol.h
+)
+target_include_directories(worker_protocol_bounds_unit_tests PRIVATE
+    ${CMAKE_CURRENT_SOURCE_DIR}
+    ${CMAKE_CURRENT_SOURCE_DIR}/src
+)
+target_link_libraries(worker_protocol_bounds_unit_tests PRIVATE slicer_base)
+
 add_executable(tiff_backend_build_info_unit_tests
     tests/unit/tiff_backend_build_info/Main.cpp
 )
@@ -2467,6 +2484,11 @@ if(Python3_Interpreter_FOUND)
             "${CMAKE_CURRENT_SOURCE_DIR}/tests/contracts/ValidateCapabilityDtos.py"
     )
     add_test(
+        NAME slicing_mode_declared_contract_test
+        COMMAND ${Python3_EXECUTABLE}
+            "${CMAKE_CURRENT_SOURCE_DIR}/tests/contracts/ValidateSlicingModeDeclared.py"
+    )
+    add_test(
         NAME stage16_release_baseline_contract_tests
         COMMAND ${Python3_EXECUTABLE}
             "${CMAKE_CURRENT_SOURCE_DIR}/tests/stage16/ValidateReleaseBaseline.py"
@@ -2544,6 +2566,10 @@ if(Python3_Interpreter_FOUND)
         COMMAND ${Python3_EXECUTABLE}
             "${CMAKE_CURRENT_SOURCE_DIR}/tests/stage14c_05/ValidateModuleInfoContracts.py"
             --repo "${CMAKE_CURRENT_SOURCE_DIR}"
+            --config $<CONFIG>
+            --probe $<TARGET_FILE:stage14c05_module_info_tests>
+            --build-manifest
+                "${SLICESOFT_VERSION_GENERATED_ROOT}/$<CONFIG>/slicesoft_build_manifest.json"
     )
     add_test(
         NAME slicer_stage14c07_dll_initialization_contract_test
@@ -2843,6 +2869,8 @@ else()
         PROPERTIES WILL_FAIL TRUE
     )
 endif()
+add_test(NAME json_parse_depth_unit_tests COMMAND json_parse_depth_unit_tests)
+add_test(NAME worker_protocol_bounds_unit_tests COMMAND worker_protocol_bounds_unit_tests)
 add_test(NAME tiff_backend_build_info_unit_tests COMMAND tiff_backend_build_info_unit_tests)
 add_test(NAME tiff_writer_backend_unit_tests COMMAND tiff_writer_backend_unit_tests)
 add_test(NAME tiff_writer_equivalence_unit_tests COMMAND tiff_writer_equivalence_unit_tests)

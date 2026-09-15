@@ -114,6 +114,7 @@ slicer_core::Json MakeXPaddingTransferProfile(const std::filesystem::path&,
     const std::filesystem::path& model, const std::filesystem::path& package, bool pad, bool padY)
 {
     return Json::object({
+        {"slicingMode", "closed_mesh_scanline"},
         {"input", Json::object({{"format", "obj"}, {"modelPath", PathToUtf8(model)}})},
         {"output", Json::object({{"packageDir", PathToUtf8(package)}, {"packageProtocol", "p0.rgbwsvt.1"},
             {"channelOrder", Json::array({"R","G","B","W","S","V","T"})},

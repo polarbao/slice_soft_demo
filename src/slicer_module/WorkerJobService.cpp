@@ -230,6 +230,10 @@ struct WorkerJobService::Implementation
 {
     struct JobExecution
     {
+        // Run() 是静态的，只拿到 execution，故用回指针访问模块实例级的协商缓存。
+        // 缓存必须是【实例级】而非进程级：pm_create 的 ABI 不变量要求同一进程内
+        // 的多个模块实例完全隔离，共享缓存会破坏这条。
+        Implementation* owner{nullptr};
         pm_job_t* job{nullptr};
         pm_module_t* module{nullptr};
         CapabilityRoute route;
@@ -254,11 +258,75 @@ struct WorkerJobService::Implementation
     mutable std::mutex mutex;
     std::map<pm_job_t*, std::shared_ptr<JobExecution>> jobs;
 
+    // file_contract_v1 §2 的措辞是「向某个 Worker 身份提交【第一个】作业之前」
+    // 执行 --contract-info，即契约本就预期按身份缓存。此前实现每个作业都重跑一次，
+    // 一个作业要起两次进程（--contract-info 与 --spi-request）。
+    struct NegotiatedContract
+    {
+        std::filesystem::file_time_type writeTime{};
+        std::uintmax_t size{0};
+        WorkerContractResult result;
+    };
+    mutable std::mutex contractMutex;
+    std::map<std::string, NegotiatedContract> contracts;
+
     [[nodiscard]] std::shared_ptr<JobExecution> Find(pm_job_t* job) const
     {
         std::scoped_lock lock{mutex};
         const auto entry = jobs.find(job);
         return entry == jobs.end() ? nullptr : entry->second;
+    }
+
+    /**
+     * @brief 按 Worker 身份与请求能力缓存协商结果。
+     *
+     * 键必须同时含【能力】：`Negotiate` 的 `compatible` 是针对具体 requirement
+     * 算出来的，只按可执行文件缓存会让 slice.rgbwsv 的结果污染 slice.rgbwsvt。
+     * 键还含 mtime 与 size，Worker 二进制被替换后缓存自动失效。
+     * 任何一次协商失败都不入缓存，避免把一次偶发传输失败固化下来。
+     */
+    [[nodiscard]] WorkerContractResult NegotiateCached(
+        WorkerClient& client,
+        const std::filesystem::path& workerExecutable,
+        const WorkerContractRequirement& requirement)
+    {
+        std::string key = workerExecutable.generic_string();
+        for (const std::string& capability : requirement.requiredCapabilities)
+        {
+            key += '|';
+            key += capability;
+        }
+
+        std::error_code error;
+        const std::filesystem::file_time_type writeTime =
+            std::filesystem::last_write_time(workerExecutable, error);
+        const std::uintmax_t size = error
+            ? 0U
+            : std::filesystem::file_size(workerExecutable, error);
+        const bool identityKnown = !error;
+
+        if (identityKnown)
+        {
+            std::scoped_lock lock{contractMutex};
+            const auto entry = contracts.find(key);
+            if (entry != contracts.end()
+                && entry->second.writeTime == writeTime
+                && entry->second.size == size)
+            {
+                return entry->second.result;
+            }
+        }
+
+        WorkerContractResult result =
+            WorkerContractNegotiator{client}.Negotiate(
+                workerExecutable, requirement);
+
+        if (identityKnown && result.compatible)
+        {
+            std::scoped_lock lock{contractMutex};
+            contracts[key] = NegotiatedContract{writeTime, size, result};
+        }
+        return result;
     }
 
     static slicer_core::Json MakeWorkerRequest(JobExecution& execution)
@@ -467,7 +535,12 @@ struct WorkerJobService::Implementation
             WorkerContractRequirement requirement;
             requirement.requiredCapabilities = {execution->route.workerCapability};
             const WorkerContractResult contract =
-                WorkerContractNegotiator{*execution->client}.Negotiate(
+                execution->owner != nullptr
+                ? execution->owner->NegotiateCached(
+                    *execution->client,
+                    execution->workerExecutable,
+                    requirement)
+                : WorkerContractNegotiator{*execution->client}.Negotiate(
                     execution->workerExecutable,
                     requirement);
             if (!contract.compatible)
@@ -665,6 +738,7 @@ WorkerJobSubmission WorkerJobService::Submit(
     }
 
     auto execution = std::make_shared<Implementation::JobExecution>();
+    execution->owner = m_implementation.get();
     execution->job = job;
     execution->module = module;
     execution->route = std::move(route);

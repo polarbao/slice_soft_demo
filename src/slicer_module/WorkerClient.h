@@ -92,10 +92,18 @@ struct WorkerRunResult
     WorkerStopReason stopReason{WorkerStopReason::StartupFailed};
     std::string errorCode;
     std::string errorMessage;
+    // 以下四个容器有上界，超限后丢弃【中段】条目并计数，首段与末段始终保留。
+    // 末段必须保留：file_contract_v1 §4 要求终态成功前发出 percent=100，
+    // 且 EngineConformanceGate / EngineConformanceSupport / stage16 用例共三处
+    // 断言 progressEvents.back().percent == 100。丢末尾会直接打断这条不变量。
     std::vector<WorkerProgressEvent> progressEvents;
     std::vector<WorkerTimingEvent> timingEvents;
     std::vector<std::string> stdoutLogLines;
     std::vector<std::string> stderrLogLines;
+    std::uint64_t droppedProgressEvents{0};
+    std::uint64_t droppedTimingEvents{0};
+    std::uint64_t droppedStdoutLogLines{0};
+    std::uint64_t droppedStderrLogLines{0};
     bool artifactCleanupAttempted{false};
     bool artifactCleanupSucceeded{false};
     bool artifactTargetRestored{false};

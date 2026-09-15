@@ -27,6 +27,7 @@ EXPECTED_PROVIDES = (
     "geometry.collision",
     "geometry.repair",
     "slice.rgbwsv",
+    "slice.rgbwsvt",
     "package.verify",
     "package.get_summary",
     "package.get_layer_descriptor",
@@ -54,6 +55,7 @@ EXPECTED_WORKER = (
     "geometry.preflight",
     "geometry.repair",
     "slice.rgbwsv",
+    "slice.rgbwsvt",
 )
 
 
@@ -107,7 +109,10 @@ def BuildModuleInfo(buildConfig: str, version: str) -> dict[str, Any]:
         "runtime": runtime,
         "buildConfig": buildConfig,
         "provides": list(EXPECTED_PROVIDES),
-        "produces": [{"contract": "p0.rgbwsv.2", "kind": "package"}],
+        "produces": [
+            {"contract": "p0.rgbwsv.2", "kind": "package"},
+            {"contract": "p0.rgbwsvt.1", "kind": "package"},
+        ],
         "capabilities": {
             "maxConcurrentJobs": 1,
             "cancelLatencyMs": 2000,
@@ -243,8 +248,13 @@ def ValidateTamperCases(
 def Main() -> int:
     parser = argparse.ArgumentParser()
     parser.add_argument("--repo", default=Path.cwd(), type=Path)
-    parser.add_argument("--debug-probe", type=Path)
-    parser.add_argument("--release-probe", type=Path)
+    # P0FIX/P0-04：探针与构建配置改为【必填】。此前它们是可选参数，缺失时
+    # Main() 会退化成 moduleInfo = expectedInfo 的自我比对，使"运行时自述漂移"
+    # 这条断言恒真通过——那正是掩盖了 pm_module_info 违反自身 schema 的原因。
+    # 不给默认值、不给回退分支：参数缺失就让 argparse 直接失败。
+    parser.add_argument("--config", required=True, choices=("Debug", "Release"))
+    parser.add_argument("--probe", required=True, type=Path)
+    parser.add_argument("--build-manifest", required=True, type=Path)
     arguments = parser.parse_args()
     repo = arguments.repo.resolve()
 
@@ -255,27 +265,33 @@ def Main() -> int:
         repo / "contracts/slicer_module_manifest.schema.json"
     )
     templatePath = repo / "src/slicer_module/module.json.in"
-    versionManifest = LoadJson(repo / "version-manifest.json")
-    slicerVersion = ImplementationVersion(
-        versionManifest["components"]["slicer"]
-    )
+
+    # 运行时自述里的 version 带构建计数（形如 0.2.467-dev），与 version-manifest.json
+    # 声明的核心版本（0.2.0-dev）不是同一个值。比对真实产物必须用构建清单里的已构建
+    # 版本，否则会在 version 字段上假失败，与能力集无关。
+    builtVersion = LoadJson(arguments.build_manifest)["components"]["slicer"]["version"]
 
     ValidateFrozenSources(repo)
-    for buildConfig, probePath in (
-        ("Debug", arguments.debug_probe),
-        ("Release", arguments.release_probe),
-    ):
-        expectedInfo = BuildModuleInfo(buildConfig, slicerVersion)
-        moduleInfo = RunProbe(probePath) if probePath else expectedInfo
-        manifest = RenderManifest(templatePath, buildConfig, slicerVersion)
-        ExpectValid(infoValidator, moduleInfo, f"{buildConfig} module info")
+    for buildConfig in ("Debug", "Release"):
+        manifest = RenderManifest(templatePath, buildConfig, builtVersion)
         ExpectValid(manifestValidator, manifest, f"{buildConfig} manifest")
+        if buildConfig != arguments.config:
+            # 多配置生成器下一次只构建一个 config，另一个没有产物可探。
+            # 明确跳过并打印，不得用期望值冒充真实产物。
+            print(
+                f"SKIP {buildConfig} runtime probe: not built in this configuration",
+                file=sys.stderr,
+            )
+            continue
+        expectedInfo = BuildModuleInfo(buildConfig, builtVersion)
+        moduleInfo = RunProbe(arguments.probe)
+        ExpectValid(infoValidator, moduleInfo, f"{buildConfig} runtime module info")
         ValidateCrossConsistency(moduleInfo, manifest)
         if moduleInfo != expectedInfo:
             raise AssertionError(f"{buildConfig} runtime module info drifted")
 
-    debugInfo = BuildModuleInfo("Debug", slicerVersion)
-    debugManifest = RenderManifest(templatePath, "Debug", slicerVersion)
+    debugInfo = BuildModuleInfo("Debug", builtVersion)
+    debugManifest = RenderManifest(templatePath, "Debug", builtVersion)
     ValidateTamperCases(
         infoValidator,
         manifestValidator,

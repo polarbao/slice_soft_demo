@@ -1,4 +1,5 @@
 {
+  "slicingMode": "closed_mesh_scanline",
   "slicePipeline": {
     "mode": "global_surface_shell"
   },

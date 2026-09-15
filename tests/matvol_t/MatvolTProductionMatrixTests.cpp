@@ -49,6 +49,7 @@ slicer_core::Json MakeConfig(
     const int maxBoundaryEdges = 0)
 {
     return slicer_core::Json::object({
+        {"slicingMode", "closed_mesh_scanline"},
         {"input", slicer_core::Json::object({
             {"format", "obj"},
             {"modelPath", ModelPath(modelName).generic_string()}})},

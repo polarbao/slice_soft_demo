@@ -123,13 +123,14 @@ function(slicesoft_load_version_manifest manifest_path)
             "version-manifest.json has an invalid compatibility.contracts field: "
             "${compatibility_error}")
     endif()
-    if(NOT compatibility_count EQUAL 3)
+    if(NOT compatibility_count EQUAL 4)
         message(FATAL_ERROR
-            "version-manifest.json must declare exactly three frozen compatibility contracts")
+            "version-manifest.json must declare exactly four frozen compatibility contracts")
     endif()
     _slicesoft_version_json_get(compatibility_spi "${manifest}" compatibility contracts 0)
     _slicesoft_version_json_get(compatibility_worker "${manifest}" compatibility contracts 1)
     _slicesoft_version_json_get(compatibility_package "${manifest}" compatibility contracts 2)
+    _slicesoft_version_json_get(compatibility_transfer_package "${manifest}" compatibility contracts 3)
 
     if(NOT schema_version EQUAL 1)
         message(FATAL_ERROR "Unsupported SliceSoft version manifest schema: ${schema_version}")
@@ -160,7 +161,8 @@ function(slicesoft_load_version_manifest manifest_path)
     endif()
     if(NOT compatibility_spi STREQUAL "slicer-module.spi.v1"
        OR NOT compatibility_worker STREQUAL "file_contract_v1"
-       OR NOT compatibility_package STREQUAL "p0.rgbwsv.2")
+       OR NOT compatibility_package STREQUAL "p0.rgbwsv.2"
+       OR NOT compatibility_transfer_package STREQUAL "p0.rgbwsvt.1")
         message(FATAL_ERROR "SliceSoft frozen compatibility contracts have drifted")
     endif()
 

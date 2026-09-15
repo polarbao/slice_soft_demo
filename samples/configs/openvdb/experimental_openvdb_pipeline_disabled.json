@@ -1,4 +1,5 @@
 {
+  "slicingMode": "closed_mesh_scanline",
   "input": {
     "modelPath": "samples/models/openvdb/surface_shell_multimaterial_seam.obj",
     "format": "obj"

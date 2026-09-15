@@ -150,6 +150,20 @@ SliceConfig load_slice_config(const std::filesystem::path& config_path) {
     // 写包时据此决定是否发射 manifest.profileEcho，避免为不存在的溯源编造内容。
     config.profile_version = root.value("profileVersion", config.profile_version);
     config.profile_hash = root.value("profileHash", config.profile_hash);
+    // P0FIX/P0-07：slicingMode 必须显式声明。
+    // 省略时会落到 config.h 的默认值 closed_mesh_scanline，而该分支走的是
+    // 未经 MEMFLOW 有界化的 sample_model_masks 全层物化路径（L×W×H 驻留），
+    // 拿到的是 2026-09-06 之前的内存画像。这里只要求把选择写出来，
+    // 不改默认值字面量、不改任一分支的算法行为。
+    // 这是对既有配置的破坏性变更：改之前省略是合法的。报错必须直接给出改法，
+    // 否则拿着旧配置的人只知道被拒、不知道填哪个值才是原来的行为。
+    if (!root.contains("slicingMode")) {
+        throw std::runtime_error(
+            "slicingMode must be declared explicitly: "
+            "closed_mesh_scanline or relief_heightfield "
+            "(configs written before this became mandatory were slicing as "
+            "closed_mesh_scanline, so declare that to keep the previous behaviour)");
+    }
     config.slicing_mode = root.value("slicingMode", config.slicing_mode);
 
     if (root.contains("slicePipeline"))

@@ -413,6 +413,35 @@ add_test(
     COMMAND slicer_ui_host_sim --self-test
 )
 
+add_executable(hostflow_slice_protocol_route_tests
+    HostSliceProtocolRoute.cpp
+    HostSliceProtocolRoute.h
+    ${CMAKE_SOURCE_DIR}/tests/hostflow/HostSliceProtocolRouteTests.cpp
+)
+set_target_properties(hostflow_slice_protocol_route_tests PROPERTIES AUTOMOC ON)
+target_include_directories(hostflow_slice_protocol_route_tests PRIVATE
+    ${CMAKE_CURRENT_SOURCE_DIR}
+)
+target_link_libraries(hostflow_slice_protocol_route_tests PRIVATE Qt5::Core)
+if(MSVC)
+    target_compile_options(hostflow_slice_protocol_route_tests PRIVATE
+        /MP
+        /W4
+        /WX
+        /utf-8
+    )
+    if(MSVC_VERSION GREATER_EQUAL 1950)
+        target_sources(hostflow_slice_protocol_route_tests PRIVATE
+            ${qt515MsvcCompatibilityHeader}
+        )
+        target_compile_options(hostflow_slice_protocol_route_tests PRIVATE
+            "/FI${qt515MsvcCompatibilityHeader}"
+        )
+    endif()
+endif()
+add_test(NAME hostflow_slice_protocol_route_tests
+    COMMAND hostflow_slice_protocol_route_tests)
+
 add_executable(ripflow_settings_unit_tests
     HostRipSettingsStore.cpp
     HostRipSettingsStore.h

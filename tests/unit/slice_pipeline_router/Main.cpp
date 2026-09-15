@@ -110,6 +110,7 @@ std::filesystem::path WriteConfig(
     WriteText(
         configPath,
         "{\n"
+        "  \"slicingMode\": \"closed_mesh_scanline\",\n"
             + pipelineEntry
             + "  \"input\": {\"modelPath\": \""
             + modelPath.generic_string()

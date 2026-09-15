@@ -1,4 +1,5 @@
 {
+  "slicingMode": "closed_mesh_scanline",
   "input": {
     "modelPath": "../../models/support/base_projection_steps.obj",
     "format": "auto"

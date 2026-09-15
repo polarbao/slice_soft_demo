@@ -1,4 +1,5 @@
 {
+  "slicingMode": "closed_mesh_scanline",
   "_comment": "MATVOL-T prototype only. Material RGB is profile data; material names are not role configuration.",
   "input": {
     "format": "obj",

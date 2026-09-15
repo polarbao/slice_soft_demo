@@ -16,6 +16,7 @@ EXPECTED_CAPABILITIES = [
     "geometry.collision",
     "geometry.repair",
     "slice.rgbwsv",
+    "slice.rgbwsvt",
     "package.verify",
     "package.get_summary",
     "package.get_layer_descriptor",
@@ -57,14 +58,14 @@ def FieldSpec(
 def Main() -> int:
     repoRoot = Path(__file__).resolve().parents[2]
     contract = LoadJson(repoRoot / "contracts" / "slicer_capability_dtos.json")
-    if contract["contractVersion"] != "1.14":
+    if contract["contractVersion"] != "1.15":
         raise AssertionError("expected the import pose contract")
     capabilities = contract["capabilities"]
     capabilityIds = [capability["id"] for capability in capabilities]
 
     if capabilityIds != EXPECTED_CAPABILITIES:
-        raise AssertionError("the ordered 15-capability surface drifted")
-    if len(set(capabilityIds)) != 15:
+        raise AssertionError("the ordered 16-capability surface drifted")
+    if len(set(capabilityIds)) != 16:
         raise AssertionError("capability IDs must be unique")
     if contract["forbiddenCapabilities"] != ["scene.layout"]:
         raise AssertionError("packing policy must remain outside the module")
@@ -530,7 +531,7 @@ def Main() -> int:
     for key, value in expectedInvariants.items():
         if invariants[key] != value:
             raise AssertionError(f"protocol invariant drifted: {key}")
-    if set(invariants["workerOnly"]) != {"slice.rgbwsv", "geometry.repair"}:
+    if set(invariants["workerOnly"]) != {"slice.rgbwsv", "slice.rgbwsvt", "geometry.repair"}:
         raise AssertionError("worker-only capability boundary drifted")
     if invariants["sliceBackend"] != {
         "field": "options.backend",

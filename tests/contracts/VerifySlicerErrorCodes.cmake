@@ -9,8 +9,8 @@ if(NOT contractVersion STREQUAL "1.0")
 endif()
 
 string(JSON codeCount LENGTH "${errorCodeJson}" codes)
-if(NOT codeCount EQUAL 19)
-    message(FATAL_ERROR "Expected 19 registered error codes, found ${codeCount}")
+if(NOT codeCount EQUAL 20)
+    message(FATAL_ERROR "Expected 20 registered error codes, found ${codeCount}")
 endif()
 
 set(seenCodes "")
@@ -26,6 +26,7 @@ endforeach()
 foreach(requiredCode
     PM-SLICER-VIEWDATA-STALE
     PM-SLICER-VIEWDATA-BUDGET
+    PM-SLICER-VIEWDATA-SIMPLIFICATION
     PM-SLICER-CONTRACT-0060
     PM-SLICER-RESOURCE-0041
 )
@@ -34,4 +35,4 @@ foreach(requiredCode
     endif()
 endforeach()
 
-message(STATUS "slicer_error_codes.json contains 19 unique registered codes")
+message(STATUS "slicer_error_codes.json contains 20 unique registered codes")
