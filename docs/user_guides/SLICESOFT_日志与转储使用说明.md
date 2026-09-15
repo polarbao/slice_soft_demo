@@ -1,6 +1,6 @@
 # SliceSoft 日志与崩溃转储使用说明
 
-适用范围：LOGDUMP 开发分支的 Windows x64 切片软件、切片 DLL 日志扩展及本地诊断组件。
+适用范围：包含 LOGDUMP 更新的 Windows x64 切片软件、切片 DLL 日志扩展及本地诊断组件。源码分支合入不自动更新已有 EXE，请使用从对应提交成套构建部署的运行包。
 真实 PrintAppLogging 组件适配已在 E01A 验收通过；正式 PrintApp 几何切片业务入口尚未实现，不能据此宣称打印 GUI、干净机器或物理打印验收完成。
 
 ## 1. 日志在哪里
@@ -139,7 +139,7 @@ $sdkRoot = Join-Path (Get-Location) ('output/logdump/sdk-' + [Guid]::NewGuid().T
 
 PrintApp 现有适配工程可直接把 `SLICESOFT_DIAGNOSTICS_SOURCE_DIR` 指向导出包，继续复用自己的 SpdlogMgr。E02 已用该方式完成真实成功切片和原负例共 2 项工程验收，详见 [交付报告](../slice/REPORT/REPORT_LOGDUMP_E02_源码SDK交付与成功切片验收.md)。正式产品 loader 仍需另行挂接。
 
-转储源码随包提供，`SLICESOFT_DIAGNOSTICS_BUILD_CRASH` 默认 OFF；显式启用后由宿主部署 helper 并管理过滤器。源码包不含 DLL、第三方运行库、PDB 或故障数据，不替代最终二进制模块包；旧 `PackageSlicerModule.ps1` 还需补 helper 部署，不能只复制源码包就认为 Worker 转储运行时已齐全。
+转储源码随包提供，`SLICESOFT_DIAGNOSTICS_BUILD_CRASH` 默认 OFF；显式启用后由宿主部署 helper 并管理过滤器。源码包不含 DLL、第三方运行库、PDB 或故障数据，不替代最终二进制模块包；LOGDUMP F01 已为 `PackageSlicerModule.ps1` 补齐 helper 和日志合同头部署。使用时仍须核对实际包清单，不能只复制源码包就认为 Worker 转储运行时已齐全。
 
 ## 6. 打包与符号
 

@@ -58,4 +58,15 @@ cmake --build $buildRoot --config RelWithDebInfo --target slicesoft_diagnostics_
 
 helper 使用系统 DbgHelp，不随包复制系统 DLL。生产二进制与匹配 PDB 应由宿主独立归档；本源码包不配置宿主的符号发布策略。完整转储和 `.partial` 必须区分；不承诺强制结束、永久系统损坏或所有异常类型均可捕获，也不会捕获外部 RIP 进程的崩溃。
 
-本包不修改原 `PackageSlicerModule.ps1` 的二进制清单；该旧入口未显式部署运行时启动的 helper，不能因本包完成而认为此缺口已修复。现有完整应用包和最终打印业务 loader 的验收仍分别管理。
+本源码包不替代二进制模块包。LOGDUMP F01 已修复 `PackageSlicerModule.ps1`，模块包显式部署运行时启动的 helper 和两个 C 合同头；消费时仍应核对实际包的文件清单及 SHA，不能用旧包冒充新交付。完整应用包和最终打印业务 loader 的验收仍分别管理。
+
+## 复用准入清单
+
+1. 使用同一版本的模块二进制包与日志合同头；动态探测日志 API v1，不向 DLL 传递 C++、Qt 或 spdlog 对象。
+2. 由宿主初始化自己的 logger，并通过 `LogSessionOptions.sink` 接收结构化事件；打印端沿用 `PrintAppSlicerLogAdapter`，不重复初始化或关闭 `SpdlogMgr`。
+3. 每个模块实例绑定自己的上下文；回调只复制入队，事件中的源进程、线程、作业及实例标识不可用消费线程信息替代。
+4. 停止业务后成功 `Clear` 才可释放上下文、模块和 DLL，最后关闭宿主日志；注销失败必须保活并重试，不能先卸载 DLL。
+5. 嵌入打印软件时不照搬 SliceSoft 的 `ProcessDiagnostics` 启动策略；转储由打印 EXE 所有者决定，避免接管其现有异常过滤器。
+6. 成套部署 Worker、helper、资源和运行库，保留与二进制匹配的私有 PDB；用实际成功/失败/取消作业与注销后宿主继续写日志验证最终接线。
+
+这些接口和组件已实现；正式打印几何切片 loader 的业务挂接属于 E01B 后续任务，并非仅链接源码 target 即自动完成。
