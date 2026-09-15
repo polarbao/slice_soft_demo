@@ -41,6 +41,20 @@
 
 各专项状态（均不占阶段编号，状态以各任务卡内的状态列为准）
 
+LOGDUMP   LOCAL COMPLETE：2026-09-14 LD-00..03 / A00..A03（含A01D）/ B01..02 / C01..02 本地完成。
+          独立分支 codex/feature-logging-dump 基于 e2546797，不包含原工作树未提交修改。
+          DLL 回调 + 软件日志 + Worker IPC + EXE helper 已实现；Debug16/16，Release17/18（既有S1路径失败）。
+          真实模型184层/fixture20层off-info字节一致；独立包中文路径/仅系统PATH验证通过，另复现既有ViewData期望失败。
+          E01A 已完成真实 PrintAppLogging+DLL 验收1/1、父工程可选适配构建、切片兼容回归2/2。
+          2026-09-15 E02-01/02 完成：23文件源码SDK独立构建、实际打印消费CTest2/2 PASS，成功3 TIFF/Reader/18条日志。
+          源码交付含可选转储；F01已补齐旧模块包helper和C头，实际验包通过；超长输出路径仍为既有限制。
+          E01B 缺正式几何切片loader；PrintApp GUI/干净机器/其他ACP/物理打印未验。F任务正分组提交和产品基线验证。
+          2026-09-15 E01B-P 准备完成：MOD-22/P23入口仍未实现；原树P0FIX持续演进，集成前需重新固定SHA。
+          准备 docs/slice/DOC/DOC_PREP_LOGDUMP_E01B_业务挂接与新基线交付准备.md
+          交付 docs/slice/REPORT/REPORT_LOGDUMP_E02_源码SDK交付与成功切片验收.md
+          保持原 pm_* 签名/Worker/S1/S2；新增导出受控评审，不在 DLL 安装崩溃过滤器。
+          卡 docs/codex_task/current/TASKS_LOGDUMP_日志与崩溃转储可复用模块专项任务清单.md
+
 FRAME     COMPLETE：2026-09-07 nail-Default 非打印定位素材专项 FRAME-00..04 完成；gubao05 多图层透明核心工艺 600 DPI/0.033 mm、148 层真实包与空区/RIP strict PASS，Release 部署/自检通过；GUI 人工交互和物理打印未验证；卡 docs/codex_task/current/TASKS_FRAME_非打印定位素材与输出画幅专项任务清单.md
 
 RENDER    ✅ R-A / R-B / R-F 收口（含 meshoptimizer 1.1、平滑法线与真实资产预算重测）
