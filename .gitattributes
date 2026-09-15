@@ -1,1 +1,3 @@
 *.pdf binary
+# This frozen fixture is verified by its exact SHA-256 bytes.
+samples/configs/3mf/three_mf_texture2d_checker.json text eol=lf
