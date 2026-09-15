@@ -92,6 +92,7 @@ add_executable(slicer_ui_host_sim
     HostSliceJobPanel.cpp
     HostSliceJobPanel.h
     Main.cpp
+    HostDiagnostics.cpp
     ModuleClient.cpp
     ModuleClient.h
     MoveOptimizationPolicy.cpp
@@ -168,6 +169,7 @@ target_include_directories(slicer_ui_host_sim PRIVATE
 )
 
 target_link_libraries(slicer_ui_host_sim PRIVATE
+    slicesoft_diagnostics_process
     Qt5::Widgets
     slicesoft_rip_integration
     bcrypt
@@ -331,6 +333,19 @@ if(Python3_Interpreter_FOUND)
             --host $<TARGET_FILE:slicer_ui_host_sim>
     )
 endif()
+
+add_executable(host_rip_diagnostics_tests "${CMAKE_SOURCE_DIR}/tests/diagnostics/HostRipDiagnosticsTests.cpp")
+target_link_libraries(host_rip_diagnostics_tests PRIVATE slicesoft_diagnostics_process Qt5::Core nlohmann_json::nlohmann_json)
+if(MSVC)
+    target_compile_options(host_rip_diagnostics_tests PRIVATE /W4 /WX /utf-8)
+    if(MSVC_VERSION GREATER_EQUAL 1950)
+        target_compile_options(host_rip_diagnostics_tests PRIVATE
+            "/FI${qt515MsvcCompatibilityHeader}")
+    endif()
+endif()
+add_test(NAME host_rip_diagnostics_tests COMMAND host_rip_diagnostics_tests
+    "${CMAKE_BINARY_DIR}/diagnostic-evidence/host-rip")
+set_tests_properties(host_rip_diagnostics_tests PROPERTIES TIMEOUT 60)
 
 add_test(
     NAME slicer_stage14e02_qt_host_smoke_test
@@ -1919,6 +1934,19 @@ set_tests_properties(
         RUN_SERIAL TRUE
         TIMEOUT 180
 )
+
+get_property(_host_diagnostic_targets DIRECTORY PROPERTY BUILDSYSTEM_TARGETS)
+add_custom_command(TARGET slicer_ui_host_sim POST_BUILD
+    COMMAND ${CMAKE_COMMAND} -E copy_if_different
+        $<TARGET_FILE:slicer_crash_reporter> $<TARGET_FILE_DIR:slicer_ui_host_sim>
+    VERBATIM)
+foreach(_target IN LISTS _host_diagnostic_targets)
+    get_target_property(_sources ${_target} SOURCES)
+    if("ModuleClient.cpp" IN_LIST _sources)
+        target_sources(${_target} PRIVATE ModuleClientLogging.cpp)
+        target_link_libraries(${_target} PRIVATE slicesoft_diagnostics_process)
+    endif()
+endforeach()
 
 set_tests_properties(
     hostflow_hd02_real_asset_matrix

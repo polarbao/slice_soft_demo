@@ -5,6 +5,7 @@
 
 #define PM_MODULE_STATIC
 #include "contracts/print_module_spi.h"
+#include "diagnostics/host/ModuleLogBinding.h"
 
 #include <QByteArray>
 #include <QString>
@@ -147,12 +148,14 @@ private:
     using LastErrorFunction = int (PM_CALL*)(char*, int, int*);
 
     bool ResolveExports(QString* error);
+    void AttachLogging() noexcept;
     bool ReadModuleInfo(QByteArray* output, QString* error);
     QString LastErrorText(const QString& fallback);
     void ResetFunctions();
     void RecordCall();
 
     HMODULE m_library{nullptr};
+    std::unique_ptr<slicesoft::diagnostics::ModuleLogBinding> m_logging;
     pm_module_t* m_module{nullptr};
     QByteArray m_moduleInfo;
     std::atomic<quint64> m_callCount{0};

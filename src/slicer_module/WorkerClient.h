@@ -7,6 +7,7 @@
 #include <memory>
 #include <optional>
 #include <string>
+#include <string_view>
 #include <vector>
 
 namespace slicesoft::module
@@ -78,6 +79,8 @@ struct WorkerLaunchOptions
     std::chrono::milliseconds cancelGracePeriod{2000};
     bool requireTerminalProgress{true};
     WorkerProgressSink progressSink;
+    // Optional telemetry; callback exceptions never affect the Worker contract.
+    std::function<void(std::string_view, std::uint32_t)> diagnosticSink;
     std::optional<WorkerPackageArtifactContext> packageArtifacts;
 };
 

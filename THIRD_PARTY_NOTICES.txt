@@ -27,6 +27,16 @@ notice:
    License: MIT.
    Full text: licenses/meshoptimizer.txt
 
+5. spdlog
+   Copyright (c) 2016 - present, Gabi Melman and spdlog contributors.
+   License: MIT.
+   Full text: licenses/spdlog.txt
+
+6. {fmt}
+   Copyright (c) 2012 - present, Victor Zverovich and {fmt} contributors.
+   License: MIT, with the upstream optional binary-embedding exception.
+   Full text: licenses/fmt.txt
+
 No name of a copyright holder or contributor may be used to endorse or
 promote SliceSoft without prior written permission where the corresponding
 license prohibits such use.
@@ -40,6 +50,13 @@ the explicit handwritten legacy verification lane does not ship LibTIFF.
 Assimp is declared in vcpkg.json but is not linked by the current CMake target
 graph. This notice includes Assimp in advance; shipping its binary later still
 requires including its full license.
+
+spdlog and its external fmt dependency follow the configured vcpkg triplet.
+The diagnostic packaging metadata selects the actual Debug or Release library;
+shared builds ship the selected DLLs and static builds record their library
+hashes. Both license texts are included for either linkage. The dump helper uses
+Windows DbgHelp supplied by the operating system; this package does not copy
+system dbghelp.dll or dbgcore.dll.
 
 The release packaging step must copy this file and the complete licenses
 directory. It must also regenerate the runtime dependency inventory and add

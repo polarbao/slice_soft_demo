@@ -6,6 +6,7 @@
 #include "slicer_module/WorkerClient.h"
 #include "slicer_module/WorkerContract.h"
 #include "slicer_module/WorkerProcessWindows.h"
+#include "slicer_module/logging/ModuleLogRegistry.h"
 
 #include <algorithm>
 #include <atomic>
@@ -410,6 +411,8 @@ struct WorkerJobService::Implementation
         (void)HandleRegistry::Instance().SetJobLifecycleState(
             execution->job,
             state);
+        logging::Emit(execution->module, state == JobLifecycleState::Failed ? 4 : 2,
+            "worker", "completed", "", LifecycleName(state), execution->route.jobId);
     }
 
     static CapabilityOutput TransportFailure(const WorkerRunResult& result)
@@ -438,6 +441,8 @@ struct WorkerJobService::Implementation
 
     static void Run(const std::shared_ptr<JobExecution>& execution) noexcept
     {
+        logging::Emit(execution->module, 2, "worker", "starting", "",
+            "negotiating Worker contract", execution->route.jobId);
         try
         {
             bool cancelledBeforeStart{false};
@@ -472,6 +477,8 @@ struct WorkerJobService::Implementation
                     requirement);
             if (!contract.compatible)
             {
+                logging::Emit(execution->module, 4, "worker", "contract_rejected",
+                    contract.errorCode, contract.errorMessage, execution->route.jobId);
                 {
                     std::scoped_lock lock{execution->mutex};
                     execution->workCompleted = true;
@@ -522,6 +529,10 @@ struct WorkerJobService::Implementation
                 execution->route.workerCapability == "slice.rgbwsv"
                 || execution->route.workerCapability == "slice.rgbwsvt";
             options.packageArtifacts = execution->packageArtifacts;
+            if (logging::HasCallback(execution->module))
+                options.diagnosticSink = [module = execution->module, jobId = execution->route.jobId](
+                    const std::string_view json, const std::uint32_t pid)
+                { logging::EmitForwarded(module, pid, json, jobId); };
             options.progressSink = [weak = std::weak_ptr<JobExecution>{execution}](
                                        const WorkerProgressEvent& event)
             {
@@ -532,6 +543,8 @@ struct WorkerJobService::Implementation
                 }
             };
             const WorkerRunResult run = execution->client->Run(options);
+            logging::Emit(execution->module, run.exitCategory == WorkerExitCategory::Ok ? 2 : 4,
+                "worker", "exited", run.errorCode, run.errorMessage, execution->route.jobId);
             bool cancellationRequested{false};
             {
                 std::scoped_lock lock{execution->mutex};

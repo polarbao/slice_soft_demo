@@ -20,6 +20,8 @@ tests/*
 !tests/golden/**
 !tests/unit/
 !tests/unit/**
+!tests/diagnostics/
+!tests/diagnostics/**
 !tests/fixtures/
 tests/fixtures/*
 !tests/fixtures/frame_geometry/

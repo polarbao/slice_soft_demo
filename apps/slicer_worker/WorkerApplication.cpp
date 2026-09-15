@@ -6,6 +6,7 @@
 #include "slicer_worker/repair/WorkerRepairExecutor.h"
 #include "slicer_worker/runtime/WorkerJobDispatcher.h"
 #include "slicer_worker/runtime/WorkerJobRuntime.h"
+#include "diagnostics/transport/WorkerTelemetry.h"
 #include "slicer_worker/slice/WorkerSliceExecutor.h"
 
 #include <filesystem>
@@ -126,6 +127,8 @@ int WorkerApplication::HandleSpiRequest(
     const int argc,
     char* const argv[])
 {
+    slicesoft::diagnostics::transport::WorkerTelemetryScope telemetry;
+    slicesoft::diagnostics::transport::EmitWorkerEvent(2, "received", "", "Worker received SPI request");
     if (argc != 3)
     {
         return PrintFailure(

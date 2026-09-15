@@ -1,4 +1,5 @@
 #include "ModuleClient.h"
+#include "diagnostics/host/ProcessDiagnostics.h"
 
 #include <array>
 #include <functional>
@@ -126,10 +127,12 @@ bool ModuleClient::Open(
         reinterpret_cast<const wchar_t*>(modulePath.utf16()));
     if (m_library == nullptr)
     {
+        const DWORD systemError = GetLastError();
+        slicesoft::diagnostics::WriteApplicationLog("module_load", "failed", modulePath.toStdString(), 4, std::to_string(systemError));
         if (error != nullptr)
         {
             *error = QStringLiteral("无法加载切片能力模块：%1")
-                         .arg(WindowsErrorText(GetLastError()));
+                         .arg(WindowsErrorText(systemError));
         }
         return false;
     }
@@ -187,11 +190,13 @@ bool ModuleClient::Open(
     }
 
     m_moduleInfo = moduleInfo;
+    AttachLogging();
     return true;
 }
 
 void ModuleClient::Close()
 {
+    m_logging.reset();
     if (m_module != nullptr && m_destroy != nullptr)
     {
         RecordCall();

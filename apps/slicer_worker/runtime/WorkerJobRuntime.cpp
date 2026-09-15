@@ -2,6 +2,7 @@
 
 #include "slicer_worker/runtime/WorkerRequestParser.h"
 #include "slicer_worker/runtime/WorkerResultWriter.h"
+#include "diagnostics/transport/WorkerTelemetry.h"
 
 #include <exception>
 #include <utility>
@@ -39,7 +40,9 @@ WorkerJobRuntimeResult WorkerJobRuntime::Run(
     try
     {
         const WorkerRequestEnvelope request = WorkerRequestParser::Parse(requestPath);
+        diagnostics::transport::EmitWorkerEvent(2, "validated", "", "Worker request parsed and validated");
         const WorkerResultEnvelope result = dispatcher.Dispatch(request);
+        diagnostics::transport::EmitWorkerEvent(result.Ok() ? 2 : 4, "executed", result.Code(), "Worker capability execution finished");
         WorkerJobRuntimeResult outcome;
         outcome.trustedidentity = true;
         outcome.processexitcode = result.ProcessExitCode();
@@ -49,15 +52,18 @@ WorkerJobRuntimeResult WorkerJobRuntime::Run(
             outcome.message = result.ToJson().at("error").at("message").as_string();
         }
         WorkerResultWriter::WriteAtomically(result);
+        diagnostics::transport::EmitWorkerEvent(2, "published", result.Code(), "Worker result published atomically");
         outcome.resultwritten = true;
         return outcome;
     }
     catch (const WorkerRequestParseError& error)
     {
+        diagnostics::transport::EmitWorkerEvent(4, "rejected", "", error.what());
         return RejectUntrusted(error);
     }
     catch (const WorkerResultWriteError& error)
     {
+        diagnostics::transport::EmitWorkerEvent(4, "write_failed", error.StableCode(), error.what());
         WorkerJobRuntimeResult result;
         result.processexitcode = error.ProcessExitCode();
         result.stablecode = error.StableCode();
@@ -68,6 +74,7 @@ WorkerJobRuntimeResult WorkerJobRuntime::Run(
     }
     catch (const std::exception& error)
     {
+        diagnostics::transport::EmitWorkerEvent(4, "failed", "PM-SLICER-INTERNAL-0099", error.what());
         WorkerJobRuntimeResult result;
         result.message = error.what();
         return result;

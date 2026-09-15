@@ -9,7 +9,8 @@
       "default-features": false
     },
     "assimp",
-    "meshoptimizer"
+    "meshoptimizer",
+    "spdlog"
   ],
   "features": {
     "openvdb": {
