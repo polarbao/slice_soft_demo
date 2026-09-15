@@ -1,5 +1,6 @@
 #include "ModuleClient.h"
 #include "diagnostics/host/ProcessDiagnostics.h"
+#include "diagnostics/host/ModuleLogBinding.h"
 
 void ModuleClient::AttachLogging() noexcept
 {

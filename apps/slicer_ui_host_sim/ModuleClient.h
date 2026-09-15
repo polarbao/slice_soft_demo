@@ -5,13 +5,15 @@
 
 #define PM_MODULE_STATIC
 #include "contracts/print_module_spi.h"
-#include "diagnostics/host/ModuleLogBinding.h"
 
 #include <QByteArray>
 #include <QString>
 #include <QtGlobal>
 
 #include <atomic>
+#include <memory>
+
+namespace slicesoft::diagnostics { class ModuleLogBinding; }
 
 /**
  * @brief 用于冻结 SliceSoft 公共 C SPI 的运行时加载客户端。
