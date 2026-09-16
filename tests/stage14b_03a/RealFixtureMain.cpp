@@ -15,6 +15,7 @@
 #include <string>
 #include <utility>
 #include <vector>
+#include "tests/support/Expect.h"
 
 namespace
 {
@@ -214,7 +215,7 @@ void VerifyThreeDView(const slicer_core::api::SceneViewData& viewData)
 
 }  // namespace
 
-int main()
+int RunGuardedBody()
 {
     const std::filesystem::path sourceRoot{SLICESOFT_SOURCE_DIR};
     const std::filesystem::path binaryRoot{SLICESOFT_BINARY_DIR};
@@ -271,4 +272,11 @@ int main()
 
     std::cout << "Stage 14B-03A real OBJ/3MF ViewData: PASS\n";
     return 0;
+}
+
+// F-44：最小保护。原 main 已改名为 RunGuardedBody，此处套一层捕获，
+// 使未捕获异常变成快速失败而非挂住等 ctest 超时。断言与用例结构未改动。
+int main()
+{
+    return slicesoft_test::GuardedMain("stage14b_03a real fixture", RunGuardedBody);
 }

@@ -40,7 +40,11 @@ if(EXISTS "${hostuxPresetModel}")
         add_test(NAME hostux_${flow}_after_import
             COMMAND slicer_ui_host_sim --hostux-scene-self-test --preset-after-import ${restoreArgument}
                 --model "${hostuxPresetModel}" --evidence-root "${CMAKE_SOURCE_DIR}/output/ux14")
-        set_tests_properties(hostux_${flow}_after_import PROPERTIES RUN_SERIAL TRUE TIMEOUT 180
+        # F-41：原为 180 s，而本机空载实测整轮需 108~117 s——余量仅 1.5 倍，有负载即假失败。
+        # 抬到 600 s，并保持【大于】HostUxSceneSmoke.h 内部的 480 s / 520 s 期限：
+        # 内部期限先触发才会打印 SCENE_UI_SLICE_TIMEOUT 说明原因；让 ctest 先超时
+        # 只会得到一条无信息的红灯，仍需定向复跑才能定责。
+        set_tests_properties(hostux_${flow}_after_import PROPERTIES RUN_SERIAL TRUE TIMEOUT 600
             ENVIRONMENT "QT_QPA_PLATFORM=offscreen;QT_QPA_FONTDIR=$ENV{WINDIR}/Fonts")
     endforeach()
 endif()
@@ -421,6 +425,7 @@ add_executable(hostflow_slice_protocol_route_tests
 set_target_properties(hostflow_slice_protocol_route_tests PROPERTIES AUTOMOC ON)
 target_include_directories(hostflow_slice_protocol_route_tests PRIVATE
     ${CMAKE_CURRENT_SOURCE_DIR}
+    ${CMAKE_SOURCE_DIR}  # 为 tests/support/Expect.h（F-17 + F-44 的共享测试头）
 )
 target_link_libraries(hostflow_slice_protocol_route_tests PRIVATE Qt5::Core)
 if(MSVC)

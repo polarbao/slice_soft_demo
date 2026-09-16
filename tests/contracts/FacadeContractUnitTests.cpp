@@ -3,6 +3,7 @@
 #include <iostream>
 #include <string>
 #include <type_traits>
+#include "tests/support/Expect.h"
 
 namespace {
 
@@ -58,7 +59,7 @@ bool VerifyDtoDefaults()
 
 }  // namespace
 
-int main()
+int RunGuardedBody()
 {
     static_assert(std::is_abstract_v<slicer_core::api::ModelFacade>);
     static_assert(std::is_abstract_v<slicer_core::api::PackageQueryFacade>);
@@ -72,4 +73,11 @@ int main()
     }
     std::cout << "Stage 14B facade contract unit tests: PASS\n";
     return 0;
+}
+
+// F-44：最小保护。原 main 已改名为 RunGuardedBody，此处套一层捕获，
+// 使未捕获异常变成快速失败而非挂住等 ctest 超时。断言与用例结构未改动。
+int main()
+{
+    return slicesoft_test::GuardedMain("facade contract", RunGuardedBody);
 }

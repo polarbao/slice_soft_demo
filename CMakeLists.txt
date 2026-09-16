@@ -750,6 +750,12 @@ add_custom_command(TARGET slicer_module POST_BUILD
     VERBATIM
 )
 
+# F-44：测试目标统一可用 #include "tests/support/Expect.h"（共享断言宏与 GuardedMain）。
+# 多数测试目标本就把仓根写进了各自的 target_include_directories，但并非全部；
+# 逐个补会散落十余处且容易写坏多行 add_executable 块（已试过一次并撤回）。
+# 此处用一条目录作用域规则统一覆盖其后定义的全部目标，与既有显式写法等价且幂等。
+include_directories(${CMAKE_CURRENT_SOURCE_DIR})
+
 add_executable(stage14c02_buffer_api_unit_tests
     tests/stage14c_02/BufferApiTests.cpp
     src/slicer_module/BufferApi.cpp

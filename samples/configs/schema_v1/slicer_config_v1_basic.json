@@ -61,12 +61,6 @@
       ],
       "whiteValue": 255,
       "varnishValue": 0
-    },
-    "textureApplication": {
-      "mode": "full_volume"
-    },
-    "varnishGeometry": {
-      "mode": "in_place_top_layers"
     }
   },
   "support": {
@@ -91,8 +85,5 @@
       "varnish"
     ],
     "onlyNonEmptyLayers": true
-  },
-  "diagnostics": {
-    "enabled": true
   }
 }

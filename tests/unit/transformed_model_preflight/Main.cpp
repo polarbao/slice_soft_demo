@@ -5,6 +5,7 @@
 #include <filesystem>
 #include <iostream>
 #include <string>
+#include "tests/support/Expect.h"
 
 namespace
 {
@@ -267,7 +268,7 @@ bool RealAdmittedAssetsPassMirroredPreflight()
 
 }  // namespace
 
-int main()
+int RunGuardedBody()
 {
     bool ok = true;
     ok = MirrorPreflightPreservesSourceAndBindsIdentity() && ok;
@@ -281,4 +282,11 @@ int main()
     }
     std::cout << "transformed_model_preflight_unit_tests: PASS\n";
     return 0;
+}
+
+// F-44：最小保护。原 main 已改名为 RunGuardedBody，此处套一层捕获，
+// 使未捕获异常变成快速失败而非挂住等 ctest 超时。断言与用例结构未改动。
+int main()
+{
+    return slicesoft_test::GuardedMain("transformed model preflight", RunGuardedBody);
 }

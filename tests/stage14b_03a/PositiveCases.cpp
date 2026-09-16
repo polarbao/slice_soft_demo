@@ -153,7 +153,19 @@ void ImplicitObjMaterialFallsBackToNeutralGrayCase()
             "three_d implicit material should retain translucent neutral gray");
 }
 
-void MissingTextureFallsBackToNeutralGrayCase()
+// 本用例原名 MissingTextureFallsBackToNeutralGrayCase，断言的是
+// 「声明了贴图但取不到 → 返回 OK + 中性灰」。那与契约直接冲突，已按
+// DOC_DECISION_TEXFAIL_R1 改写。契约原文（slicer_capability_dtos.md:220-222）：
+//   「对声明纹理的模型，top 必须返回带纹理 surfacePreview…但不得静默退为无纹理灰模。
+//     模型本身没有纹理时返回 textureStatus=not_provided 并使用 baseColorFactor。」
+// 贴图文件不存在 → 无法返回带纹理预览；又不得退灰；且不属于「模型本身没有纹理」，
+// 故 not_provided 不适用——唯一合规结果是失败。
+//
+// 注意与 MakeTexturedQuad 的关系：它设 has_texture=true，本用例再把 texture_exists
+// 改为 false，得到的正是「声明了、但文件没了」。若要测「模型本身就没有贴图」，
+// 应构造 has_texture=false 的模型，那条路径仍然返回 not_provided + baseColorFactor，
+// 本次未改动。
+void DeclaredButMissingTextureMustFailCase()
 {
     auto model = MakeTexturedQuad(
         "missing-texture.obj",
@@ -170,17 +182,10 @@ void MissingTextureFallsBackToNeutralGrayCase()
         MakeRequest(slicer_core::api::ViewMode::Top),
         MakeSnapshot({{"missing-texture", 103U}}),
         active);
-    Require(top.IsOk(),
-            "used missing texture should use an explicit neutral fallback");
-    Require(top.Value()->instances.front().texture_status
-                == slicer_core::api::TextureStatus::NotProvided,
-            "missing texture fallback must not claim texture availability");
-    Require(top.Value()->appearances.front().textures.empty(),
-            "missing texture fallback must not invent texture data");
-    Require(ContainsColor(
-                top.Value()->instances.front().surface_preview->rgba8,
-                {153U, 153U, 153U, 140U}),
-            "missing texture fallback should render as translucent gray");
+    Require(!top.IsOk(),
+            "declared-but-missing texture must fail ViewData, not degrade to gray");
+    Require(top.Error() != nullptr && !top.Error()->message.empty(),
+            "the failure must carry a readable diagnosis");
 }
 
 void UvSeamPreservationCase()
@@ -552,7 +557,7 @@ void RunPositiveCases()
 {
     CheckerThreeMfSemanticCase();
     ImplicitObjMaterialFallsBackToNeutralGrayCase();
-    MissingTextureFallsBackToNeutralGrayCase();
+    DeclaredButMissingTextureMustFailCase();
     ShengdanjieUsedMaterialClosureCase();
     WhiteAndNearWhiteTextureCase();
     TextureBaseColorFactorCase();

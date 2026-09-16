@@ -15,6 +15,7 @@
 #include <iterator>
 #include <string>
 #include <vector>
+#include "tests/support/Expect.h"
 
 namespace
 {
@@ -919,7 +920,7 @@ bool SceneContractFailuresAreStable()
 
 }  // namespace
 
-int main(const int argc, char** argv)
+int RunGuardedBody(const int argc, char** argv)
 {
     if (argc == 3
         && std::string(argv[1]) == "--emit-fixture")
@@ -962,4 +963,11 @@ int main(const int argc, char** argv)
     std::cout
         << "multi_model_production_service_unit_tests: PASS\n";
     return 0;
+}
+
+// F-44：最小保护。原 main 已改名为 RunGuardedBody，此处套一层捕获，
+// 使未捕获异常变成快速失败而非挂住等 ctest 超时。断言与用例结构未改动。
+int main(int argc, char* argv[])
+{
+    return slicesoft_test::GuardedMain("multi model production service", [&] { return RunGuardedBody(argc, argv); });
 }

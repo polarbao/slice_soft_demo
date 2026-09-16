@@ -145,8 +145,28 @@ ApiResult<ResolvedViewAppearance> ResolveViewAppearance(
 
         const ModelAppearanceAssessment appearanceAssessment =
             AssessModelAppearance(model);
+        // TEXFAIL/TF-01（裁定见 DOC_DECISION_TEXFAIL_R1）：原先只读
+        // single_material_only 这一个布尔位，把 status 丢掉了。但该位对【两种语义
+        // 完全不同】的降级都为真：
+        //   degraded_missing_material_definition —— 模型根本没有 mtllib 可用，
+        //       没有「声明过的贴图」可言，渲染成中性外观是合理的；
+        //   degraded_missing_texture             —— 模型【声明了】贴图但取不到。
+        //
+        // contracts/slicer_capability_dtos.md:220-222 对后者的规定没有余地：
+        //   「对声明纹理的模型，top 必须返回带纹理 surfacePreview…
+        //     但不得静默退为无纹理灰模。模型本身没有纹理时返回
+        //     textureStatus=not_provided 并使用 baseColorFactor。」
+        // 贴图文件不存在 → 无法返回带纹理预览；又不得退灰；且不属于
+        // 「模型本身没有纹理」故 not_provided 不适用 —— 唯一合规结果是失败。
+        //
+        // 这里不新增失败路径：把该情况放行到下方，由既有的 ResolveTexture 产生
+        // PM-SLICER-INPUT-0001「used ViewData material declares a missing texture」。
+        //
+        // 导入层不受影响：AssessModelAppearance 仍照常返回 single_material_only=true
+        // 与 status，宿主「降级导入」的提示行为逐字不变。
         const bool useDegradedNeutralAppearance =
-            appearanceAssessment.single_material_only;
+            appearanceAssessment.single_material_only
+            && appearanceAssessment.status != "degraded_missing_texture";
 
         std::map<std::string, const MaterialInfo*> sourceMaterials;
         for (const MaterialInfo& material : model.material_infos)

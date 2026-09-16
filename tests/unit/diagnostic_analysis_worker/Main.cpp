@@ -18,6 +18,7 @@
 #include <optional>
 #include <stdexcept>
 #include <thread>
+#include "tests/support/Expect.h"
 
 namespace
 {
@@ -471,7 +472,7 @@ bool TestRejectedTopologyDoesNotPublishWidthBounds()
 
 }  // namespace
 
-int main(int argc, char* argv[])
+int RunGuardedBody(int argc, char* argv[])
 {
     QCoreApplication application(argc, argv);
     const bool success =
@@ -492,4 +493,11 @@ int main(int argc, char* argv[])
     std::cout
         << "diagnostic_analysis_worker_unit_tests passed\n";
     return 0;
+}
+
+// F-44：最小保护。原 main 已改名为 RunGuardedBody，此处套一层捕获，
+// 使未捕获异常变成快速失败而非挂住等 ctest 超时。断言与用例结构未改动。
+int main(int argc, char* argv[])
+{
+    return slicesoft_test::GuardedMain("diagnostic analysis worker", [&] { return RunGuardedBody(argc, argv); });
 }

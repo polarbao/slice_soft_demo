@@ -6,6 +6,7 @@
 #include <iostream>
 #include <optional>
 #include <string>
+#include "tests/support/Expect.h"
 
 namespace
 {
@@ -406,7 +407,7 @@ void UnsupportedFileFailsBeforeDispatch()
 
 }  // namespace
 
-int main(int argc, char* argv[])
+int RunGuardedBody(int argc, char* argv[])
 {
     QCoreApplication application(argc, argv);
     OrderedThreeItemBatchAppliesOneLayout();
@@ -417,4 +418,11 @@ int main(int argc, char* argv[])
     std::cout
         << "scene_batch_import_controller_unit_tests: PASS\n";
     return 0;
+}
+
+// F-44：最小保护。原 main 已改名为 RunGuardedBody，此处套一层捕获，
+// 使未捕获异常变成快速失败而非挂住等 ctest 超时。断言与用例结构未改动。
+int main(int argc, char* argv[])
+{
+    return slicesoft_test::GuardedMain("scene batch import controller", [&] { return RunGuardedBody(argc, argv); });
 }

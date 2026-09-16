@@ -26,6 +26,67 @@ tests/*
 # 放行后它们会变为未跟踪可见状态，去留由所属专项自行决定，此处不代为入库。
 !tests/contracts/
 !tests/contracts/**
+# tests/support 同理：新建的共享测试头文件若不放行，会被 tests/* 静默吞掉——
+# 本地全绿而他人拉取后因文件不存在而编译失败（F-46）。
+!tests/support/
+!tests/support/**
+# F-46：tests/* 把 35 个含已跟踪文件的子目录中的 25 个挡在外面。已跟踪文件不受影响，
+# 所以现存文件一切正常、问题完全不可见；但【新增】文件会被静默忽略，而 git status
+# 默认也不显示。最坏形态是新文件被 CMakeLists 注册成测试：作者本地全绿，
+# 他人拉取后必红且红灯信息是「文件不存在」。tests/contracts 已因此丢过两个脚本。
+# 放行前逐目录实测过：以下 23 个全部零未跟踪文件，仅 stage14d_03 有构建产物，
+# 由下方 tests/*/out/ 单独挡住。
+# tests/fixtures 不在此列：既有规则「只放行 frame_geometry」是刻意设计，不动。
+!tests/integration/
+!tests/integration/**
+!tests/stage14b_02/
+!tests/stage14b_02/**
+!tests/stage14b_03a/
+!tests/stage14b_03a/**
+!tests/stage14c_02/
+!tests/stage14c_02/**
+!tests/stage14c_03/
+!tests/stage14c_03/**
+!tests/stage14c_04/
+!tests/stage14c_04/**
+!tests/stage14c_05/
+!tests/stage14c_05/**
+!tests/stage14c_06/
+!tests/stage14c_06/**
+!tests/stage14c_07/
+!tests/stage14c_07/**
+!tests/stage14d_02/
+!tests/stage14d_02/**
+!tests/stage14d_03/
+!tests/stage14d_03/**
+!tests/stage14d_04a/
+!tests/stage14d_04a/**
+!tests/stage14d_05/
+!tests/stage14d_05/**
+!tests/stage14d_06/
+!tests/stage14d_06/**
+!tests/stage14d_07/
+!tests/stage14d_07/**
+!tests/stage14d_08_r1/
+!tests/stage14d_08_r1/**
+!tests/stage14d_08_r2/
+!tests/stage14d_08_r2/**
+!tests/stage14d_08_r3/
+!tests/stage14d_08_r3/**
+!tests/stage14e_01/
+!tests/stage14e_01/**
+!tests/stage14e_03/
+!tests/stage14e_03/**
+!tests/stage14e_04/
+!tests/stage14e_04/**
+!tests/stage14e_04c/
+!tests/stage14e_04c/**
+!tests/stage14e_04d/
+!tests/stage14e_04d/**
+# 测试目录内的构建输出不入库。放在放行规则【之后】才能生效。
+# 注意不能写成 *.obj —— model/obj/ 下全是正在跟踪的三维模型，
+# 那条规则会让以后新增的模型被静默忽略，等于把 F-46 换个地方再犯一次。
+tests/*/out/
 !tests/fixtures/
 tests/fixtures/*
 !tests/fixtures/frame_geometry/

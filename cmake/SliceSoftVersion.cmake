@@ -201,9 +201,24 @@ function(slicesoft_load_version_manifest manifest_path)
     set(slicer_version "${release_version}")
 
     # HEAD 变动时重新配置，否则派生出的 PATCH 会停在上次配置时的快照。
-    # .git/HEAD 记录当前分支指针，refs 目录记录各分支/标签的提交，两者足以覆盖
-    # 「提交」「切分支」「打标签」三种会改变派生结果的操作。
-    foreach(_slicesoft_git_watch IN ITEMS ".git/HEAD" ".git/refs")
+    #
+    # 原监视项是 ".git/HEAD" 与 ".git/refs"，两条都不生效（F-42，2026-09-15 实测）：
+    #   - 普通提交【不改】.git/HEAD——它存的是 "ref: refs/heads/<branch>"，内容不变。
+    #     实测本分支 .git/HEAD 停在 09-14 18:42（建分支时），其后 6 次提交无一触碰。
+    #   - .git/refs 是【目录】。MSBuild 的自定义生成依赖只接受文件，对目录会报
+    #     MSB8064「指定的依赖项不存在」并使该依赖失效（构建日志里每个目标刷一条）。
+    # 于是提交后没有任何监视项变化 → 不重新配置 → PATCH 停在旧值；此后若只重建部分
+    # 目标，已重建的拿新版本、未重建的留旧版本，跨二进制比对版本的测试就会红，
+    # 而红灯长得和真回归一模一样（实测 Debug 0.2.474 与 Release 0.2.458 并存）。
+    #
+    # 改为监视三个【文件】：
+    #   .git/logs/HEAD   —— HEAD 的 reflog，提交/切分支/reset/merge/rebase 均追加一行，
+    #                       是唯一能覆盖「提交」的那一项；core.logAllRefUpdates 非裸仓默认 true。
+    #   .git/HEAD        —— 切分支（checkout 会重写它），保留。
+    #   .git/packed-refs —— git gc / pack-refs 会把标签搬进来，而 PATCH 由
+    #                       describe --tags 派生，故标签打包也须触发重配。
+    # 三者都用 if(EXISTS) 守护：关掉 reflog 的仓库退回原有行为，不会构建失败。
+    foreach(_slicesoft_git_watch IN ITEMS ".git/HEAD" ".git/logs/HEAD" ".git/packed-refs")
         if(EXISTS "${CMAKE_CURRENT_SOURCE_DIR}/${_slicesoft_git_watch}")
             set_property(
                 DIRECTORY "${CMAKE_CURRENT_SOURCE_DIR}"

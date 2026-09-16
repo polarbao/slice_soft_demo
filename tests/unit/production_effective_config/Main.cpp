@@ -12,6 +12,7 @@
 
 #include <iostream>
 #include <string>
+#include "tests/support/Expect.h"
 
 namespace
 {
@@ -861,7 +862,7 @@ bool TestTextureWhitePreflightWarningIsProfileAndSceneBound()
 
 }  // namespace
 
-int main()
+int RunGuardedBody()
 {
     const bool passed = TestRestrictedProfileClearsStaleOverrides()
         && TestMaterialParityRestoresProfileContract()
@@ -878,4 +879,11 @@ int main()
     }
     std::cout << "PASS production_effective_config_unit_tests\n";
     return 0;
+}
+
+// F-44：最小保护。原 main 已改名为 RunGuardedBody，此处套一层捕获，
+// 使未捕获异常变成快速失败而非挂住等 ctest 超时。断言与用例结构未改动。
+int main()
+{
+    return slicesoft_test::GuardedMain("production effective config", RunGuardedBody);
 }

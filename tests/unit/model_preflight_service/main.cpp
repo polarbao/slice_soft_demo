@@ -7,6 +7,7 @@
 #include <iostream>
 #include <string>
 #include <vector>
+#include "tests/support/Expect.h"
 
 namespace
 {
@@ -418,7 +419,7 @@ bool ProjectRootRelativeModelPathMatchesImporter()
 
 }  // namespace
 
-int main()
+int RunGuardedBody()
 {
     const std::vector<TestCase> tests{
         {"closed_model_passes_and_caches", ClosedModelPassesAndCaches},
@@ -440,4 +441,11 @@ int main()
         passed = current && passed;
     }
     return passed ? 0 : 1;
+}
+
+// F-44：最小保护。原 main 已改名为 RunGuardedBody，此处套一层捕获，
+// 使未捕获异常变成快速失败而非挂住等 ctest 超时。断言与用例结构未改动。
+int main()
+{
+    return slicesoft_test::GuardedMain("model preflight service", RunGuardedBody);
 }

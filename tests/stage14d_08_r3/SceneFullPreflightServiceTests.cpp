@@ -11,6 +11,7 @@
 #include <iterator>
 #include <memory>
 #include <string>
+#include "tests/support/Expect.h"
 
 namespace
 {
@@ -328,7 +329,7 @@ void AppliesModeBudgetAndCancellationRules()
 
 }  // namespace
 
-int main()
+int RunGuardedBody()
 {
     PassesAndIsDeterministic();
     SkipsHiddenAndReportsSpatialBlockers();
@@ -336,4 +337,11 @@ int main()
     AppliesModeBudgetAndCancellationRules();
     std::cout << "stage14d08_r3_scene_preflight_tests: PASS\n";
     return 0;
+}
+
+// F-44：最小保护。原 main 已改名为 RunGuardedBody，此处套一层捕获，
+// 使未捕获异常变成快速失败而非挂住等 ctest 超时。断言与用例结构未改动。
+int main()
+{
+    return slicesoft_test::GuardedMain("scene full preflight service", RunGuardedBody);
 }

@@ -206,6 +206,8 @@ MEMFLOW   ▶ MF-00..03B4A COMPLETE；MF-03B4B PREPARED；生产仍为 Retained 
 6. Do not revert or delete user changes unless the user explicitly requests that operation.
 7. For destructive operations, dependency upgrades, architecture migration, production-path changes, hardware/device control, or git history rewrite, give a plan and wait for confirmation.
 8. After a minimal task, run task-specific validation. Before committing, run `git status --short` and `git diff --check`.
+8b. **提交之后、判定回归之前，必须全量重建**（`cmake --build <dir> --config <cfg>`，不加 `--target`）。版本号第三段由 `git rev-list --count <最近 v* 标签>..HEAD` 派生，提交即变；只重建部分目标会让已重建的拿新版本、未重建的留旧版本，跨二进制比对版本的测试随即变红，**而红灯与真回归长得一模一样**。若失败信息提到引擎版本、`--version` 漂移或 manifest 版本不一致，先全量重建复跑，再判定是否为真回归。
+8c. 回归结果与基线对照要比**失败集合**，不要比失败**数量**。数量相同可能是「新增 N 条、消失 N 条」；本仓已发生过把新增失败误认成基线项的情况。
 9. Commit only when the user asks or when the active task explicitly requires it; do not push unless explicitly instructed.
 10. New commits must use `type(scope): 【功能分类】中文摘要`; use Chinese body items such as `【模块】`, `【验证】`, and `【边界】`. Do not rewrite published remote history solely to restyle old messages.
 

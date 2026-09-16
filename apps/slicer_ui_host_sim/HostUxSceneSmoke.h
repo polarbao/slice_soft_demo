@@ -100,15 +100,34 @@ inline int RunHostUxSceneSmoke(const QString& module,const QString& model,const 
         <<" hash="<<window.m_sliceSettingsPanel->EffectiveProfile().profilehash
         <<" T="<<window.m_sliceSettingsPanel->Settings().transferchannel.enabled<<Qt::endl;
     if(presetFlow) start->click(); else window.OnStartSlice();
+    // F-41：这两个期限原为 120 s / 130 s，而本机空载实测整轮需 108~117 s——余量不足 1.1 倍。
+    // 有负载时切片超过 120 s，循环退出后走 OnCancelSlice() 并 return 6，对外表现为
+    // 「154 s 失败且无任何消息」，既不是 ctest 超时（那是 180 s）也不像真回归，每次都要定向复跑才能定责。
+    // 抬到 480 s / 520 s（约 4 倍余量），并保持 < 注册处的 ctest TIMEOUT 600 s：
+    // 内部期限先触发才有自述消息，让 ctest 先超时只会得到一条无信息的红灯。
+    constexpr qint64 kSliceWaitMs{480000};
+    constexpr qint64 kResultLoadWaitMs{520000};
     QElapsedTimer timer;timer.start();
-    while(window.m_sliceJobController->IsActive() && timer.elapsed()<120000)
+    while(window.m_sliceJobController->IsActive() && timer.elapsed()<kSliceWaitMs)
     {
         QApplication::processEvents();QThread::msleep(10);
     }
-    if(window.m_sliceJobController->IsActive()) { window.OnCancelSlice(); return 6; }
+    if(window.m_sliceJobController->IsActive())
+    {
+        // 原先这里直接 return 6，不打印任何原因——失败无法与真回归区分。
+        QTextStream(stdout)<<"SCENE_UI_SLICE_TIMEOUT waited_ms="<<timer.elapsed()
+            <<" limit_ms="<<kSliceWaitMs<<" reason=slice_job_still_active"<<Qt::endl;
+        window.OnCancelSlice();
+        return 6;
+    }
     const auto completion=window.m_sliceJobController->Completion();
     QTextStream(stdout)<<"SCENE_UI_SLICE success="<<completion.success<<" code="<<completion.code
         <<" message="<<completion.message<<Qt::endl;
-    while(window.m_resultLoadActive && timer.elapsed()<130000) { QApplication::processEvents(); QThread::msleep(10); }
+    while(window.m_resultLoadActive && timer.elapsed()<kResultLoadWaitMs) { QApplication::processEvents(); QThread::msleep(10); }
+    if(window.m_resultLoadActive)
+    {
+        QTextStream(stdout)<<"SCENE_UI_RESULT_LOAD_TIMEOUT waited_ms="<<timer.elapsed()
+            <<" limit_ms="<<kResultLoadWaitMs<<" reason=result_load_still_active"<<Qt::endl;
+    }
     return completion.success ? 0 : 7;
 }

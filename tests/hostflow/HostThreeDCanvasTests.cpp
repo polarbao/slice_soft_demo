@@ -413,9 +413,22 @@ void VerifyRealAssetMatrix(
     // 顺带记录一处语义变化：同一批资产里有 7 个从 asset-rejected 变为可渲染，
     // 即资产准入自 8 月 11 日起明显放宽（mesh repair / importer 侧的改进），
     // 这正是重固化必须留痕的原因。
-    Require(renderedCount == 29
+    // 2026-09-16 TEXFAIL/TF-01 重固化：29 / 0 / 2 → 28 / 0 / 3。
+    // 恰好一个资产从 rendered 移到 asset-rejected：
+    //   model/obj/aishen_fudiao/MF_aishen_xiaozhi_L.obj
+    // 它被 usemtl 绑定的材质 blinn1SG 声明了 map_Kd RGB.png，而该文件【不存在】。
+    // 此前 ViewData 对这种「声明了贴图但取不到」走中性外观路径并返回成功，
+    // 宿主因此把它渲染成灰模型；按 contracts/slicer_capability_dtos.md:220-222
+    // 这是契约禁止的静默降级，现已改为失败（PM-SLICER-INPUT-0001）。
+    // 裁定见 docs/slice/DOC/DOC_DECISION_TEXFAIL_R1_声明贴图缺失时的视图数据行为.md。
+    //
+    // 这不是回归，是一个真实损坏的资产终于被正确拒绝——它正是 TEXFAIL 要治的病的实例。
+    // 另两个同目录资产不受影响，已逐个核过：
+    //   MF_aishen_zhongzhi_L_tx03.obj 是 mtllib 整份缺失（另一种降级，本次未改）；
+    //   MF_shengdanjie_zhongzhi_R_fy02.obj 被用材质的贴图存在，缺的都是未使用的材质。
+    Require(renderedCount == 28
                 && budgetRejectedCount == 0
-                && assetRejectedCount == 2,
+                && assetRejectedCount == 3,
             QStringLiteral(
                 "R-F-02 frozen matrix changed: rendered=%1 budget=%2 asset=%3")
                 .arg(renderedCount)

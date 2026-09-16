@@ -352,10 +352,17 @@ int main(int argc, char* argv[])
         BuildScene(missing, QStringLiteral("missing")), &error), error);
     error.clear();
     TopViewFrame badFrame;
-    Require(!topRenderer.Refresh(badController.SceneHandle(),
-        badController.SceneRevision(), &badFrame, &error)
-        && !error.isEmpty(),
-        QStringLiteral("missing texture silently became a gray model"));
+    // TEXFAIL/TF-00：原先是一条复合断言，失败时只打印「silently became a gray model」，
+    // 分不出是【Refresh 返回了 true】还是【返回 false 但 error 为空】——
+    // 而这两种的修法完全不同。拆成两条具名断言，红灯自己说清楚是哪一种。
+    const bool badRefreshOk = topRenderer.Refresh(badController.SceneHandle(),
+        badController.SceneRevision(), &badFrame, &error);
+    Require(!badRefreshOk,
+        QStringLiteral("declared-texture model with a missing texture must FAIL Refresh, "
+                       "but Refresh returned true (silently became a gray model)"));
+    Require(!error.isEmpty(),
+        QStringLiteral("Refresh correctly failed for the missing texture, but error was "
+                       "EMPTY (host has nothing to show the user)"));
 
     QTextStream(stdout)
         << "14E-04d dual-view contract: PASS calls=" << client.CallCount()
