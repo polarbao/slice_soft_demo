@@ -1,6 +1,7 @@
 #include "slicer_core/api/implementation/ModelFacadeImplementation.h"
 #include "slicer_core/system/Utf8Path.h"
 #include "slicer_core/model.h"
+#include "slicer_core/system/BoundedFileRead.h"
 #include "slicer_core/scene/SceneResourceIdentity.h"
 #include "slicer_core/system/Sha256.h"
 
@@ -47,9 +48,9 @@ std::string ReadFileBytes(const std::filesystem::path& path)
         throw std::runtime_error(
             "failed to read model source: " + slicer_core::PathToUtf8(path));
     }
-    return {
-        std::istreambuf_iterator<char>(input),
-        std::istreambuf_iterator<char>()};
+    // F-35：读取加界。这条路径读【整个模型文件】算 SHA-256，
+    // 此前绕开了 F-34 给 load_model_report 加的闸门。
+    return ReadOpenFileBounded(input, path);
 }
 
 void AppendUint64(std::string& payload, const std::uint64_t value)

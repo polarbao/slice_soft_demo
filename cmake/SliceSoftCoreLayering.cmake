@@ -36,6 +36,7 @@ function(SliceSoftPartitionCoreSources allSourcesVar baseSourcesVar engineSource
         "src/slicer_core/reports/ReportSchema"
         "src/slicer_core/reports/ReportSchemaValidator"
         "src/slicer_core/rip_reader"
+        "src/slicer_core/system/BoundedFileRead"
         "src/slicer_core/system/Sha256"
         "src/slicer_core/system/Sha256Internal"
         "src/slicer_core/TiffPackBitsReadInternal"

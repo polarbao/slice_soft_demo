@@ -1,4 +1,5 @@
 #include "slicer_core/api/implementation/PackageQueryFacadeInternal.h"
+#include "slicer_core/system/BoundedFileRead.h"
 #include "slicer_core/system/Utf8Path.h"
 #include "slicer_core/TiffReadApi.h"
 #include "slicer_core/system/Sha256.h"
@@ -122,9 +123,7 @@ std::string ReadFileBytes(const std::filesystem::path& path)
     {
         return {};
     }
-    return std::string{
-        std::istreambuf_iterator<char>{input},
-        std::istreambuf_iterator<char>{}};
+    return ReadOpenFileBounded(input, path);  // F-35：读取加界
 }
 
 std::string FileMetadataIdentity(const std::filesystem::path& path)

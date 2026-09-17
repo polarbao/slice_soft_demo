@@ -509,6 +509,8 @@ set(SLICESOFT_CORE_SOURCES
     src/slicer_core/support/SupportType.h
     src/slicer_core/system/ProcessMemoryStats.cpp
     src/slicer_core/system/ProcessMemoryStats.h
+    src/slicer_core/system/BoundedFileRead.cpp
+    src/slicer_core/system/BoundedFileRead.h
     src/slicer_core/system/Sha256.cpp
     src/slicer_core/system/Sha256.h
     src/slicer_core/system/Sha256Internal.h
@@ -1597,6 +1599,13 @@ add_executable(model_import_size_limit_unit_tests
 )
 
 target_link_libraries(model_import_size_limit_unit_tests PRIVATE slicer_base)
+
+# F-35：进程内整文件读取的上限用例，与上条同族。
+add_executable(in_process_read_limit_unit_tests
+    tests/unit/in_process_read_limit/Main.cpp
+)
+
+target_link_libraries(in_process_read_limit_unit_tests PRIVATE slicer_base)
 
 add_executable(worker_protocol_bounds_unit_tests
     tests/unit/worker_protocol_bounds/Main.cpp
@@ -2911,6 +2920,7 @@ else()
 endif()
 add_test(NAME json_parse_depth_unit_tests COMMAND json_parse_depth_unit_tests)
 add_test(NAME model_import_size_limit_unit_tests COMMAND model_import_size_limit_unit_tests)
+add_test(NAME in_process_read_limit_unit_tests COMMAND in_process_read_limit_unit_tests)
 add_test(NAME worker_protocol_bounds_unit_tests COMMAND worker_protocol_bounds_unit_tests)
 add_test(NAME tiff_backend_build_info_unit_tests COMMAND tiff_backend_build_info_unit_tests)
 add_test(NAME tiff_writer_backend_unit_tests COMMAND tiff_writer_backend_unit_tests)

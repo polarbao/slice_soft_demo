@@ -1,4 +1,5 @@
 #include "slicer_core/output/rgbwsvt/RgbwsvtPackageReader.h"
+#include "slicer_core/system/BoundedFileRead.h"
 
 #include "slicer_core/json_value.h"
 #include "slicer_core/materials/transfer/TransferChannelError.h"
@@ -38,9 +39,7 @@ std::string ReadFileBytes(const std::filesystem::path& path)
             ValidationErrorCode::ManifestMissing,
             "manifest is missing: " + path.generic_string());
     }
-    return std::string{
-        std::istreambuf_iterator<char>{input},
-        std::istreambuf_iterator<char>{}};
+    return ReadOpenFileBounded(input, path);  // F-35：读取加界
 }
 Json ParseManifest(const std::filesystem::path& path, std::string* bytes)
 {
