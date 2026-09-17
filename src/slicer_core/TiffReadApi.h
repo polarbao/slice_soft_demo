@@ -131,4 +131,25 @@ TiffReadResult read_rgbwsv_tiff(const std::filesystem::path& path);
  */
 TiffReadResult read_rgbwsv_tiff_stats(const std::filesystem::path& path);
 
+/// TIFF 声明的解码尺寸相对【文件实际大小】的最大可信膨胀比（F-52）。
+///
+/// PackBits 的理论上限是 64:1（2 字节编码 128 个重复字节），这里取 128 留一倍余量。
+/// 实测真实产物的比值是 1.0–1.2:1，离该上界有约百倍余量。
+///
+/// 刻意【不】设绝对上限：那需要一个拿不出证据的数字，定小了会打断大幅面生产。
+/// 比值判据有原理依据，且正好挡住本条要挡的东西——「文件很小却声称自己很大」。
+constexpr std::uintmax_t kMaxTiffDecodedExpansion{128U};
+
+/**
+ * @brief 声明尺寸算出的解码字节数若远超文件所能承载的上界即抛出（F-52）。
+ * @param decodedBytes 按文件头的宽×高×通道算出的字节数。
+ * @param fileBytes 文件实际字节数；0 表示未知，此时不作判断。
+ * @param path 仅用于错误信息。
+ * @throws std::runtime_error 超出可信膨胀比时。
+ */
+void EnsureDecodedSizeIsPlausible(
+    std::uintmax_t decodedBytes,
+    std::uintmax_t fileBytes,
+    const std::filesystem::path& path);
+
 }  // namespace slicer_core

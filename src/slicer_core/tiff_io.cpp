@@ -2,6 +2,7 @@
 
 #include "slicer_core/TiffPackBitsReadInternal.h"
 #include "slicer_core/TiffReadStructureInternal.h"
+#include "slicer_core/system/Utf8Path.h"
 #include "slicer_core/TiffRowReadInternal.h"
 
 #include <algorithm>
@@ -156,7 +157,11 @@ std::size_t DecodedByteCount(const TiffReadResult& result)
         * result.spec.height * result.spec.samples_per_pixel;
 }
 
-void InitializeReadPixels(TiffReadResult& result, const bool retainPixels)
+void InitializeReadPixels(
+    TiffReadResult& result,
+    const bool retainPixels,
+    const std::size_t fileBytes,
+    const std::filesystem::path& path)
 {
     if (!retainPixels)
     {
@@ -164,6 +169,10 @@ void InitializeReadPixels(TiffReadResult& result, const bool retainPixels)
         result.pixels.clear();
         return;
     }
+    // F-52：闸门放在分配点【内部】，这样任何调用点都漏不掉。
+    // 此前数据量与声明尺寸的对账在读条带时才做，而那时内存已经分配【并填充】完毕；
+    // 一个几 KB、头里声称十万见方的 TIFF 足以把宿主拖垮。
+    EnsureDecodedSizeIsPlausible(DecodedByteCount(result), fileBytes, path);
     result.pixels.assign(DecodedByteCount(result), 255U);
 }
 
@@ -357,7 +366,7 @@ TiffReadResult ReadTiledFromBuffer(
         ReadU16Array(data, FindRequiredEntry(entries, 339U), 339U);
     ValidateCommonSpec(result, bitsPerSample, sampleFormats, path);
     result.spec.row_order = tiff_read_internal::ReadRowOrder(data, entries);
-    InitializeReadPixels(result, true);
+    InitializeReadPixels(result, true, data.size(), path);
 
     const auto tileOffsets =
         ReadU32Array(data, FindRequiredEntry(entries, 324U), 324U);
@@ -439,7 +448,7 @@ TiffReadResult ReadStrippedFromBuffer(
         ReadU16Array(data, FindRequiredEntry(entries, 339U), 339U);
     ValidateCommonSpec(result, bitsPerSample, sampleFormats, path);
     result.spec.row_order = tiff_read_internal::ReadRowOrder(data, entries);
-    InitializeReadPixels(result, retainPixels);
+    InitializeReadPixels(result, retainPixels, data.size(), path);
     if (result.spec.rows_per_strip == 0U)
     {
         throw std::runtime_error(
@@ -543,6 +552,33 @@ TiffReadResult read_rgbwsv_tiff(const std::filesystem::path& path)
 TiffReadResult read_rgbwsv_tiff_stats(const std::filesystem::path& path)
 {
     return DispatchRgbwsvTiff(path, false);
+}
+
+void EnsureDecodedSizeIsPlausible(
+    const std::uintmax_t decodedBytes,
+    const std::uintmax_t fileBytes,
+    const std::filesystem::path& path)
+{
+    if (fileBytes == 0U)
+    {
+        return;
+    }
+    // 先防乘法溢出：文件本身已大到乘不动时，另有「一次读入」那道检查兜着。
+    if (fileBytes > std::numeric_limits<std::uintmax_t>::max() / kMaxTiffDecodedExpansion)
+    {
+        return;
+    }
+    const std::uintmax_t ceiling = fileBytes * kMaxTiffDecodedExpansion;
+    if (decodedBytes <= ceiling)
+    {
+        return;
+    }
+    throw std::runtime_error(
+        "TIFF header declares an implausible decoded size: " + PathToUtf8(path)
+        + " would decode to " + std::to_string(decodedBytes)
+        + " bytes from a " + std::to_string(fileBytes)
+        + " byte file, above the " + std::to_string(kMaxTiffDecodedExpansion)
+        + "x expansion any compression can produce");
 }
 
 }  // namespace slicer_core

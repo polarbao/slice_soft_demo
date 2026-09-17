@@ -1607,6 +1607,13 @@ add_executable(in_process_read_limit_unit_tests
 
 target_link_libraries(in_process_read_limit_unit_tests PRIVATE slicer_base)
 
+# F-52：TIFF 声明尺寸与文件实际大小的对账，同族最后一条。
+add_executable(tiff_decoded_size_guard_unit_tests
+    tests/unit/tiff_decoded_size_guard/Main.cpp
+)
+
+target_link_libraries(tiff_decoded_size_guard_unit_tests PRIVATE slicer_base)
+
 add_executable(worker_protocol_bounds_unit_tests
     tests/unit/worker_protocol_bounds/Main.cpp
     src/slicer_module/WorkerProtocol.cpp
@@ -2921,6 +2928,7 @@ endif()
 add_test(NAME json_parse_depth_unit_tests COMMAND json_parse_depth_unit_tests)
 add_test(NAME model_import_size_limit_unit_tests COMMAND model_import_size_limit_unit_tests)
 add_test(NAME in_process_read_limit_unit_tests COMMAND in_process_read_limit_unit_tests)
+add_test(NAME tiff_decoded_size_guard_unit_tests COMMAND tiff_decoded_size_guard_unit_tests)
 add_test(NAME worker_protocol_bounds_unit_tests COMMAND worker_protocol_bounds_unit_tests)
 add_test(NAME tiff_backend_build_info_unit_tests COMMAND tiff_backend_build_info_unit_tests)
 add_test(NAME tiff_writer_backend_unit_tests COMMAND tiff_writer_backend_unit_tests)
