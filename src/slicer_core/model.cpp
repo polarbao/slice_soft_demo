@@ -1878,10 +1878,41 @@ ModelAppearanceAssessment AssessModelAppearance(const ModelReport& report)
     return {};
 }
 
+// kMaxModelFileBytes 取 512 MiB 的理由（F-34）：
+//
+// model.import 是 in_process 能力——解析与分配都发生在【宿主地址空间】，
+// 此前没有任何规模上限，一个 2 GB 的 ASCII STL 足以把宿主打印软件撑爆，
+// 代价与后果完全不成比例（同 F-33 的 JSON 深度上限）。
+//
+// 512 MiB 是仓库内最大真实模型（39.96 MB）的约 13 倍，留足余量。
+// 刻意【不】做成环境变量开关：引擎侧没有读环境变量的先例，
+// 给一个要嵌进宿主进程的库加隐藏的全局输入是坏味道；
+// 若将来确有合法的超大模型需求，应走配置契约加字段，而不是加后门。
+void EnsureModelFileWithinLimit(
+    const std::filesystem::path& modelPath,
+    const std::uintmax_t actualBytes,
+    const std::uintmax_t limitBytes) {
+    if (limitBytes == 0U || actualBytes <= limitBytes) {
+        return;
+    }
+    throw std::runtime_error(
+        "model file is too large to import: " + modelPath.string()
+        + " is " + std::to_string(actualBytes) + " bytes, limit is "
+        + std::to_string(limitBytes)
+        + " bytes; split the model or reduce its tessellation before importing");
+}
+
 ModelReport load_model_report(const ModelLoadConfig& config, const std::filesystem::path& config_dir) {
     const std::filesystem::path model_path = resolve_path(config.input.model_path, config_dir);
     if (!std::filesystem::exists(model_path)) {
         throw std::runtime_error("model file does not exist: " + model_path.string());
+    }
+
+    // F-34：在读任何字节、分配任何内存【之前】把量级错误的输入挡住。
+    std::error_code sizeError;
+    const std::uintmax_t modelBytes = std::filesystem::file_size(model_path, sizeError);
+    if (!sizeError) {
+        EnsureModelFileWithinLimit(model_path, modelBytes, kMaxModelFileBytes);
     }
 
     const std::string format = detect_format(model_path, config.input.format);

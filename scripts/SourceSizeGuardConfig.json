@@ -1,5 +1,7 @@
 {
   "schemaVersion": 1,
+  "censusBaseline": 132,
+  "censusBaselineNote": "2026-09-17 实测值。棘轮：只防新增，不冻结清单，不替任何专项承接既有的 132 条债。降下来后应把本值一并收紧。",
   "thresholds": {
     "newSourceMaxLines": 500,
     "newHeaderMaxLines": 200,
@@ -34,14 +36,6 @@
       ],
       "reason": "用户 2026-09-01 授权放宽：MATOPQ 方案 A 新增 geometrySampling.degenerateAreaEpsilonMm2 的加载与校验，属纯声明性配置项增长。",
       "expiresWhen": "版本重构时统一清理 config.cpp 与其他历史巨型文件"
-    },
-    {
-      "path": "src/slicer_core/slicer.cpp",
-      "rules": [
-        "G2"
-      ],
-      "reason": "用户 2026-09-01 授权放宽：MATOPQ 方案 A 需在 transfer 与 MATVOL 两处适配调用透传退化面阈值；MO-04 将在此文件内接入不透明度到光油通道的判据。",
-      "expiresWhen": "版本重构时统一清理 slicer.cpp（现 5645 行）"
     }
   ]
 }

@@ -1,4 +1,5 @@
 #include "slicer_core/pipeline/OpenVdbCandidatePipeline.h"
+#include "slicer_core/pipeline/SliceProgressNotifier.h"
 
 #include "slicer_core/config.h"
 #include "slicer_core/geometry/OpenVdbAdapter.h"
@@ -33,12 +34,9 @@ namespace slicer_core
 namespace
 {
 
-using PipelineClock = std::chrono::steady_clock;
-
-double ElapsedMsSince(const PipelineClock::time_point& start)
-{
-    return std::chrono::duration<double, std::milli>(PipelineClock::now() - start).count();
-}
+// F-49：与 slicer.cpp 同源的时钟，改为指向共享单元；
+// 别名保留是为了让本文件 15 处既有 PipelineClock 用法一字不改。
+using PipelineClock = SlicerClock;
 
 void NotifyProgress(
     const OpenVdbCandidatePipelineOptions& options,
@@ -58,18 +56,7 @@ void NotifyProgress(
         current,
         total,
         percent,
-        ElapsedMsSince(runStart)});
-}
-
-bool ShouldNotifyLayerProgress(const int completedLayers, const int layerCount)
-{
-    if (completedLayers <= 1 || completedLayers >= layerCount)
-    {
-        return true;
-    }
-
-    const int interval = std::max(1, (layerCount + 99) / 100);
-    return completedLayers % interval == 0;
+        progress::ElapsedMsSince(runStart)});
 }
 
 std::string LayerFileName(const int layerIndex)
@@ -400,7 +387,7 @@ OpenVdbCandidatePipelineResult RunOpenVdbCandidatePipelineCore(
     const SliceConfig config = load_slice_config(configPath);
     EnsureGlobalTextureFillPartitionBackendAvailable(config);
     EnsureCandidateConfig(config);
-    profile.config_load_ms = ElapsedMsSince(phaseStart);
+    profile.config_load_ms = progress::ElapsedMsSince(phaseStart);
     NotifyProgress(options, runStart, "openvdb_prepare", 0, 1, 3);
     phaseStart = PipelineClock::now();
 
@@ -433,7 +420,7 @@ OpenVdbCandidatePipelineResult RunOpenVdbCandidatePipelineCore(
             throw std::runtime_error("OpenVDB non-production fallback failed: " + prototype.errors.front());
         }
     }
-    profile.mask_sampling_ms = ElapsedMsSince(phaseStart);
+    profile.mask_sampling_ms = progress::ElapsedMsSince(phaseStart);
     NotifyProgress(options, runStart, "layer_buffer_prepare", 0, 1, 30);
     phaseStart = PipelineClock::now();
 
@@ -445,7 +432,7 @@ OpenVdbCandidatePipelineResult RunOpenVdbCandidatePipelineCore(
     {
         throw std::runtime_error("OpenVDB candidate layer buffers failed: " + buffers.error);
     }
-    profile.grid_setup_ms = ElapsedMsSince(phaseStart);
+    profile.grid_setup_ms = progress::ElapsedMsSince(phaseStart);
     NotifyProgress(options, runStart, "layer_processing", 0, buffers.depth, 36);
     phaseStart = PipelineClock::now();
 
@@ -489,14 +476,14 @@ OpenVdbCandidatePipelineResult RunOpenVdbCandidatePipelineCore(
         {
             throw std::runtime_error("OpenVDB candidate material composition failed: " + composed.error);
         }
-        profile.layer_compute_ms += ElapsedMsSince(layerComputeStart);
+        profile.layer_compute_ms += progress::ElapsedMsSince(layerComputeStart);
 
         const std::string relativeLayerPath = LayerFileName(layer.layer_index);
         if (options.write_tiff_layers)
         {
             const auto tiffWriteStart = PipelineClock::now();
             write_rgbwsv_tiff(stagingDir / relativeLayerPath, tiffSpec, composed.channels);
-            profile.tiff_write_ms += ElapsedMsSince(tiffWriteStart);
+            profile.tiff_write_ms += progress::ElapsedMsSince(tiffWriteStart);
         }
         const auto layerMetadataStart = PipelineClock::now();
         layers.push_back(Json::object({
@@ -512,7 +499,7 @@ OpenVdbCandidatePipelineResult RunOpenVdbCandidatePipelineCore(
         summary.model_pixels += composed.stats.model_pixels;
         summary.support_pixels += composed.stats.support_pixels;
         summary.shell_pixels += layer.stats.shell_pixels;
-        profile.layer_compute_ms += ElapsedMsSince(layerMetadataStart);
+        profile.layer_compute_ms += progress::ElapsedMsSince(layerMetadataStart);
 
         if (options.write_preview_files)
         {
@@ -587,11 +574,11 @@ OpenVdbCandidatePipelineResult RunOpenVdbCandidatePipelineCore(
                     config.preview.empty_color,
                     config.preview.varnish_color),
                 composed.stats.varnish_pixels);
-            profile.preview_write_ms += ElapsedMsSince(previewWriteStart);
+            profile.preview_write_ms += progress::ElapsedMsSince(previewWriteStart);
         }
 
         const int completedLayers = layer.layer_index + 1;
-        if (ShouldNotifyLayerProgress(completedLayers, buffers.depth))
+        if (progress::ShouldNotifyLayerProgress(completedLayers, buffers.depth))
         {
             const int percent = 36 + (completedLayers * 56 / std::max(1, buffers.depth));
             NotifyProgress(
@@ -603,7 +590,7 @@ OpenVdbCandidatePipelineResult RunOpenVdbCandidatePipelineCore(
                 percent);
         }
     }
-    profile.layer_compose_ms = ElapsedMsSince(phaseStart);
+    profile.layer_compose_ms = progress::ElapsedMsSince(phaseStart);
     NotifyProgress(options, runStart, "report_build", 0, 1, 92);
     phaseStart = PipelineClock::now();
 
@@ -665,7 +652,7 @@ OpenVdbCandidatePipelineResult RunOpenVdbCandidatePipelineCore(
     });
 
     const Json realModelReport = MakeSurfaceShellRealModelReport(prototype);
-    profile.report_build_ms = ElapsedMsSince(phaseStart);
+    profile.report_build_ms = progress::ElapsedMsSince(phaseStart);
     NotifyProgress(options, runStart, "report_write", 0, 1, 95);
     phaseStart = PipelineClock::now();
     if (options.write_reports)
@@ -714,14 +701,14 @@ OpenVdbCandidatePipelineResult RunOpenVdbCandidatePipelineCore(
             {"generated", Json{previewFiles}},
         }));
     }
-    profile.report_write_ms = ElapsedMsSince(phaseStart);
+    profile.report_write_ms = progress::ElapsedMsSince(phaseStart);
 
     if (options.publish_package)
     {
         NotifyProgress(options, runStart, "package_publish", 0, 1, 98);
         phaseStart = PipelineClock::now();
         PublishStagedPackage(stagingDir, packageDir);
-        profile.package_publish_ms = ElapsedMsSince(phaseStart);
+        profile.package_publish_ms = progress::ElapsedMsSince(phaseStart);
     }
     summary.non_production = nonProductionPackage;
     profile.slice_processing_ms =
@@ -735,7 +722,7 @@ OpenVdbCandidatePipelineResult RunOpenVdbCandidatePipelineCore(
         + profile.preview_write_ms
         + profile.report_write_ms
         + profile.package_publish_ms;
-    profile.total_ms = ElapsedMsSince(runStart);
+    profile.total_ms = progress::ElapsedMsSince(runStart);
     summary.profile = profile;
     NotifyProgress(options, runStart, "completed", 1, 1, 100);
 

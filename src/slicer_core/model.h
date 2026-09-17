@@ -147,6 +147,22 @@ struct ModelAppearanceAssessment
  */
 ModelAppearanceAssessment AssessModelAppearance(const ModelReport& report);
 
+/// 导入文件尺寸上限（F-34）：仓库内最大真实模型的约 13 倍，
+/// 挡的是量级错误的输入而非正常大模型。取值理由见 model.cpp 的实现处。
+inline constexpr std::uintmax_t kMaxModelFileBytes{512ULL * 1024ULL * 1024ULL};
+
+/**
+ * @brief 文件尺寸超限即抛出，错误信息给出实际值、上限与文件名。
+ * @param modelPath 仅用于错误信息。
+ * @param actualBytes 实际字节数。
+ * @param limitBytes 上限；0 表示不限（供测试构造用）。
+ * @throws std::runtime_error 超限时。
+ */
+void EnsureModelFileWithinLimit(
+    const std::filesystem::path& modelPath,
+    std::uintmax_t actualBytes,
+    std::uintmax_t limitBytes);
+
 /**
  * @brief Load a model using the narrow base-layer configuration.
  * @param config Model load configuration.

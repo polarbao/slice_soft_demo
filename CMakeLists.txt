@@ -222,6 +222,10 @@ set(SLICESOFT_CORE_SOURCES
     src/slicer_core/geometry/SceneModelTriangleMeshAdapter.cpp
     src/slicer_core/geometry/SceneModelTriangleMeshAdapter.h
     src/slicer_core/geometry/SliceGridSpec.h
+    src/slicer_core/geometry/ReliefHeightfieldSampler.cpp
+    src/slicer_core/geometry/ReliefHeightfieldSampler.h
+    src/slicer_core/geometry/SliceMaskRasterizer.cpp
+    src/slicer_core/geometry/SliceMaskRasterizer.h
     src/slicer_core/geometry/TransformedModelAdapter.cpp
     src/slicer_core/geometry/TransformedModelAdapter.h
     src/slicer_core/geometry/ShellMask.cpp
@@ -253,6 +257,8 @@ set(SLICESOFT_CORE_SOURCES
     src/slicer_core/materials/volume/MaterialTopologyClassifier.h
     src/slicer_core/materials/volume/MaterialVolumePlan.cpp
     src/slicer_core/materials/volume/MaterialVolumePlan.h
+    src/slicer_core/materials/SliceMaterialTexture.cpp
+    src/slicer_core/materials/SliceMaterialTexture.h
     src/slicer_core/materials/volume/MaterialLayerRgbComposer.cpp
     src/slicer_core/materials/volume/MaterialLayerRgbComposer.h
     src/slicer_core/materials/volume/MaterialOpacityVarnishResolver.h
@@ -315,6 +321,10 @@ set(SLICESOFT_CORE_SOURCES
     src/slicer_core/model/ObjFaceParser.cpp
     src/slicer_core/model/MtlMaterialParser.h
     src/slicer_core/model/MtlMaterialParser.cpp
+    src/slicer_core/output/preview/LayerPreviewWriter.cpp
+    src/slicer_core/output/preview/LayerPreviewWriter.h
+    src/slicer_core/output/reports/SliceReportJson.cpp
+    src/slicer_core/output/reports/SliceReportJson.h
     src/slicer_core/output/rgbwsv/RgbwsvPackage.cpp
     src/slicer_core/output/rgbwsv/RgbwsvPackage.h
     src/slicer_core/output/rgbwsv/RgbwsvPackageWriter.cpp
@@ -333,6 +343,8 @@ set(SLICESOFT_CORE_SOURCES
     src/slicer_core/output/rgbwsv/RgbwsvCapabilitySummary.h
     src/slicer_core/output/rgbwsv/RgbwsvSceneExtension.cpp
     src/slicer_core/output/rgbwsv/RgbwsvSceneExtension.h
+    src/slicer_core/pipeline/SliceProgressNotifier.cpp
+    src/slicer_core/pipeline/SliceProgressNotifier.h
     src/slicer_core/pipeline/PipelineContext.cpp
     src/slicer_core/pipeline/PipelineContext.h
     src/slicer_core/pipeline/RasterMemoryBudget.cpp
@@ -412,6 +424,8 @@ set(SLICESOFT_CORE_SOURCES
     src/slicer_core/raster/RasterBoundary.h
     src/slicer_core/raster/TextureFillPartitionRasterMapper.cpp
     src/slicer_core/raster/TextureFillPartitionRasterMapper.h
+    src/slicer_core/reports/CrossSectionStackReport.cpp
+    src/slicer_core/reports/CrossSectionStackReport.h
     src/slicer_core/reports/ReportBase.cpp
     src/slicer_core/reports/ReportBase.h
     src/slicer_core/reports/MultiModelSceneReport.cpp
@@ -461,6 +475,8 @@ set(SLICESOFT_CORE_SOURCES
     src/slicer_core/SliceRunTelemetry.h
     src/slicer_core/slicer.cpp
     src/slicer_core/slicer.h
+    src/slicer_core/support/SliceSupportGeneration.cpp
+    src/slicer_core/support/SliceSupportGeneration.h
     src/slicer_core/support/SupportComponentAnalysis.cpp
     src/slicer_core/support/SupportComponentAnalysis.h
     src/slicer_core/support/BoundedSupportDemand.cpp
@@ -1575,6 +1591,13 @@ add_executable(json_parse_depth_unit_tests
 
 target_link_libraries(json_parse_depth_unit_tests PRIVATE slicer_base)
 
+# F-34：与 json_parse_depth 同族的输入规模闸门用例（见 analysis/09）。
+add_executable(model_import_size_limit_unit_tests
+    tests/unit/model_import_size_limit/Main.cpp
+)
+
+target_link_libraries(model_import_size_limit_unit_tests PRIVATE slicer_base)
+
 add_executable(worker_protocol_bounds_unit_tests
     tests/unit/worker_protocol_bounds/Main.cpp
     src/slicer_module/WorkerProtocol.cpp
@@ -2495,6 +2518,11 @@ if(Python3_Interpreter_FOUND)
             "${CMAKE_CURRENT_SOURCE_DIR}/tests/contracts/ValidateSlicingModeDeclared.py"
     )
     add_test(
+        NAME capability_registry_contract_test
+        COMMAND ${Python3_EXECUTABLE}
+            "${CMAKE_CURRENT_SOURCE_DIR}/tests/contracts/ValidateCapabilityRegistry.py"
+    )
+    add_test(
         NAME stage16_release_baseline_contract_tests
         COMMAND ${Python3_EXECUTABLE}
             "${CMAKE_CURRENT_SOURCE_DIR}/tests/stage16/ValidateReleaseBaseline.py"
@@ -2624,6 +2652,12 @@ if(Python3_Interpreter_FOUND)
         COMMAND ${Python3_EXECUTABLE}
             "${CMAKE_CURRENT_SOURCE_DIR}/scripts/ValidateSourceSizeGuard.py"
             --self-test
+    )
+    add_test(
+        NAME slicer_source_size_census_test
+        COMMAND ${Python3_EXECUTABLE}
+            "${CMAKE_CURRENT_SOURCE_DIR}/scripts/ValidateSourceSizeGuard.py"
+            --census
     )
     add_test(
         NAME third_party_notice_contract_test
@@ -2876,6 +2910,7 @@ else()
     )
 endif()
 add_test(NAME json_parse_depth_unit_tests COMMAND json_parse_depth_unit_tests)
+add_test(NAME model_import_size_limit_unit_tests COMMAND model_import_size_limit_unit_tests)
 add_test(NAME worker_protocol_bounds_unit_tests COMMAND worker_protocol_bounds_unit_tests)
 add_test(NAME tiff_backend_build_info_unit_tests COMMAND tiff_backend_build_info_unit_tests)
 add_test(NAME tiff_writer_backend_unit_tests COMMAND tiff_writer_backend_unit_tests)
