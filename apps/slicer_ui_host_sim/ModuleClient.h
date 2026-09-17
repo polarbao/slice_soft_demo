@@ -11,6 +11,9 @@
 #include <QtGlobal>
 
 #include <atomic>
+#include <memory>
+
+namespace slicesoft::diagnostics { class ModuleLogBinding; }
 
 /**
  * @brief 用于冻结 SliceSoft 公共 C SPI 的运行时加载客户端。
@@ -147,12 +150,14 @@ private:
     using LastErrorFunction = int (PM_CALL*)(char*, int, int*);
 
     bool ResolveExports(QString* error);
+    void AttachLogging() noexcept;
     bool ReadModuleInfo(QByteArray* output, QString* error);
     QString LastErrorText(const QString& fallback);
     void ResetFunctions();
     void RecordCall();
 
     HMODULE m_library{nullptr};
+    std::unique_ptr<slicesoft::diagnostics::ModuleLogBinding> m_logging;
     pm_module_t* m_module{nullptr};
     QByteArray m_moduleInfo;
     std::atomic<quint64> m_callCount{0};

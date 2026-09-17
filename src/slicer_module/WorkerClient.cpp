@@ -1,6 +1,7 @@
 #include "WorkerClient.h"
 #include "WorkerProcessWindows.h"
 #include "WorkerProtocol.h"
+#include "diagnostics/transport/EventPipe.h"
 
 #include "slicer_core/api/artifacts/PackageArtifactSafety.h"
 #include "slicer_core/rip_reader.h"
@@ -278,10 +279,13 @@ WorkerRunResult WorkerClient::Impl::RunProcess(
     PROCESS_INFORMATION processInformation{};
     const wchar_t* workingDirectory = options.workingDirectory.empty()
         ? nullptr : options.workingDirectory.c_str();
+    std::optional<diagnostics::transport::EventPipeServer> telemetry;
+    if (options.diagnosticSink) telemetry.emplace();
+    auto environment = diagnostics::transport::WorkerEnvironment(telemetry ? telemetry->Endpoint() : L"");
     if (CreateProcessW(options.executablePath.c_str(), commandLine.data(), nullptr, nullptr, TRUE,
             CREATE_NO_WINDOW | CREATE_SUSPENDED | CREATE_UNICODE_ENVIRONMENT
                 | EXTENDED_STARTUPINFO_PRESENT,
-            nullptr, workingDirectory, &startup.StartupInfo, &processInformation) == FALSE)
+            environment.empty() ? nullptr : environment.data(), workingDirectory, &startup.StartupInfo, &processInformation) == FALSE)
     {
         result.errorCode = "PM-SLICER-INTERNAL-0099";
         result.errorMessage = WindowsError("CreateProcessW");
@@ -327,6 +331,7 @@ WorkerRunResult WorkerClient::Impl::RunProcess(
     {
         ReadAvailablePipe(stdoutRead.Get(), true, &stdoutOpen, &protocol);
         ReadAvailablePipe(stderrRead.Get(), false, &stderrOpen, &protocol);
+        if (telemetry) telemetry->Poll(result.processId, options.diagnosticSink);
         const auto now = std::chrono::steady_clock::now();
         timedOut = timedOut || now - startedAt >= options.timeout;
         const bool mustCancel = timedOut || m_cancelRequested.load(std::memory_order_acquire)
@@ -357,6 +362,7 @@ WorkerRunResult WorkerClient::Impl::RunProcess(
     {
         ReadAvailablePipe(stdoutRead.Get(), true, &stdoutOpen, &protocol);
         ReadAvailablePipe(stderrRead.Get(), false, &stderrOpen, &protocol);
+        if (telemetry) telemetry->Poll(result.processId, options.diagnosticSink);
         Sleep(1);
     }
     protocol.Finish();

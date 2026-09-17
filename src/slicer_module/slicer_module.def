@@ -12,3 +12,6 @@ EXPORTS
     pm_release
     pm_self_test
     pm_last_error
+    slicer_log_api_version
+    slicer_set_log_callback_v1
+    slicer_clear_log_callback_v1

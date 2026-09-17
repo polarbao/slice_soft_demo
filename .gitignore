@@ -20,6 +20,9 @@ tests/*
 !tests/golden/**
 !tests/unit/
 !tests/unit/**
+# product 侧（LOGDUMP）放行的诊断测试目录，合并时并入。
+!tests/diagnostics/
+!tests/diagnostics/**
 # tests/contracts 此前不在放行名单内：已跟踪的文件不受 .gitignore 影响，所以
 # 现存 28 个契约测试照常在库，而【新增】的会被静默忽略——本目录已因此丢过两个
 # 脚本（RunSceneFacade14B03Tests.ps1、ValidateSceneFacade14B03.py，仅存在于磁盘）。

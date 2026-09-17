@@ -7,6 +7,7 @@
 #include "HostUxUiSmoke.h"
 #include "HostUxSceneSmoke.h"
 #include "ModuleClient.h"
+#include "HostDiagnostics.h"
 
 #include <QApplication>
 #include <QCheckBox>
@@ -962,7 +963,5 @@ int main(int argc, char* argv[])
                 ? QStringLiteral("success")
                 : expectedOutcome);
     }
-    HostMainWindow window(modulePath);
-    window.show();
-    return application.exec();
+    return RunDiagnosticHost(modulePath);
 }

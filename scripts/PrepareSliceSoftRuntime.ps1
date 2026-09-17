@@ -32,6 +32,7 @@ param(
 
 Set-StrictMode -Version Latest
 $ErrorActionPreference = "Stop"
+. (Join-Path $PSScriptRoot "SliceSoftDiagnosticsPackaging.ps1")
 
 function ResolveQt5CMakeDir
 {
@@ -422,6 +423,7 @@ function AssertRuntimeDirectoryNotInUse
         "slicer_ui_host_sim",
         "slicer_cli",
         "slicer_worker",
+        "slicer_crash_reporter",
         "rip_reader_test"))
     {
         foreach ($process in @(Get-Process -Name $processName -ErrorAction SilentlyContinue))
@@ -864,6 +866,9 @@ try
     $workerExecutable = ResolveBuiltExecutable `
         -BuildRoot $resolvedConfigBuildDir `
         -Candidates @("$Config/slicer_worker.exe", "slicer_worker.exe")
+    $crashReporterExecutable = ResolveBuiltExecutable `
+        -BuildRoot $resolvedConfigBuildDir `
+        -Candidates @("$Config/slicer_crash_reporter.exe", "slicer_crash_reporter.exe")
     $moduleInfoProbe = ResolveBuiltExecutable `
         -BuildRoot $resolvedConfigBuildDir `
         -Candidates @("$Config/slicer_host_sim.exe", "slicer_host_sim.exe")
@@ -1050,6 +1055,7 @@ try
         Copy-Item -LiteralPath $hostUiExecutable -Destination (Join-Path $stagingDir "slicer_ui_host_sim.exe")
         Copy-Item -LiteralPath $moduleLibrary -Destination (Join-Path $stagingDir "slicer_module.dll")
         Copy-Item -LiteralPath $workerExecutable -Destination (Join-Path $stagingDir "slicer_worker.exe")
+        Copy-Item -LiteralPath $crashReporterExecutable -Destination (Join-Path $stagingDir "slicer_crash_reporter.exe")
         Copy-Item -LiteralPath $moduleManifest -Destination (Join-Path $stagingDir "module.json")
         Copy-Item -LiteralPath $sourceVersionManifest -Destination (Join-Path $stagingDir "version-manifest.json")
         Copy-Item -LiteralPath $buildVersionManifest -Destination (Join-Path $stagingDir "slicesoft_build_manifest.json")
@@ -1073,6 +1079,13 @@ try
             -LiteralPath (Join-Path $repoRoot "licenses") `
             -Destination $stagingDir `
             -Recurse
+        $diagnosticsRuntimeInventory = Copy-SliceSoftDiagnosticsDependencies `
+            -MetadataPath (Join-Path $resolvedConfigBuildDir "slicesoft_diagnostics_runtime_$Config.txt") `
+            -StagingDir $stagingDir
+        $diagnosticsGuideRelativePath = "docs/user_guides/SLICESOFT_日志与转储使用说明.md"
+        $diagnosticsGuideDestination = Join-Path $stagingDir $diagnosticsGuideRelativePath
+        New-Item -ItemType Directory -Force -Path (Split-Path -Parent $diagnosticsGuideDestination) | Out-Null
+        Copy-Item -LiteralPath (Join-Path $repoRoot $diagnosticsGuideRelativePath) -Destination $diagnosticsGuideDestination
         $userGuideRelativePath =
             "docs/user_guides/SLICE_PRODUCT_PACKAGED_新版切片软件使用手册.md"
         $userGuideAssetRelativePath =
@@ -1383,6 +1396,12 @@ try
         }
 
         $profileResourceValidation = TestPortableProfileResources -RuntimeRoot $stagingDir
+        $symbolArchiveRoot = Join-Path $resolvedConfigBuildDir "symbol-archive"
+        AssertPathUnderRepo -RepoRoot $repoRoot -Path $symbolArchiveRoot -Purpose "Private symbol archive"
+        $diagnosticsSymbolArchive = Export-SliceSoftSymbolArchive `
+            -BinaryPaths @($slicerCli, $ripReader, $hostUiExecutable, $moduleLibrary, $workerExecutable, $crashReporterExecutable) `
+            -ArchiveRoot $symbolArchiveRoot -BuildManifest $buildVersionManifest -Config $Config `
+            -PackagedBinaryDirectory $stagingDir
         $manifest = [ordered]@{
             schema = "slicesoft.runtime.1"
             generatedAt = [DateTimeOffset]::Now.ToString("o")
@@ -1417,6 +1436,16 @@ try
                 ui = "slice_soft_test.exe"
                 slicerCli = "slicer_cli.exe"
                 ripReader = "rip_reader_test.exe"
+                crashReporter = "slicer_crash_reporter.exe"
+            }
+            diagnostics = [ordered]@{
+                eventSchema = "diagnostics.event.v1"
+                crashSchema = "diagnostics.crash.v1"
+                crashReporter = "slicer_crash_reporter.exe"
+                crashReporterSha256 = (Get-FileHash -LiteralPath (Join-Path $stagingDir "slicer_crash_reporter.exe") -Algorithm SHA256).Hash.ToLowerInvariant()
+                runtimeLibraries = $diagnosticsRuntimeInventory
+                symbols = $diagnosticsSymbolArchive
+                userGuide = $diagnosticsGuideRelativePath
             }
             capabilityPackage = [ordered]@{
                 module = "slicer_module.dll"

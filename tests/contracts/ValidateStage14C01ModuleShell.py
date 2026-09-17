@@ -18,6 +18,12 @@ EXPECTED_EXPORTS = [
     "pm_last_error",
 ]
 
+LOGGING_EXPORTS = [
+    "slicer_log_api_version",
+    "slicer_set_log_callback_v1",
+    "slicer_clear_log_callback_v1",
+]
+
 
 def ReadText(path: Path) -> str:
     return path.read_text(encoding="utf-8")
@@ -39,8 +45,8 @@ def Validate() -> None:
     cmake = ReadText(repoRoot / "CMakeLists.txt")
 
     exported = ParseDefExports(moduleDef)
-    assert exported == EXPECTED_EXPORTS, (
-        f"expected exact ordered exports {EXPECTED_EXPORTS}, got {exported}"
+    assert exported == EXPECTED_EXPORTS + LOGGING_EXPORTS, (
+        f"expected frozen SPI plus logging v1 exports, got {exported}"
     )
 
     definitions = re.findall(
@@ -49,6 +55,14 @@ def Validate() -> None:
     )
     assert definitions == EXPECTED_EXPORTS, (
         f"expected exact ordered definitions {EXPECTED_EXPORTS}, got {definitions}"
+    )
+    logging_source = ReadText(repoRoot / "src/slicer_module/logging/LoggingExports.cpp")
+    logging_definitions = re.findall(
+        r'extern\s+"C"\s+PM_API[\s\S]*?PM_CALL\s+(slicer_[a-z_0-9]+)\s*\(',
+        logging_source,
+    )
+    assert logging_definitions == LOGGING_EXPORTS, (
+        f"expected exact optional logging definitions {LOGGING_EXPORTS}, got {logging_definitions}"
     )
     assert "PM_MODULE_BUILD_SHARED" in cmake
     assert re.search(r"add_library\(slicer_module\s+SHARED", cmake)

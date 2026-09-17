@@ -9,6 +9,16 @@
 
 本目录存放 Codex 操作任务、执行提示词和历史任务归档。`current` 表示文件仍需保留或可能继续执行，不表示其中每份任务都是当前入口。
 
+## LOGDUMP 开发入口（2026-09-15）
+
+最新：[G 产品合入与复用交付收口](../slice/REPORT/REPORT_LOGDUMP_G_产品合入与复用交付收口.md)。切片侧专项已完成并实际快进合入本地product；清洁源码0.2.471-dev全目标Release构建及完整包启动落盘通过，新SDK独立构建和真实打印消费2/2通过。67项62通过/5失败，既有红灯及E01B正式打印入口依赖保留；原P0FIX树不动、未推送。以下为各轮历史证据。
+
+[日志与崩溃转储可复用模块专项](current/TASKS_LOGDUMP_日志与崩溃转储可复用模块专项任务清单.md)：本地实现/验证及 LD-E01A 真实 PrintAppLogging 适配完成；E01B 尚无正式几何切片 loader。E01A 真实后端/DLL 验收1/1、父工程可选适配构建及切片兼容回归2/2通过，见 [E01A报告](../slice/REPORT/REPORT_LOGDUMP_E01A_PrintApp真实日志适配验收.md)。此前 Debug16/16、Release17/18（既有S1路径失败），独立运行包和真实模型A/B已验证；另保留既有ViewData期望失败，见 [本地报告](../slice/REPORT/REPORT_LOGDUMP_本地实现与验证状态.md)。独立切片分支 `codex/feature-logging-dump` 基于 `e2546797`，打印适配分支 `codex/slicer-logging-adapter` 基于 `22bfcd3d235d`，不包含两个原工作树未提交代码。设计见 [实施准备](../slice/DOC/DOC_PREP_LOGDUMP_日志与崩溃转储模块设计及实施准备.md) 和 [A00定案](../slice/DOC/DOC_DECISION_LOGDUMP_A00_开发准入与日志扩展定案.md)，操作见 [日志与转储使用说明](../user_guides/SLICESOFT_日志与转储使用说明.md)。
+
+2026-09-15 已完成 [E01B-P 业务挂接与新基线交付准备](../slice/DOC/DOC_PREP_LOGDUMP_E01B_业务挂接与新基线交付准备.md)：打印 MOD-22/P23 装载入口仍未实现，正式接线保持等待前置；原切片分支 P0FIX 正在演进，记录固定快照的6文件交叠及程序改名/进度/符号/合同重验要求。该准备轮只复核旧证据，没有宣称新基线验收通过。
+
+随后按继续授权完成 [E02 可迁移源码 SDK 与成功切片验收](../slice/REPORT/REPORT_LOGDUMP_E02_源码SDK交付与成功切片验收.md)：先准备、再并行实施，23文件源码包及日志/可选转储targets编译通过；真实PrintAppLogging从导出SDK消费，CTest2/2 PASS、3 TIFF与Reader/18条日志通过。最终包身份和已知长路径/旧二进制helper边界见报告，E01B仍待正式产品入口，未合入原树。
+
 ## XYPAD Y 轴补白扩展（2026-09-09）
 
 [XY 原点输出画幅补白任务](current/TASKS_XYPAD_XY原点输出画幅补白.md)：独立 X/Y 开关、六/七通道下侧补空白与全层对照已完成，原 Release 已按授权更新；拆分提交已合入 `product/packaged-slicer`，本地功能分支已删除，未推送。

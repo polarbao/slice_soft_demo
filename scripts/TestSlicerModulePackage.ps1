@@ -56,6 +56,12 @@ function InvokeNativeStep
     }
 }
 
+function GetVersionLine([string]$Version)
+{
+    if ($Version -notmatch '^(\d+)\.(\d+)\.\d+(-[0-9A-Za-z.-]+)?$') { return $null }
+    return $matches[1] + "." + $matches[2] + $matches[3]
+}
+
 $repoRoot = [System.IO.Path]::GetFullPath((Join-Path $PSScriptRoot ".."))
 $resolvedPackageDir = ResolveRepoPath -RepoRoot $repoRoot -Path $PackageDir
 $resolvedBuildDir = ResolveRepoPath -RepoRoot $repoRoot -Path $BuildDir
@@ -66,6 +72,9 @@ AssertPathUnderRoot -Root $repoRoot -Path $resolvedEvidenceRoot -Purpose "Eviden
 $requiredFiles = @(
     "slicer_module.dll",
     "slicer_worker.exe",
+    "slicer_crash_reporter.exe",
+    "slicer_logging.h",
+    "print_module_spi.h",
     "module.json",
     "version-manifest.json",
     "slicesoft_build_manifest.json",
@@ -117,16 +126,20 @@ if (-not [string]::IsNullOrWhiteSpace(
     $sourceSlicerVersion +=
         "-" + [string]$sourceVersionManifest.components.slicer.preRelease
 }
+$buildAppVersion = [string]$buildVersionManifest.components.application.version
+$buildSlicerVersion = [string]$buildVersionManifest.components.slicer.version
+$sourceLine = GetVersionLine $sourceApplicationVersion
 $versionSnapshotValid =
     $sourceVersionManifest.schemaVersion -eq 1 -and
     $sourceVersionManifest.releasePolicy -eq "lockstep" -and
     $buildVersionManifest.schema -eq "slicesoft.build.1" -and
     $buildVersionManifest.build.config -eq $Config -and
-    $buildVersionManifest.components.application.version -eq $sourceApplicationVersion -and
+    $null -ne $sourceLine -and
+    (GetVersionLine $buildAppVersion) -eq $sourceLine -and
     $buildVersionManifest.components.slicer.id -eq "slicer" -and
-    $buildVersionManifest.components.slicer.version -eq $sourceSlicerVersion -and
+    $buildAppVersion -eq $buildSlicerVersion -and
     $sourceApplicationVersion -eq $sourceSlicerVersion -and
-    $sourceSlicerVersion -eq $moduleManifest.version
+    $buildSlicerVersion -eq $moduleManifest.version
 if (-not $versionSnapshotValid)
 {
     throw "Package version snapshot is inconsistent."
@@ -135,8 +148,8 @@ if (-not $versionSnapshotValid)
 foreach ($binaryName in @("slicer_module.dll", "slicer_worker.exe"))
 {
     $versionInfo = (Get-Item -LiteralPath (Join-Path $resolvedPackageDir $binaryName)).VersionInfo
-    if ($versionInfo.FileVersion -ne $sourceSlicerVersion -or
-        $versionInfo.ProductVersion -ne $sourceSlicerVersion -or
+    if ($versionInfo.FileVersion -ne $buildSlicerVersion -or
+        $versionInfo.ProductVersion -ne $buildSlicerVersion -or
         $versionInfo.PrivateBuild -ne
             [string]$buildVersionManifest.components.slicer.fullBuildVersion)
     {
@@ -216,7 +229,7 @@ if ($LASTEXITCODE -ne 0)
 $workerContract = $workerContractText | ConvertFrom-Json
 if ($workerContract.contract -ne "file_contract" -or
     $workerContract.major -ne 1 -or
-    $workerContract.engineVersion -ne $sourceSlicerVersion)
+    $workerContract.engineVersion -ne $buildSlicerVersion)
 {
     throw "Packaged worker returned an incompatible contract or implementation version."
 }
@@ -233,7 +246,7 @@ if ($LASTEXITCODE -ne 0)
     throw "Packaged pm_module_info probe failed with exit code $LASTEXITCODE."
 }
 $packagedModuleInfo = $packagedModuleInfoText | ConvertFrom-Json
-if ($packagedModuleInfo.version -ne $sourceSlicerVersion -or
+if ($packagedModuleInfo.version -ne $buildSlicerVersion -or
     $packagedModuleInfo.spi -ne 1)
 {
     throw "Packaged pm_module_info version or SPI drifted."

@@ -157,9 +157,12 @@ void TestBinaryContract(const slicesoft::tests::SpiModuleApi& api)
         "pm_result",
         "pm_self_test",
         "pm_spi_version",
-        "pm_submit"};
+        "pm_submit",
+        "slicer_clear_log_callback_v1",
+        "slicer_log_api_version",
+        "slicer_set_log_callback_v1"};
     Require(api.ExportNames() == expected, "C-SPI-16 export set drifted");
-    ReportPass("C-SPI-16", "exactly 11 undecorated pm_* exports");
+    ReportPass("C-SPI-16", "11 frozen pm_* exports and 3 optional logging v1 exports");
 
     for (std::string dependency : api.ImportedDllNames())
     {

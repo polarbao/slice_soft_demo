@@ -1,4 +1,5 @@
 #include "HostRipJobController.h"
+#include "HostRipDiagnostics.h"
 
 #include "rip_integration/RipArtifactPublisher.h"
 #include "rip_integration/RipCommandBuilder.h"
@@ -25,7 +26,6 @@
 
 namespace
 {
-constexpr int kMaximumCapturedLogBytes = 1024 * 1024;
 
 std::filesystem::path FsPath(const QString& path)
 {
@@ -107,16 +107,6 @@ bool ReadJsonObject(
     }
     *object = document.object();
     return true;
-}
-
-void AppendCapped(QByteArray* destination, const QByteArray& value)
-{
-    if (destination->size() >= kMaximumCapturedLogBytes)
-    {
-        return;
-    }
-    destination->append(value.left(
-        kMaximumCapturedLogBytes - destination->size()));
 }
 
 QString RipMessage(const slicesoft::rip::RipStatus& status)
@@ -890,6 +880,7 @@ void HostRipJobController::StartExternalProcess()
     connect(m_process, &QProcess::errorOccurred, this, &HostRipJobController::OnProcessError);
     m_phase = Phase::RunningProcess;
     PublishState(QStringLiteral("starting"), QStringLiteral("正在启动 RIP 进程"));
+    RecordRipProcessStart(*m_process);
     m_process->start();
     m_timeoutTimer.start(m_settings.timeoutseconds * 1000);
 }
@@ -940,7 +931,7 @@ void HostRipJobController::OnReadyStandardError()
 {
     if (m_process != nullptr)
     {
-        AppendCapped(&m_stderr, m_process->readAllStandardError());
+        AppendCapped(&m_stderr, m_process->readAllStandardError(), "stderr");
     }
 }
 
@@ -954,6 +945,7 @@ void HostRipJobController::OnProcessFinished(
     }
     OnReadyStandardOutput();
     OnReadyStandardError();
+    RecordRipProcessExit(exitCode, exitStatus);
     m_timeoutTimer.stop();
     m_killTimer.stop();
     if (m_cancelRequested)
@@ -1288,6 +1280,7 @@ void HostRipJobController::FinishFailure(
     const QString& code,
     const QString& message)
 {
+    RecordRipFailure(code, message);
     if (m_phase == Phase::Idle)
     {
         return;

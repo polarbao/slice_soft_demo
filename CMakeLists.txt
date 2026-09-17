@@ -45,6 +45,7 @@ if(SLICESOFT_TIFF_BACKEND STREQUAL "handwritten")
 endif()
 
 slicesoft_initialize_version_build()
+include(cmake/SliceSoftDiagnostics.cmake)
 
 set(SLICESOFT_CORE_SOURCES
     src/third_party/miniz/miniz.c
@@ -738,6 +739,11 @@ target_include_directories(slicer_module PRIVATE
 )
 target_compile_definitions(slicer_module PRIVATE PM_MODULE_BUILD_SHARED)
 target_link_libraries(slicer_module PRIVATE slicer_base)
+target_sources(slicer_module PRIVATE
+    src/slicer_module/logging/ModuleLogDispatcher.cpp
+    src/slicer_module/logging/ModuleLogRegistry.cpp
+    src/slicer_module/logging/LoggingExports.cpp)
+target_link_libraries(slicer_module PRIVATE slicesoft_diagnostics_transport nlohmann_json::nlohmann_json)
 set_target_properties(slicer_module PROPERTIES PREFIX "")
 slicesoft_add_windows_version_resource(
     slicer_module
@@ -869,7 +875,7 @@ target_include_directories(stage14d02_worker_client_unit_tests PRIVATE
     ${CMAKE_CURRENT_SOURCE_DIR}
     ${CMAKE_CURRENT_SOURCE_DIR}/src
 )
-target_link_libraries(stage14d02_worker_client_unit_tests PRIVATE slicer_base)
+target_link_libraries(stage14d02_worker_client_unit_tests PRIVATE slicer_base slicesoft_diagnostics_transport)
 
 add_executable(stage14d03_worker_contract_unit_tests
     tests/stage14d_03/WorkerContractTests.cpp
@@ -886,7 +892,7 @@ target_include_directories(stage14d03_worker_contract_unit_tests PRIVATE
     ${CMAKE_CURRENT_SOURCE_DIR}
     ${CMAKE_CURRENT_SOURCE_DIR}/src
 )
-target_link_libraries(stage14d03_worker_contract_unit_tests PRIVATE slicer_base)
+target_link_libraries(stage14d03_worker_contract_unit_tests PRIVATE slicer_base slicesoft_diagnostics_transport)
 add_dependencies(stage14d03_worker_contract_unit_tests slicer_worker)
 slicesoft_use_version(stage14d03_worker_contract_unit_tests)
 if(MSVC)
@@ -1118,13 +1124,14 @@ endif()
 
 add_executable(slicer_cli
     apps/slicer_cli/main.cpp
+    apps/slicer_cli/CliProgress.cpp
     apps/slicer_cli/CliDiagnosticJson.h
     apps/slicer_cli/CliDiagnosticJson.cpp
     apps/slicer_cli/RepairAssetCommand.h
     apps/slicer_cli/RepairAssetCommand.cpp
 )
 
-target_link_libraries(slicer_cli PRIVATE slicer_core)
+target_link_libraries(slicer_cli PRIVATE slicer_core slicesoft_diagnostics_process)
 slicesoft_add_windows_version_resource(
     slicer_cli
     application
@@ -1154,7 +1161,7 @@ target_include_directories(slicer_worker_runtime PUBLIC
     ${CMAKE_CURRENT_SOURCE_DIR}/apps
     ${CMAKE_CURRENT_SOURCE_DIR}/src
 )
-target_link_libraries(slicer_worker_runtime PUBLIC slicer_base)
+target_link_libraries(slicer_worker_runtime PUBLIC slicer_base slicesoft_diagnostics_transport)
 if(MSVC)
     target_compile_options(slicer_worker_runtime PRIVATE /W4 /WX)
 endif()
@@ -1367,6 +1374,7 @@ target_compile_definitions(stage14d05_real_worker_artifact_tests PRIVATE
 )
 target_link_libraries(stage14d05_real_worker_artifact_tests PRIVATE
     slicer_engine
+    slicesoft_diagnostics_transport
 )
 if(MSVC)
     target_compile_options(stage14d05_real_worker_artifact_tests PRIVATE /W4 /WX)
@@ -1389,6 +1397,7 @@ target_include_directories(stage14d07_engine_conformance_gate PRIVATE
 )
 target_link_libraries(stage14d07_engine_conformance_gate PRIVATE
     slicer_engine
+    slicesoft_diagnostics_transport
 )
 if(MSVC)
     target_compile_options(stage14d07_engine_conformance_gate PRIVATE /W4 /WX)
@@ -1405,6 +1414,7 @@ target_include_directories(slicer_worker PRIVATE
 )
 target_link_libraries(slicer_worker PRIVATE
     slicer_engine
+    slicesoft_diagnostics_process
     slicer_worker_runtime
     slicer_worker_preflight_runtime
     slicer_worker_repair_runtime
@@ -2519,6 +2529,7 @@ target_link_libraries(mesh_complete_self_intersection_analyzer_unit_tests PRIVAT
 find_package(Python3 QUIET COMPONENTS Interpreter)
 
 enable_testing()
+slicesoft_register_diagnostic_tests()
 add_test(
     NAME print_module_spi_contract_declaration_test
     COMMAND ${CMAKE_COMMAND}

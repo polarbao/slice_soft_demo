@@ -13,7 +13,9 @@
 #include "SliceSoftBuildVersion.h"
 
 #include "CliDiagnosticJson.h"
+#include "CliProgress.h"
 #include "RepairAssetCommand.h"
+#include "diagnostics/host/ProcessDiagnostics.h"
 
 #include <algorithm>
 #include <chrono>
@@ -33,6 +35,8 @@
 
 namespace
 {
+
+using slicer_cli::PrintSliceProgress;
 
 struct CliOptions
 {
@@ -336,19 +340,6 @@ std::string FormatMilliseconds(const double value)
     std::ostringstream stream;
     stream << std::fixed << std::setprecision(3) << value;
     return stream.str();
-}
-
-void PrintSliceProgress(const slicer_core::SliceRunProgress& progress)
-{
-    std::cout
-        << "SLICE_PROGRESS"
-        << " phase=" << progress.phase
-        << " current=" << progress.current
-        << " total=" << progress.total
-        << " percent=" << progress.percent
-        << " elapsedMs=" << FormatMilliseconds(progress.elapsed_ms)
-        << '\n';
-    std::cout.flush();
 }
 
 void PrintSliceTiming(
@@ -1058,6 +1049,7 @@ int PrintTiffBackendInfoJson()
 
 int main(int argc, char** argv)
 {
+    std::unique_ptr<slicesoft::diagnostics::ProcessDiagnostics> diagnostics;
     try
     {
         const CliOptions options = ParseOptions(argc, argv);
@@ -1082,6 +1074,7 @@ int main(int argc, char** argv)
         {
             return PrintTiffBackendInfoJson();
         }
+        diagnostics = std::make_unique<slicesoft::diagnostics::ProcessDiagnostics>("cli", SLICESOFT_APP_IMPLEMENTATION_VERSION);
         if (options.repair_asset)
         {
             slicer_cli::RepairAssetRequest repair;
@@ -1143,6 +1136,7 @@ int main(int argc, char** argv)
     }
     catch (const std::exception& error)
     {
+        slicesoft::diagnostics::WriteApplicationLog("cli", "failed", error.what(), 4);
         std::cerr << "slicer_cli error: " << error.what() << '\n';
         return 1;
     }

@@ -8,6 +8,7 @@
 #include "slicer_module/ModuleSelfTest.h"
 #include "slicer_module/SyncCapabilityAdapter.h"
 #include "slicer_module/WorkerJobService.h"
+#include "slicer_module/logging/ModuleLogRegistry.h"
 
 #include <exception>
 #include <string_view>
@@ -95,6 +96,7 @@ extern "C" PM_API pm_module_t* PM_CALL pm_create(const char* optionsJson)
                 SetInternalError("pm_create could not register capability services");
                 return nullptr;
             }
+            slicesoft::module::logging::RegisterModule(module, registry.FindModule(module)->Id());
             return module;
         }
         catch (...)
@@ -112,6 +114,7 @@ extern "C" PM_API pm_module_t* PM_CALL pm_create(const char* optionsJson)
 
 extern "C" PM_API void PM_CALL pm_destroy(pm_module_t* module)
 {
+    if (slicesoft::module::logging::IsCallbackThread(module)) return;
     try
     {
         if (module == nullptr)
@@ -126,6 +129,7 @@ extern "C" PM_API void PM_CALL pm_destroy(pm_module_t* module)
         }
         slicesoft::module::WorkerJobService::Instance().RemoveModule(module);
         slicesoft::module::SyncCapabilityAdapter::Instance().RemoveModule(module);
+        slicesoft::module::logging::ShutdownModule(module);
         if (!slicesoft::module::HandleRegistry::Instance().DestroyModule(module))
         {
             SetInvalidRequestError("pm_destroy received an unknown module handle");
@@ -140,10 +144,12 @@ extern "C" PM_API void PM_CALL pm_destroy(pm_module_t* module)
 
 extern "C" PM_API pm_job_t* PM_CALL pm_submit(pm_module_t* module, const char* requestJson)
 {
+    if (slicesoft::module::logging::IsCallbackThread(module)) return nullptr;
     try
     {
         if (requestJson == nullptr)
         {
+            slicesoft::module::logging::Emit(module, 4, "submit", "rejected", InputErrorCode, "request_json is required");
             SetInvalidRequestError("pm_submit requires request_json");
             return nullptr;
         }
@@ -156,6 +162,7 @@ extern "C" PM_API pm_job_t* PM_CALL pm_submit(pm_module_t* module, const char* r
             slicesoft::module::CapabilityCarrierRouter::Route(requestJson);
         if (!route.accepted)
         {
+            slicesoft::module::logging::Emit(module, 4, "submit", "rejected", route.errorCode, route.errorMessage);
             slicesoft::module::SetThreadLastError(
                 route.errorCode,
                 route.errorMessage,
@@ -163,6 +170,7 @@ extern "C" PM_API pm_job_t* PM_CALL pm_submit(pm_module_t* module, const char* r
             return nullptr;
         }
 
+        slicesoft::module::logging::Emit(module, 2, "submit", "routed", "", "capability request accepted by router", route.jobId);
         auto& registry = slicesoft::module::HandleRegistry::Instance();
         if (route.carrier == slicesoft::module::CapabilityCarrier::Worker)
         {
@@ -189,6 +197,7 @@ extern "C" PM_API pm_job_t* PM_CALL pm_submit(pm_module_t* module, const char* r
                     jobState->Id());
             if (!submission.accepted)
             {
+                slicesoft::module::logging::Emit(module, 4, "worker", "rejected", submission.errorCode, submission.errorMessage);
                 (void)registry.ReleaseJob(job);
                 slicesoft::module::SetThreadLastError(
                     submission.errorCode,
@@ -203,6 +212,7 @@ extern "C" PM_API pm_job_t* PM_CALL pm_submit(pm_module_t* module, const char* r
             .Execute(module, requestJson);
         if (!submission.accepted)
         {
+            slicesoft::module::logging::Emit(module, 4, "submit", "rejected", submission.errorcode, submission.errormessage);
             slicesoft::module::SetThreadLastError(
                 submission.errorcode,
                 submission.errormessage,
@@ -238,6 +248,7 @@ extern "C" PM_API pm_job_t* PM_CALL pm_submit(pm_module_t* module, const char* r
                 SetInternalError("pm_submit could not publish terminal job state");
                 return nullptr;
             }
+            slicesoft::module::logging::Emit(module, succeeded ? 2 : 4, "submit", "completed", "", succeeded ? "synchronous capability succeeded" : "synchronous capability failed");
             return job;
         }
         catch (...)
@@ -249,6 +260,7 @@ extern "C" PM_API pm_job_t* PM_CALL pm_submit(pm_module_t* module, const char* r
     }
     catch (...)
     {
+        slicesoft::module::logging::Emit(module, 4, "submit", "failed", InternalErrorCode, "request validation failed unexpectedly");
         SetInternalError("pm_submit failed while validating the request");
         return nullptr;
     }
@@ -260,6 +272,7 @@ extern "C" PM_API int PM_CALL pm_poll(
     int cap,
     int* outRequired)
 {
+    if (slicesoft::module::logging::IsJobCallbackThread(job)) return PM_ERR_INVALID_STATE;
     try
     {
         if (slicesoft::module::HandleRegistry::Instance().FindJob(job) == nullptr)
@@ -291,6 +304,7 @@ extern "C" PM_API int PM_CALL pm_poll(
 
 extern "C" PM_API int PM_CALL pm_cancel(pm_job_t* job)
 {
+    if (slicesoft::module::logging::IsJobCallbackThread(job)) return PM_ERR_INVALID_STATE;
     try
     {
         auto& registry = slicesoft::module::HandleRegistry::Instance();
@@ -328,6 +342,7 @@ extern "C" PM_API int PM_CALL pm_result(
     int cap,
     int* outRequired)
 {
+    if (slicesoft::module::logging::IsJobCallbackThread(job)) return PM_ERR_INVALID_STATE;
     try
     {
         const auto jobState =
@@ -369,6 +384,7 @@ extern "C" PM_API int PM_CALL pm_result(
 
 extern "C" PM_API void PM_CALL pm_release(pm_job_t* job)
 {
+    if (slicesoft::module::logging::IsJobCallbackThread(job)) return;
     try
     {
         auto& registry = slicesoft::module::HandleRegistry::Instance();
@@ -401,6 +417,7 @@ extern "C" PM_API int PM_CALL pm_self_test(
     int cap,
     int* outRequired)
 {
+    if (slicesoft::module::logging::IsCallbackThread(module)) return PM_ERR_INVALID_STATE;
     try
     {
         if (slicesoft::module::HandleRegistry::Instance().FindModule(module) == nullptr)

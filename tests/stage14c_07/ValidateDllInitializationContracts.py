@@ -17,6 +17,9 @@ EXPECTED_EXPORTS = [
     "pm_release",
     "pm_self_test",
     "pm_last_error",
+    "slicer_log_api_version",
+    "slicer_set_log_callback_v1",
+    "slicer_clear_log_callback_v1",
 ]
 
 FORBIDDEN_DEPENDENCIES = [
@@ -96,7 +99,7 @@ def ValidateSource(repoRoot: Path) -> None:
     )
     Require(
         ParseDefExports(moduleDef) == EXPECTED_EXPORTS,
-        "the frozen 11-symbol export surface changed",
+        "the 11 frozen SPI and 3 optional logging v1 exports changed",
     )
 
     linkBlock = re.search(
