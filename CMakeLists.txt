@@ -1614,6 +1614,29 @@ add_executable(tiff_decoded_size_guard_unit_tests
 
 target_link_libraries(tiff_decoded_size_guard_unit_tests PRIVATE slicer_base)
 
+# F-09：八个搬出单元的公开入口单测（R-12 验证 Gate 第 4 条）。
+# 批次 5 起按 TU 拆分并由 Main.cpp 汇总返回码：既不撞 G1 的 500 行，也不再加目标块。
+add_executable(slicer_extracted_units_unit_tests
+    tests/unit/slicer_extracted_units/Main.cpp
+    tests/unit/slicer_extracted_units/ReportJsonCases.cpp
+)
+
+target_link_libraries(slicer_extracted_units_unit_tests PRIVATE slicer_engine)
+
+# 第三批另起目标而非续写上面那个文件：该文件已 399 行，续写会越过 G1 的 500 行阈值。
+add_executable(slicer_relief_sampler_unit_tests
+    tests/unit/slicer_relief_sampler/Main.cpp
+)
+
+target_link_libraries(slicer_relief_sampler_unit_tests PRIVATE slicer_engine)
+
+# 第四批：掩膜栅格化单元的核心入口（模型采样、外光油壳、上表面支撑边界）。
+add_executable(slicer_mask_rasterizer_unit_tests
+    tests/unit/slicer_mask_rasterizer/Main.cpp
+)
+
+target_link_libraries(slicer_mask_rasterizer_unit_tests PRIVATE slicer_engine)
+
 add_executable(worker_protocol_bounds_unit_tests
     tests/unit/worker_protocol_bounds/Main.cpp
     src/slicer_module/WorkerProtocol.cpp
@@ -2929,6 +2952,9 @@ add_test(NAME json_parse_depth_unit_tests COMMAND json_parse_depth_unit_tests)
 add_test(NAME model_import_size_limit_unit_tests COMMAND model_import_size_limit_unit_tests)
 add_test(NAME in_process_read_limit_unit_tests COMMAND in_process_read_limit_unit_tests)
 add_test(NAME tiff_decoded_size_guard_unit_tests COMMAND tiff_decoded_size_guard_unit_tests)
+add_test(NAME slicer_extracted_units_unit_tests COMMAND slicer_extracted_units_unit_tests)
+add_test(NAME slicer_relief_sampler_unit_tests COMMAND slicer_relief_sampler_unit_tests)
+add_test(NAME slicer_mask_rasterizer_unit_tests COMMAND slicer_mask_rasterizer_unit_tests)
 add_test(NAME worker_protocol_bounds_unit_tests COMMAND worker_protocol_bounds_unit_tests)
 add_test(NAME tiff_backend_build_info_unit_tests COMMAND tiff_backend_build_info_unit_tests)
 add_test(NAME tiff_writer_backend_unit_tests COMMAND tiff_writer_backend_unit_tests)
