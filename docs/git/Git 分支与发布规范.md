@@ -9,6 +9,13 @@
 > **2026-09-18 第二次修订**：用户裁定采纳 `develop`，并把 `main` 快进到产品线。
 > 本文随之改写第一、二、三、五节——`develop` 不是照搬初版，而是拿到了一个**有实测依据的职责**
 > （见第一节「develop 的职责」）。
+>
+> **2026-09-18 第三次修订**：用户裁定 `product/` 退场、集成线改名 `develop/packaged-slicer`、
+> 功能分支统一为 `feature/<agent>-<专项slug>-<描述>`。
+> 触发这次修订的实测依据有两条：`main` 与 `product/packaged-slicer` 已停在**同一个提交**
+> （第二次修订把 main 快进过去之后两者职责重合），且引用该分支名的 36 个文件**全是 `.md`、
+> 零个脚本硬编码**，改名无功能性风险。迁移步骤与回退见同目录
+> 《分支模型迁移方案_product 退场与 dev 集成线.md》。
 
 ---
 
@@ -17,15 +24,19 @@
 **初版说核心是 `main` + `develop`。2026-09-18 首次实测时：`develop` 本地与远端各 0 条，`main` 落后真正的产品线 481 条。**（同日用户裁定采纳 develop 并把 main 快进，现状见下表；初版的问题不在于要不要 develop，而在于它当时**不存在**却被当作流程基础。）
 本仓实际是「双产品线 + agent 工作分支」模型：
 
-| 分支 | 作用 | 实际状态（2026-09-18） |
+| 分支 | 作用 | 实际状态（2026-09-18 第三次修订后） |
 |---|---|---|
-| `product/packaged-slicer` | **真正的产品线**，封装宿主 + 能力模块拓扑 | 与 origin 同步，发布基线 |
-| `product/legacy-slicer` | 并行 legacy 线，手工运行时 | 领先 origin 2 条；有独立工作树且含未提交改动 |
-| `develop` | **集成线**：功能分支合回此处，累积到里程碑再进产品线 | 2026-09-18 建于 `a0a4f742` |
-| `main` | 仓库名义默认分支（`origin/HEAD` 指向它） | **2026-09-18 已快进至产品线**（`b5fc0fb3 → a0a4f742`，489 条落差归零） |
-| `codex/feature-<专项>-<描述>` | agent 工作分支 | 用完合入 product 后删除 |
-| `feature/<描述>` | 早期人工分支 | origin 上尚存 2 条历史遗留 |
+| `main` | **发布线**，同时是 `origin/HEAD` 指向的入口 | 只被快进，**永不直接提交**；承接原 `product/packaged-slicer` 的全部职责 |
+| `develop/packaged-slicer` | **集成线**：功能分支合回此处，累积到里程碑再进发布线 | 由原 `develop` 改名 |
+| `feature/<agent>-<专项slug>-<描述>` | agent 工作分支 | 用完合入集成线后删除 |
+| `product/legacy-slicer` | 并行 legacy 线，手工运行时 | 领先 origin 2 条；**有独立工作树**，本次迁移不动它 |
 | `archive/<原因>-<日期>` | 归档快照 | origin 上 2 条 + 同名标签 |
+
+> **`product/packaged-slicer` 已退场**：第二次修订把 `main` 快进到它之后，两者停在同一提交、
+> 职责完全重合，保留两条指向同一提交的长期分支只是冗余。**它不是改名成了别的，是删除**，
+> 职责由 `main` 承接。原 origin 上的 `feature/12e-08c-mesh-repair`、
+> `feature/14-slicer-capability-package` 两条历史遗留分支已完全并入且停更于 2026-08-05，
+> 一并退场——它们的命名带阶段号，违反 2.1。
 
 > ⚠ **`slice_soft_demo-logdump` 工作树不要删**（15GB，2026-09-18 已 detached）。
 > 它看着像 P0FIX 合入后的冗余残留，**实际是待做的 LOGDUMP E01B 的活资产**：
@@ -34,12 +45,16 @@
 > 是外部项目 `ry_print_demo/PrintSolution` 集成消费的那一个；另有 10 余份 LOGDUMP 文档引用该路径。
 > **判断"某个工作树是否冗余"时，要查引用它的文档与未完成的专项阶段，不能只看分支是否已合入。**
 
-> **入口已定（2026-09-18）**：保留 `main` 作 `origin/HEAD` 指向的入口，
-> 但它**只跟随 `product/packaged-slicer`，永不直接提交**——由发布流程末尾的快进更新。
-> 选它而不是改指 product 的理由有两条：改 GitHub 默认分支需要网页或 `gh`（本环境不可用），
-> 而克隆者本来就预期默认分支叫 `main`。**代价是多一步快进**，写进第五节流程里。
+> **入口已定（2026-09-18）**：保留 `main` 作 `origin/HEAD` 指向的入口。
+> 选它而不是改指别的分支，理由有两条：改 GitHub 默认分支需要网页或 `gh`（本环境不可用），
+> 而克隆者本来就预期默认分支叫 `main`。
+>
+> **第三次修订后它不再只是「入口」**：`product/packaged-slicer` 退场，`main` 直接就是发布线。
+> 第二次修订为它写的「只跟随 product、由流程末尾快进更新」**已作废**——
+> 那一步快进连同它的同步成本一起消失了（见第五节）。
+> 不变的是**永不直接提交**：`main` 只能由集成线快进过来。
 
-### develop 的职责（为什么这次它不是空转的）
+### 集成线的职责（为什么这次它不是空转的）
 
 初版把 develop 当成「开发主分支」，那在本仓会空转——**单人 + AI agent 协作、无 CI**
 （F-16 用户 2026-08-10 裁决暂缓），`gh` CLI 在本环境不可用，所以初版
@@ -57,17 +72,20 @@
 **于是三层分支对应三档闸门**：
 
 ```
-claude|codex/feature-*   ── 核心档 12~18 秒 ──┐  自测
+feature/<agent>-*        ── 核心档 12~18 秒 ──┐  自测
                                               ↓
-develop                  ── 快集档 约 3 分钟 ─┐  集成线
+develop/packaged-slicer  ── 快集档 约 3 分钟 ─┐  集成线
                                               ↓
-product/packaged-slicer  ── 全量档 约 16 分钟 ┘  发布线（+ 字节级基线）
+main                     ── 全量档 约 16 分钟 ┘  发布线（+ 字节级基线）
 ```
 
-**develop 的收益是可量化的**：几个功能可以在它上面累积、每次只付 3 分钟的快集闸门，
+**集成线的收益是可量化的**：几个功能可以在它上面累积、每次只付 3 分钟的快集闸门，
 不必每合一个就付 16 分钟的里程碑闸门。这是省时间，不是走流程。
 
-**反过来说，如果哪天有了 CI，develop 的这层职责就该交给 CI**——届时重新评估它是否还需要存在。
+**第三次修订没有改变级数与判据**，只是把终点从 `product/packaged-slicer` 换成了 `main`——
+两级闸门、各自的判据与豁免范围全部原样保留。**换名字不是放宽门禁。**
+
+**反过来说，如果哪天有了 CI，集成线的这层职责就该交给 CI**——届时重新评估它是否还需要存在。
 
 ---
 
@@ -76,30 +94,34 @@ product/packaged-slicer  ── 全量档 约 16 分钟 ┘  发布线（+ 字�
 ### 2.1 命名
 
 ```
-codex/feature-<专项slug>-<短描述>      # codex 开的工作分支
-claude/feature-<专项slug>-<短描述>     # claude 开的工作分支
+feature/<agent>-<专项slug>-<短描述>    # agent 取 claude 或 codex
 ```
 
 - `<专项slug>` 取 `AGENTS.md`「各专项状态」里的小写 slug（如 `p0fix`、`logdump`、`ripflow`）。
   **没有对应专项就先在 `AGENTS.md` 里立一条**——分支不该比专项先存在。
 - `<短描述>` 用连字符英文小写，说清这条分支要解决什么，不用阶段号。
-- 实例：`codex/feature-p0fix-contract-robustness`。
+- `<agent>` 取 `claude` 或 `codex`，说明这条分支是谁开的——多 agent 并行时靠它区分。
+- 实例：`feature/codex-p0fix-contract-robustness`。
+
+> **2026-09-18 第三次修订前**的写法是 `codex/feature-<专项slug>-<短描述>`（agent 在最前）。
+> 改成顶层统一 `feature/` 是用户裁定，理由是顶层前缀应表达「这是什么分支」而不是「谁开的」。
+> agent 信息没有丢，只是移到了第二段。
 
 ### 2.2 从哪里拉
 
-**功能分支从 `develop` 拉**，不是从 `main`（它只是入口，跟随 product）：
+**功能分支从集成线拉**，不是从 `main`（它是发布线，只被快进）：
 
 ```bash
 git fetch origin
-git checkout -b codex/feature-p0fix-xxx origin/develop
+git checkout -b feature/codex-p0fix-xxx origin/develop/packaged-slicer
 ```
 
-**热修复例外**：从 `product/packaged-slicer` 拉，修完合回 product 与 develop 两侧——
-否则下一次 develop 进 product 会把修复覆盖掉。
+**热修复例外**：从 `main` 拉，修完合回 `main` 与 `develop/packaged-slicer` **两侧**——
+否则下一次集成线进 `main` 会把修复覆盖掉。
 
 ### 2.3 提交信息
 
-必须与 `product/packaged-slicer` 的既有风格一致（`AGENTS.md` 第 10 条）：
+必须与 `main` 的既有风格一致（`AGENTS.md` 第 10 条）：
 
 ```
 type(专项slug): 【功能分类】中文摘要
@@ -117,27 +139,27 @@ type(专项slug): 【功能分类】中文摘要
 - **全角标点**，正文里不出现半角 `,` `.` `:` `;`
 - 结尾按环境要求附 `Co-Authored-By`
 
-### 2.4 合回产品线
+### 2.4 合回集成线与发布线
 
 **能快进就快进，不要制造无意义的合并提交。** 分两步走：
 
 ```bash
-# ① 功能分支 → develop（跑快集档）
-git merge --no-ff develop            # 先把 develop 合进来，解冲突、跑验证
-ctest --preset slicesoft-debug-fast  # 闸门
-git checkout develop && git merge --ff-only codex/feature-xxx
-git push origin develop
+# ① 功能分支 → 集成线（跑快集档）
+git merge --no-ff develop/packaged-slicer   # 先把集成线合进来，解冲突、跑验证
+ctest --preset slicesoft-debug-fast         # 闸门
+git checkout develop/packaged-slicer && git merge --ff-only feature/claude-xxx
+git push origin develop/packaged-slicer
 
-# ② develop → product（里程碑，跑全量 + 基线）
+# ② 集成线 → main（里程碑，跑全量 + 基线）
 cmake --build <构建目录> --config Debug          # 全量重建，不加 --target
 python scripts/CaptureSliceOutputBaseline.py --verify
 ctest --preset slicesoft-debug-full
-git checkout product/packaged-slicer && git merge --ff-only develop
-git push origin product/packaged-slicer
+git checkout main && git merge --ff-only develop/packaged-slicer
+git push origin main
 ```
 
 > 为什么反向先合：验证要在**产出过基线的那个构建目录**里做（本仓有多个构建目录，个别已坏）。
-> 反向合完再让 product 快进，product 侧零冲突、零额外验证。
+> 反向合完再让 `main` 快进，`main` 侧零冲突、零额外验证。
 
 ### 2.5 历史改写与备份
 
@@ -146,15 +168,15 @@ git push origin product/packaged-slicer
   应为空（备份里没有 HEAD 缺失的文件）。
   **注意 diff 方向**：`git diff HEAD <backup> --diff-filter=D` 列的是 HEAD 有而备份没有的，
   方向搞反会得出相反结论。
-- 合入 product **并推送成功**之后，备份才可删除（`git branch -D`）。
+- 合入 `main` **并推送成功**之后，备份才可删除（`git branch -D`）。
 - **绝不 force-push 任何在 origin 上存在的分支。** 改写只允许发生在未发布的本地分支上
   （`AGENTS.md` 第 10 条）。
 
 ### 2.6 删除分支
 
-- 已并入 product 的：用 `git branch -d`（安全模式），**不要直接用 `-D`**。
+- 已并入发布线的：用 `git branch -d`（安全模式），**不要直接用 `-D`**。
   `-d` 会在「已并入 HEAD 但未并入自身 origin 上游」时拒绝——那正是需要人看一眼的情形。
-- 被 `-d` 拒绝而确实想删的：先算 product 的可达集合做包含判断，确认**每一条**提交都在其中，
+- 被 `-d` 拒绝而确实想删的：先算 `main` 的可达集合做包含判断，确认**每一条**提交都在其中，
   再用 `-D`。抽样检查不够。
 - 工作树占用的分支删不掉；先 `git worktree list` 看清。
 
@@ -251,28 +273,28 @@ git push origin product/packaged-slicer
 
 ## 五、发布流程
 
-两跳：功能分支 → `develop`（快集闸门）→ `product/packaged-slicer`（全量闸门 + 基线）。
-初版的 `release/vX.Y.Z` 这一跳**本仓不设**——发布就是给 product 上打标签，
+两跳：功能分支 → `develop/packaged-slicer`（快集闸门）→ `main`（全量闸门 + 基线）。
+初版的 `release/vX.Y.Z` 这一跳**本仓不设**——发布就是给 `main` 上打标签，
 再多一条冻结分支在单人协作下只会多一个要同步的地方。
 
 ```bash
-# 1. 功能分支 → develop（见 2.4 ①）
-# 2. 里程碑：develop → product（见 2.4 ②，必须过第三节三条闸门）
+# 1. 功能分支 → 集成线（见 2.4 ①）
+# 2. 里程碑：集成线 → main（见 2.4 ②，必须过第三节三条闸门）
 
-# 3. 发布时在 product 上打标签
-git tag -a v0.2.0 -m "v0.2.0：<新增/修复/已知问题>"
-git push origin v0.2.0
+# 3. 发布时在 main 上打标签
+git tag -a v0.3.0 -m "v0.3.0：<新增/修复/已知问题>"
+git push origin v0.3.0
 
-# 4. main 跟随 product（它是入口，不能落后）
-git push . product/packaged-slicer:main   # push . 会强制要求快进，比 branch -f 安全
-git push origin main
-
-# 5. 删除工作分支（先 -d，被拒再复核后 -D）
+# 4. 删除工作分支（先 -d，被拒再复核后 -D）
 git branch -d <工作分支>
 ```
 
-**热修复**：从 `product/packaged-slicer` 拉 `hotfix/<描述>`，过第三节闸门后快进到 product，
-**再合回 `develop`**——漏了这一步，下一次 develop 进 product 会把修复覆盖掉。
+> **第三次修订前这里有第 4 步「main 跟随 product」的快进**（`git push . product/packaged-slicer:main`）。
+> `product/packaged-slicer` 退场后 `main` 本身就是发布线，**这一步连同它的同步成本一起消失了**——
+> 这是本次改名附带的实际收益，不只是换名字。
+
+**热修复**：从 `main` 拉 `hotfix/<描述>`，过第三节闸门后快进到 `main`，
+**再合回 `develop/packaged-slicer`**——漏了这一步，下一次集成线进 `main` 会把修复覆盖掉。
 
 ---
 
