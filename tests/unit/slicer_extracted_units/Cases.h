@@ -11,3 +11,12 @@
 
 /// 报告序列化器（output/reports/SliceReportJson）的用例。
 int RunReportJsonCases();
+
+/// 支撑放置策略与统计三件套（support/SliceSupportGeneration）的用例。
+int RunSupportStatsCases();
+
+/// 四个在多来源之间定优先级的取值入口（materials / preview / progress）的用例。
+int RunPolicyResolverCases();
+
+/// 枚举翻译、配置与生效之分、报告 schema（materials / support / reports）的用例。
+int RunClosureAndReportCases();

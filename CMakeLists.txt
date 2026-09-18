@@ -1543,6 +1543,9 @@ slicesoft_add_test_executable(NAME tiff_decoded_size_guard_unit_tests SRC tests/
 add_executable(slicer_extracted_units_unit_tests
     tests/unit/slicer_extracted_units/Main.cpp
     tests/unit/slicer_extracted_units/ReportJsonCases.cpp
+    tests/unit/slicer_extracted_units/SupportStatsCases.cpp
+    tests/unit/slicer_extracted_units/PolicyResolverCases.cpp
+    tests/unit/slicer_extracted_units/ClosureAndReportCases.cpp
 )
 
 target_link_libraries(slicer_extracted_units_unit_tests PRIVATE slicer_engine)

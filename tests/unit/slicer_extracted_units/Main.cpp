@@ -1,11 +1,13 @@
-// F-09 单测缺口的第一批（R-12 验证 Gate 第 4 条）。
+// F-09 单测缺口：本文件是第一、二批，并作为整个目标的入口汇总其余批次。
+// 批次 5 起按编译单元拆分（见 Cases.h），各自跑一套 RunCases、在 main 里把返回码或起来。
 //
 // R-12 写着「搬出的每个函数至少 1 条新单测（这是搬迁的目的，不是附加项）」，
 // 而八步搬运新增单测为零。R-12 自己的话：「搬出来的代码如果不加测试，
 // 只是把 5888 行分成几个文件，债没减。」
 //
-// 本批只覆盖【无需重型夹具】的公开入口——那正是搬出来之后才第一次可单测的部分。
-// 需要 GridSpec / SliceConfig / ModelReport 的入口留待后续批次，它们要先有夹具。
+// 本文件里的两批只覆盖【无需手工造结构体】的公开入口。需要 GridSpec / SliceConfig /
+// ModelReport 的入口在后续批次——实测那些也不重（都是带默认值的聚合体），
+// 真正要造的只有小尺寸掩膜与三角形。
 //
 // 选用例的标准是「这条断言失败时，我能说出哪个行为坏了」，不是凑数量。
 
@@ -402,5 +404,8 @@ int main()
     // 各批自成一套、各自打印。用 | 而非 || ：即便前一批已经红了，
     // 后一批也要跑完并报出全部失败，否则一次改动只能看到最前面那条。
     const int reportJson = RunReportJsonCases();
-    return extracted | reportJson;
+    const int supportStats = RunSupportStatsCases();
+    const int policyResolvers = RunPolicyResolverCases();
+    const int closureAndReport = RunClosureAndReportCases();
+    return extracted | reportJson | supportStats | policyResolvers | closureAndReport;
 }
