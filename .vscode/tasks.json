@@ -14,7 +14,7 @@
       },
       "group": "build",
       "problemMatcher": [],
-      "detail": "配置 Visual Studio x64 多配置主构建目录；已有 cache 时通常只需约 1-2 秒。"
+      "detail": "配置 Visual Studio x64 多配置主构建目录。【2026-09-18 实测：即便 cache 齐备也要 24.6~27.1 秒（三次取最小 24.6）】——此前这里写的 1-2 秒差了 12~25 倍，而那句过期说法正是没人质疑「Fast Build 无条件挂 Configure 前置」的原因。只在新建或删过构建目录时手动跑一次即可；日常 --build 自己会按需重配。"
     },
     {
       "label": "SliceSoft: Fast Build (Debug)",
@@ -28,10 +28,9 @@
       "options": {
         "cwd": "${workspaceFolder}"
       },
-      "dependsOn": "SliceSoft: Configure Main Build",
       "group": "build",
       "problemMatcher": "$msCompile",
-      "detail": "仅执行 Debug 增量编译，不复制资源、不运行 windeployqt。"
+      "detail": "仅执行 Debug 增量编译，不复制资源、不运行 windeployqt。刻意【不】挂 Configure 前置：cmake 自带 ZERO_CHECK，CMakeLists 变化时 --build 会自己重配（已实测确认会打印 Configuring done / Generating done），而无条件跑一遍配置在零改动时白花约 17.5 秒。新建或删过构建目录时先跑一次 Configure Main Build。"
     },
     {
       "label": "SliceSoft: Deploy Runtime (Debug, No Build)",
@@ -74,6 +73,76 @@
       "detail": "先执行 Debug 快速增量编译，再部署完整 Debug Runtime。"
     },
     {
+      "label": "SliceSoft: Core Checks (Debug)",
+      "type": "shell",
+      "command": "ctest",
+      "args": [
+        "--preset",
+        "slicesoft-debug-core"
+      ],
+      "options": {
+        "cwd": "${workspaceFolder}"
+      },
+      "group": {
+        "kind": "test",
+        "isDefault": true
+      },
+      "problemMatcher": [],
+      "detail": "核心检测：只跑不起进程的纯逻辑测试，155 项、实测 12~18 秒、零假失败。起进程与 Qt 的测试在并行下会撞自己的内部期限而假失败，故不含。不构建，只跑测试。"
+    },
+    {
+      "label": "SliceSoft 14E: Build + Core Checks (Debug)",
+      "dependsOrder": "sequence",
+      "dependsOn": [
+        "SliceSoft 14E: Build Packaged Host UI (Debug)",
+        "SliceSoft: Core Checks (Debug)"
+      ],
+      "group": "build",
+      "problemMatcher": [],
+      "detail": "构建并部署 Debug 宿主运行时，再跑核心检测（约 12 秒）。作为启动前置时，检测失败会中止启动。"
+    },
+    {
+      "label": "SliceSoft: Build + Core Checks (Debug)",
+      "dependsOrder": "sequence",
+      "dependsOn": [
+        "SliceSoft: Fast Build (Debug)",
+        "SliceSoft: Core Checks (Debug)"
+      ],
+      "group": "test",
+      "problemMatcher": [],
+      "detail": "快速增量编译后立刻跑核心检测。不部署 Runtime、不跑慢测试。"
+    },
+    {
+      "label": "SliceSoft: Fast Subset Checks (Debug)",
+      "type": "shell",
+      "command": "ctest",
+      "args": [
+        "--preset",
+        "slicesoft-debug-fast"
+      ],
+      "options": {
+        "cwd": "${workspaceFolder}"
+      },
+      "group": "test",
+      "problemMatcher": [],
+      "detail": "快集：只排除最慢 8 项，262 项，实测约 3 分钟（并行 4）。提交前用。"
+    },
+    {
+      "label": "SliceSoft: Full Checks (Debug)",
+      "type": "shell",
+      "command": "ctest",
+      "args": [
+        "--preset",
+        "slicesoft-debug-full"
+      ],
+      "options": {
+        "cwd": "${workspaceFolder}"
+      },
+      "group": "test",
+      "problemMatcher": [],
+      "detail": "全量 270 项，实测约 16 分钟（并行 4）。合入产品线等里程碑时用。"
+    },
+    {
       "label": "SliceSoft: Fast Build (Release)",
       "type": "shell",
       "command": "cmake",
@@ -85,10 +154,9 @@
       "options": {
         "cwd": "${workspaceFolder}"
       },
-      "dependsOn": "SliceSoft: Configure Main Build",
       "group": "build",
       "problemMatcher": "$msCompile",
-      "detail": "仅执行 Release 增量编译，不复制资源、不运行 windeployqt。"
+      "detail": "仅执行 Release 增量编译，不复制资源、不运行 windeployqt。刻意【不】挂 Configure 前置：cmake 自带 ZERO_CHECK，CMakeLists 变化时 --build 会自己重配（已实测确认会打印 Configuring done / Generating done），而无条件跑一遍配置在零改动时白花约 17.5 秒。新建或删过构建目录时先跑一次 Configure Main Build。"
     },
     {
       "label": "SliceSoft: Build Runtime (Release)",
@@ -441,6 +509,8 @@
         "build",
         "-C",
         "Debug",
+        "-j",
+        "4",
         "--output-on-failure"
       ],
       "dependsOn": "SliceSoft: Advanced - Build Legacy Debug",

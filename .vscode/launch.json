@@ -2,32 +2,19 @@
   "version": "0.2.0",
   "configurations": [
     {
-      "name": "SliceSoft 14E: Debug Packaged Host UI (Debug)",
+      "name": "Run: Host UI (Release, no build)",
       "type": "cppvsdbg",
       "request": "launch",
-      "program": "${workspaceFolder}/runtime/slicesoft/Debug/slice_soft_test.exe",
+      "program": "${workspaceFolder}/runtime/slicesoft/Release/slice_soft_test.exe",
       "args": [],
-      "cwd": "${workspaceFolder}/runtime/slicesoft/Debug",
-      "preLaunchTask": "SliceSoft 14E: Build Packaged Host UI (Debug)",
-      "environment": [],
-      "console": "integratedTerminal",
-      "visualizerFile": "c:\\Users\\admin\\AppData\\Roaming\\Code\\User\\workspaceStorage\\b0f435ccd0db336fc05e239acbc5be77\\tonka3000.qtvsctools\\qt.natvis.xml"
-    },
-    {
-      "name": "SliceSoft 14E: Run Packaged Host UI (Debug)",
-      "type": "cppvsdbg",
-      "request": "launch",
-      "program": "${workspaceFolder}/runtime/slicesoft/Debug/slice_soft_test.exe",
-      "args": [],
-      "cwd": "${workspaceFolder}/runtime/slicesoft/Debug",
-      "preLaunchTask": "SliceSoft 14E: Build Packaged Host UI (Debug)",
+      "cwd": "${workspaceFolder}/runtime/slicesoft/Release",
       "environment": [],
       "noDebug": true,
       "console": "integratedTerminal",
       "visualizerFile": "c:\\Users\\admin\\AppData\\Roaming\\Code\\User\\workspaceStorage\\b0f435ccd0db336fc05e239acbc5be77\\tonka3000.qtvsctools\\qt.natvis.xml"
     },
     {
-      "name": "SliceSoft 14E: Run Packaged Host UI (Release)",
+      "name": "Run: Host UI (Release)",
       "type": "cppvsdbg",
       "request": "launch",
       "program": "${workspaceFolder}/runtime/slicesoft/Release/slice_soft_test.exe",
@@ -40,19 +27,56 @@
       "visualizerFile": "c:\\Users\\admin\\AppData\\Roaming\\Code\\User\\workspaceStorage\\b0f435ccd0db336fc05e239acbc5be77\\tonka3000.qtvsctools\\qt.natvis.xml"
     },
     {
-      "name": "SliceSoft 14E: Quick Run Packaged Host UI (Release, No Build)",
+      "name": "Run: Host UI (Debug, no build)",
       "type": "cppvsdbg",
       "request": "launch",
-      "program": "${workspaceFolder}/runtime/slicesoft/Release/slice_soft_test.exe",
+      "program": "${workspaceFolder}/runtime/slicesoft/Debug/slice_soft_test.exe",
       "args": [],
-      "cwd": "${workspaceFolder}/runtime/slicesoft/Release",
+      "cwd": "${workspaceFolder}/runtime/slicesoft/Debug",
       "environment": [],
       "noDebug": true,
       "console": "integratedTerminal",
       "visualizerFile": "c:\\Users\\admin\\AppData\\Roaming\\Code\\User\\workspaceStorage\\b0f435ccd0db336fc05e239acbc5be77\\tonka3000.qtvsctools\\qt.natvis.xml"
     },
     {
-      "name": "SliceSoft: Advanced - Debug CLI",
+      "name": "Run: Host UI (Debug)",
+      "type": "cppvsdbg",
+      "request": "launch",
+      "program": "${workspaceFolder}/runtime/slicesoft/Debug/slice_soft_test.exe",
+      "args": [],
+      "cwd": "${workspaceFolder}/runtime/slicesoft/Debug",
+      "preLaunchTask": "SliceSoft 14E: Build Packaged Host UI (Debug)",
+      "environment": [],
+      "noDebug": true,
+      "console": "integratedTerminal",
+      "visualizerFile": "c:\\Users\\admin\\AppData\\Roaming\\Code\\User\\workspaceStorage\\b0f435ccd0db336fc05e239acbc5be77\\tonka3000.qtvsctools\\qt.natvis.xml"
+    },
+    {
+      "name": "Debug: Host UI",
+      "type": "cppvsdbg",
+      "request": "launch",
+      "program": "${workspaceFolder}/runtime/slicesoft/Debug/slice_soft_test.exe",
+      "args": [],
+      "cwd": "${workspaceFolder}/runtime/slicesoft/Debug",
+      "preLaunchTask": "SliceSoft 14E: Build Packaged Host UI (Debug)",
+      "environment": [],
+      "console": "integratedTerminal",
+      "visualizerFile": "c:\\Users\\admin\\AppData\\Roaming\\Code\\User\\workspaceStorage\\b0f435ccd0db336fc05e239acbc5be77\\tonka3000.qtvsctools\\qt.natvis.xml"
+    },
+    {
+      "name": "Debug: Host UI + core checks",
+      "type": "cppvsdbg",
+      "request": "launch",
+      "program": "${workspaceFolder}/runtime/slicesoft/Debug/slice_soft_test.exe",
+      "args": [],
+      "cwd": "${workspaceFolder}/runtime/slicesoft/Debug",
+      "preLaunchTask": "SliceSoft 14E: Build + Core Checks (Debug)",
+      "environment": [],
+      "console": "integratedTerminal",
+      "visualizerFile": "c:\\Users\\admin\\AppData\\Roaming\\Code\\User\\workspaceStorage\\b0f435ccd0db336fc05e239acbc5be77\\tonka3000.qtvsctools\\qt.natvis.xml"
+    },
+    {
+      "name": "CLI: Slice a config",
       "type": "cppvsdbg",
       "request": "launch",
       "program": "${workspaceFolder}/runtime/slicesoft/Debug/slicer_cli.exe",
@@ -66,7 +90,7 @@
       "visualizerFile": "c:\\Users\\admin\\AppData\\Roaming\\Code\\User\\workspaceStorage\\b0f435ccd0db336fc05e239acbc5be77\\tonka3000.qtvsctools\\qt.natvis.xml"
     },
     {
-      "name": "SliceSoft: Advanced - Inspect Model",
+      "name": "CLI: Inspect model",
       "type": "cppvsdbg",
       "request": "launch",
       "program": "${workspaceFolder}/runtime/slicesoft/Debug/slicer_cli.exe",
@@ -81,7 +105,7 @@
       "visualizerFile": "c:\\Users\\admin\\AppData\\Roaming\\Code\\User\\workspaceStorage\\b0f435ccd0db336fc05e239acbc5be77\\tonka3000.qtvsctools\\qt.natvis.xml"
     },
     {
-      "name": "SliceSoft: Advanced - Preview Only",
+      "name": "CLI: Preview only",
       "type": "cppvsdbg",
       "request": "launch",
       "program": "${workspaceFolder}/runtime/slicesoft/Debug/slicer_cli.exe",
@@ -96,7 +120,7 @@
       "visualizerFile": "c:\\Users\\admin\\AppData\\Roaming\\Code\\User\\workspaceStorage\\b0f435ccd0db336fc05e239acbc5be77\\tonka3000.qtvsctools\\qt.natvis.xml"
     },
     {
-      "name": "SliceSoft: Advanced - Debug RIP Reader",
+      "name": "Tool: RIP reader summary",
       "type": "cppvsdbg",
       "request": "launch",
       "program": "${workspaceFolder}/runtime/slicesoft/Debug/rip_reader_test.exe",
@@ -111,7 +135,7 @@
       "visualizerFile": "c:\\Users\\admin\\AppData\\Roaming\\Code\\User\\workspaceStorage\\b0f435ccd0db336fc05e239acbc5be77\\tonka3000.qtvsctools\\qt.natvis.xml"
     },
     {
-      "name": "SliceSoft: Advanced - Debug Worker Request",
+      "name": "Tool: Worker SPI request",
       "type": "cppvsdbg",
       "request": "launch",
       "program": "${workspaceFolder}/build-slicesoft/main/Debug/slicer_worker.exe",
@@ -135,8 +159,8 @@
     {
       "id": "packageDir",
       "type": "promptString",
-      "description": "RGBWSV 输出包目录",
-      "default": "output/NailRgbWhiteVarnishTop2"
+      "description": "RGBWSV 输出包目录（output/ 不入库，原默认值 output/NailRgbWhiteVarnishTop2 已不存在；用 ls output/ 找一个本地实际存在的，例如 output/S1Probe）",
+      "default": ""
     }
   ]
 }

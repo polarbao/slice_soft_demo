@@ -141,5 +141,64 @@
       ],
       "jobs": 16
     }
+  ],
+  "testPresets": [
+    {
+      "name": "slicesoft-debug-core",
+      "displayName": "SliceSoft Debug 核心检测（纯逻辑，约十几秒）",
+      "description": "改完想立刻看一眼时用。按【是否起进程】划分而非按耗时阈值：纯逻辑 144 项串行仅 43.1 秒、最慢 3.36 秒，且不起进程因而并行安全；被排除的 104 项起子进程或用 Qt offscreen，占全量 1754 秒中的 1711 秒（97.6%），且在并行下墙钟膨胀十几到二十几倍、会撞自己的内部期限而假失败。并行度 8：这一档没有进程竞争，可以吃满一些。 另排除 2 项【继承自合并基 d28b6451 的既有失败】（stage16c06_bounded_support_shape_unit_tests、scene_layer_adapters_unit_tests）：一个恒显红灯的「十秒看一眼」档会训练人忽略红灯，所以这一档做到「好就是绿」。那 2 项在 fast / full 两档里照常出现，债没被藏起来。它们修好之后应把这两条排除删掉。",
+      "configurePreset": "slicesoft-main",
+      "configuration": "Debug",
+      "output": {
+        "outputOnFailure": true
+      },
+      "execution": {
+        "jobs": 8
+      },
+      "filter": {
+        "exclude": {
+          "name": "^hostflow_|^hostux_|^matvol_|^frame_|^stage16_|^stage14d|^stage14e|^stage14f|^slicer_stage14d|^slicer_stage14e|^textured_scene_|^ripflow_|^rip_|^test_spi|^stage16c06_bounded_support_shape_unit_tests$|^scene_layer_adapters_unit_tests$"
+        }
+      }
+    },
+    {
+      "name": "slicesoft-debug-fast",
+      "displayName": "SliceSoft Debug 快集（排除最慢 8 项）",
+      "description": "提交前用。实测最慢 8 项占全量耗时 75%，排除后覆盖面几乎不变。并行度 4 而非构建侧的 16：ctest 有 21 项 RUN_SERIAL（独占运行、并行时相加），占全量 1754 秒中的 931 秒，j=4 已接近墙钟下界，再加大收益极小。带 --repeat until-pass:2 是因为本档含起进程的测试，-j4 下会偶发假失败（实测：单独重跑即通过）；真失败会重复出现，重试过的项 ctest 会标出来。",
+      "configurePreset": "slicesoft-main",
+      "configuration": "Debug",
+      "output": {
+        "outputOnFailure": true
+      },
+      "execution": {
+        "jobs": 4,
+        "repeat": {
+          "mode": "until-pass",
+          "count": 2
+        }
+      },
+      "filter": {
+        "exclude": {
+          "name": "^hostflow_hd02_real_asset_matrix$|^frame_production_tests$|^stage14d08_r2_slice_executor_tests$|^stage16_contact_leveling_diagnostic_tests$|^hostux_preset_after_import$|^matvol_production_wiring_tests$|^hostux_restored_preset_after_import$|^matvol_rgbwsvt_legacy_package_tests$"
+        }
+      }
+    },
+    {
+      "name": "slicesoft-debug-full",
+      "displayName": "SliceSoft Debug 全量",
+      "description": "里程碑用：合入产品线，或改动触及被快集排除的 8 项所覆盖的域。并行度 4 而非构建侧的 16：ctest 有 21 项 RUN_SERIAL（独占运行、并行时相加），占全量 1754 秒中的 931 秒，j=4 已接近墙钟下界，再加大收益极小。带 --repeat until-pass:2 是因为本档含起进程的测试，-j4 下会偶发假失败（实测：单独重跑即通过）；真失败会重复出现，重试过的项 ctest 会标出来。",
+      "configurePreset": "slicesoft-main",
+      "configuration": "Debug",
+      "output": {
+        "outputOnFailure": true
+      },
+      "execution": {
+        "jobs": 4,
+        "repeat": {
+          "mode": "until-pass",
+          "count": 2
+        }
+      }
+    }
   ]
 }
