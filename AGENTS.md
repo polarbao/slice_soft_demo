@@ -237,6 +237,12 @@ MEMFLOW   ▶ MF-00..03B4A COMPLETE；MF-03B4B PREPARED；生产仍为 Retained 
 8c. 回归结果与基线对照要比**失败集合**，不要比失败**数量**。数量相同可能是「新增 N 条、消失 N 条」；本仓已发生过把新增失败误认成基线项的情况。
 9. Commit only when the user asks or when the active task explicitly requires it; do not push unless explicitly instructed.
 10. New commits must use `type(scope): 【功能分类】中文摘要`; use Chinese body items such as `【模块】`, `【验证】`, and `【边界】`. Do not rewrite published remote history solely to restyle old messages.
+11. **新建分支必须遵守 `docs/git/Git 分支与发布规范.md`。** 硬约束五条，细节见该文：
+    a. 命名 `codex/feature-<专项slug>-<短描述>` 或 `claude/feature-<专项slug>-<短描述>`；`<专项slug>` 取本文「各专项状态」里的 slug，**没有对应专项就先立一条**——分支不该比专项先存在。
+    b. **一律从 `product/packaged-slicer` 拉**，不要从 `main`（它停在 2026-08-05、落后产品线 481 条）。本仓**没有 develop 分支**，早期那份 git-flow 文档里的 develop 流程不适用。
+    c. 合回产品线前必须过三条闸门：**全量重建**（见 8b）、**字节级基线 PASS**（`scripts/CaptureSliceOutputBaseline.py --verify`）、**失败集合与基线一致**（见 8c）。没有 CI 也没有 PR 评审，验证就是唯一闸门。
+    d. 改写历史前**必须建 `backup/pre-<原因>-<日期>` 备份**，改写后用`git diff --diff-filter=A --name-only HEAD <backup>` 验证零内容丢失（应为空）；合入并**推送成功后**才可删备份。**绝不 force-push 任何在 origin 上存在的分支。**
+    e. 删分支先用 `git branch -d`（安全模式）。它在「已并入 HEAD 但未并入自身 origin 上游」时会拒绝——那正是需要人看一眼的情形；确要删则先逐条验证提交全部可达，再 `-D`。
 
 ## Evidence Classification
 
