@@ -2,7 +2,7 @@
 
 > 创建日期：2026-08-14
 >
-> 适用分支：`product/packaged-slicer`、`product/legacy-slicer`
+> 适用分支：`main`（2026-09-18 前叫 `product/packaged-slicer`）、`product/legacy-slicer`
 >
 > 目标：分别提供新版参考宿主和旧版调试 UI 的可操作中文手册，并为主要功能附带真实界面截图。
 
@@ -20,7 +20,7 @@
 
 ## 证据边界
 
-- 新版功能以当前 `product/packaged-slicer` 源码、运行目录和 HostFlow 截图为准。
+- 新版功能以当前 `main` 源码、运行目录和 HostFlow 截图为准。
 - 旧版功能以 `product/legacy-slicer` 分支源码、既有操作手册和实际运行界面为准。
 - 截图证明对应界面和操作入口存在，不替代构建、目标 RIP、设备通信或实物打印验收。
 - 不修改 RGBWSV 协议、生产默认策略、模块 ABI 或任何切片实现。

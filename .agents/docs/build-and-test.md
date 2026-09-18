@@ -192,7 +192,7 @@ build-slicesoft/main/<Config>
 runtime/slicesoft/<Config>
 ```
 
-On `product/packaged-slicer`, the runtime directory contains `slicer_ui_host_sim.exe`,
+On `main` (the release line; before 2026-09-18 this was `product/packaged-slicer`), the runtime directory contains `slicer_ui_host_sim.exe`,
 `slicer_module.dll`, `slicer_worker.exe`, `module.json`, `slicer_cli.exe`,
 `rip_reader_test.exe`, required third-party runtime DLLs, Qt DLLs, platform plugins,
 the MSVC runtime, `samples/`, `model/`, Profile-referenced documents, and

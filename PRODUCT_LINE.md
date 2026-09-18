@@ -1,6 +1,7 @@
 # SliceSoft 产品线边界
 
-本分支是 `product/packaged-slicer`，只维护封装后的切片能力包产品线。
+本分支是 `main`，只维护封装后的切片能力包产品线。
+（2026-09-18 前这条产品线叫 `product/packaged-slicer`，因与 `main` 停在同一提交、职责重合而退场，职责由 `main` 承接；见 `docs/git/分支模型迁移记录_product 退场与集成线改名.md`。）
 
 ## 保留范围
 

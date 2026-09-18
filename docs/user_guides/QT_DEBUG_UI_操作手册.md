@@ -9,7 +9,7 @@
 
 `slicer_debug_ui` 是 SliceSoft 的本地调试 UI。它负责组织配置、调用命令行工具、加载输出包和展示报告，不直接实现喷头控制、RIP 半色调或设备通信。
 
-本手册描述旧版单体调试工作台。新版 `product/packaged-slicer` 已改为参考宿主、切片模块和
+本手册描述旧版单体调试工作台。新版产品线（`main`，2026-09-18 前叫 `product/packaged-slicer`）已改为参考宿主、切片模块和
 Worker 分层结构，日常新版操作请改用单独发布的《SliceSoft 新版切片软件使用手册》。
 
 固定输出协议仍为：

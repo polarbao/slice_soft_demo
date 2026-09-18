@@ -2,7 +2,7 @@
 
 > 日期：2026-09-14（同步蓝色选中轮廓、鼠标导航、逐页布局、导入后工艺切换、RIP 进度与默认目录）
 >
-> 适用产品线：`product/packaged-slicer`；本次 HOSTUX 更新实现分支为 `codex/host-visibility-navigation`。
+> 适用产品线：`main`（2026-09-18 前叫 `product/packaged-slicer`）；本次 HOSTUX 更新实现分支为 `codex/host-visibility-navigation`。
 >
 > 适用程序：`slice_soft_test.exe`；保留 `slicer_ui_host_sim.exe` 兼容入口，两者启动同一版本。
 >
