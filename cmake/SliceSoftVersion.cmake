@@ -40,7 +40,19 @@ endfunction()
 # PATCH 表示「同一功能面上的修补」，与提交数天然对应，交给 git 更准确也免于手工遗漏。
 #
 # 约定：手工提升 MINOR 时应同时打 v<MAJOR>.<MINOR>.0 标签，PATCH 即从该标签重新计数。
-# 未打标签时会继续累计自上一个标签，版本仍然单调递增，不会倒退。
+# 未打标签时会继续累计自上一个标签。
+#
+# 注意：只在历史「只追加」时才单调递增。改写历史（rebase 合并提交、reset 回退重做、
+# 挑拣提交到别的分支）会让计数下降 —— 2026-09-18 合并提交后实测 507 降到 493，
+# 且计数再爬回来时会让两个不同提交派生出同一个短版本号。
+#
+# 这只影响**显示**：构建清单里的 fullBuildVersion 含 commit SHA，
+# 部署脚本的身份检查比的也是它（PrepareSliceSoftRuntime.ps1），所以碰撞不会造成错配。
+#
+# 别指望「补打一个标签」能修：PATCH 取的是 <最近 v* 标签>..HEAD 的计数，
+# 在 HEAD 打标签会让它归零（0.2.493 -> 0.2.0）。要切断碰撞区间必须同时抬 MINOR
+# 并打 v<M>.<N+1>.0，而抬 MINOR 是产品决策。详见
+# analysis/04_问题清单与改动空间.md 的 F-54。
 #
 # 取不到 git 或无任何 v* 标签时退回清单中的 PATCH，使离线源码包仍可构建。
 function(_slicesoft_derive_patch output fallback_patch source_dir)

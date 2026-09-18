@@ -238,6 +238,63 @@ function InvokeNativeStep
     }
 }
 
+# 被打断的构建会留下 0 字节的中间产物。MSBuild 的增量判定只比时间戳，
+# 0 字节的 .obj 比源文件「新」，于是每次重建都跳过重编、链接每次读到同一个空文件，
+# 以 `fatal error LNK1136` 失败 —— 重新跑一次全量重建**修不好它**，
+# 因为走的是同一套跳过逻辑。唯一的出路是删掉那个文件让它重编。
+#
+# 症状会指向错误的方向：链接失败的目标停在旧版本，同轮其它目标正常更新，
+# 部署随后以「version identity drifted」拒绝，报错指向版本而真因在链接。
+#
+# 扫描耗时实测 8.5~9.5 秒（3660 个产物），故**只在构建失败后**调用，不拖慢正常构建。
+# 详见 analysis/04_问题清单与改动空间.md 的 F-55。
+function RemoveZeroLengthBuildArtifacts
+{
+    param(
+        [string]$BuildDir
+    )
+
+    if (-not (Test-Path -LiteralPath $BuildDir -PathType Container))
+    {
+        return
+    }
+
+    try
+    {
+        $corrupt = @(Get-ChildItem -LiteralPath $BuildDir -Recurse `
+            -Include *.obj, *.lib, *.dll, *.exe -File -ErrorAction SilentlyContinue |
+            Where-Object { $_.Length -eq 0 })
+    }
+    catch
+    {
+        # 诊断失败不能盖掉原始的构建失败。
+        Write-Warning "Zero-length artifact scan failed: $($_.Exception.Message)"
+        return
+    }
+
+    if ($corrupt.Count -eq 0)
+    {
+        return
+    }
+
+    Write-Warning ("Found $($corrupt.Count) zero-length build artifact(s). " +
+        "These survive a full rebuild because MSBuild compares timestamps only; " +
+        "removing them so the next build regenerates them:")
+    foreach ($item in $corrupt)
+    {
+        Write-Warning "  $($item.FullName)"
+        try
+        {
+            Remove-Item -LiteralPath $item.FullName -Force -ErrorAction Stop
+        }
+        catch
+        {
+            Write-Warning "  could not remove: $($_.Exception.Message)"
+        }
+    }
+    Write-Warning "Re-run the build; the link error should not recur."
+}
+
 function GetRuntimeBuildInputFingerprint
 {
     param(
@@ -813,10 +870,19 @@ try
                 "/p:LinkToolExe=link.exe",
                 "/p:RCToolPath=$rcToolPath")
         }
-        InvokeNativeStep `
-            -Name "build SliceSoft runtime targets ($Config)" `
-            -Executable "cmake" `
-            -Arguments $buildArguments
+        try
+        {
+            InvokeNativeStep `
+                -Name "build SliceSoft runtime targets ($Config)" `
+                -Executable "cmake" `
+                -Arguments $buildArguments
+        }
+        catch
+        {
+            # 见 RemoveZeroLengthBuildArtifacts 的注释：LNK1136 类失败靠重跑修不好。
+            RemoveZeroLengthBuildArtifacts -BuildDir $resolvedConfigBuildDir
+            throw
+        }
 
         $postBuildInputFingerprint =
             GetRuntimeBuildInputFingerprint `
