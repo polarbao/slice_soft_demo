@@ -46,6 +46,8 @@ endif()
 
 slicesoft_initialize_version_build()
 include(cmake/SliceSoftDiagnostics.cmake)
+# R-08：形状一致的测试可执行目标改为清单式一行一个；判定与边界见该模块开头。
+include(cmake/SliceSoftTestTargets.cmake)
 
 set(SLICESOFT_CORE_SOURCES
     src/third_party/miniz/miniz.c
@@ -1467,29 +1469,13 @@ if(MSVC)
     target_compile_options(slicer_host_sim PRIVATE /W4 /WX)
 endif()
 
-add_executable(texture_fill_partition_release_benchmark
-    apps/texture_fill_partition_release_benchmark/main.cpp
-)
+slicesoft_add_test_executable(NAME texture_fill_partition_release_benchmark SRC apps/texture_fill_partition_release_benchmark/main.cpp LIB slicer_core)
 
-target_link_libraries(texture_fill_partition_release_benchmark PRIVATE slicer_core)
+slicesoft_add_test_executable(NAME tiff_writer_benchmark SRC apps/tiff_writer_benchmark/Main.cpp LIB slicer_core)
 
-add_executable(tiff_writer_benchmark
-    apps/tiff_writer_benchmark/Main.cpp
-)
+slicesoft_add_test_executable(NAME texture_fill_partition_positive_matrix SRC apps/texture_fill_partition_positive_matrix/Main.cpp LIB slicer_core)
 
-target_link_libraries(tiff_writer_benchmark PRIVATE slicer_core)
-
-add_executable(texture_fill_partition_positive_matrix
-    apps/texture_fill_partition_positive_matrix/Main.cpp
-)
-
-target_link_libraries(texture_fill_partition_positive_matrix PRIVATE slicer_core)
-
-add_executable(repaired_asset_intake
-    apps/repaired_asset_intake/Main.cpp
-)
-
-target_link_libraries(repaired_asset_intake PRIVATE slicer_core)
+slicesoft_add_test_executable(NAME repaired_asset_intake SRC apps/repaired_asset_intake/Main.cpp LIB slicer_core)
 
 add_executable(multi_model_scene_matrix
     apps/multi_model_scene_matrix/Main.cpp
@@ -1504,89 +1490,33 @@ if(WIN32)
     target_link_libraries(multi_model_scene_matrix PRIVATE Psapi)
 endif()
 
-add_executable(mesh_repair_preflight
-    apps/mesh_repair_preflight/main.cpp
-)
+slicesoft_add_test_executable(NAME mesh_repair_preflight SRC apps/mesh_repair_preflight/main.cpp LIB slicer_core)
 
-target_link_libraries(mesh_repair_preflight PRIVATE slicer_core)
+slicesoft_add_test_executable(NAME rip_reader_test SRC apps/rip_reader_test/main.cpp LIB slicer_core)
 
-add_executable(rip_reader_test
-    apps/rip_reader_test/main.cpp
-)
+slicesoft_add_test_executable(NAME support_shape_unit_tests SRC tests/unit/support_shape/main.cpp LIB slicer_core)
 
-target_link_libraries(rip_reader_test PRIVATE slicer_core)
+slicesoft_add_test_executable(NAME surface_shell_texture_unit_tests SRC tests/unit/surface_shell_texture/main.cpp LIB slicer_core)
 
-add_executable(support_shape_unit_tests
-    tests/unit/support_shape/main.cpp
-)
+slicesoft_add_test_executable(NAME surface_shell_real_model_unit_tests SRC tests/unit/surface_shell_real_model/main.cpp LIB slicer_core)
 
-target_link_libraries(support_shape_unit_tests PRIVATE slicer_core)
+slicesoft_add_test_executable(NAME surface_shell_robustness_unit_tests SRC tests/unit/surface_shell_robustness/main.cpp LIB slicer_core)
 
-add_executable(surface_shell_texture_unit_tests
-    tests/unit/surface_shell_texture/main.cpp
-)
+slicesoft_add_test_executable(NAME production_admission_policy_unit_tests SRC tests/unit/production_admission_policy/main.cpp LIB slicer_core)
 
-target_link_libraries(surface_shell_texture_unit_tests PRIVATE slicer_core)
+slicesoft_add_test_executable(NAME experimental_config_unit_tests SRC tests/unit/experimental_config/main.cpp LIB slicer_core)
 
-add_executable(surface_shell_real_model_unit_tests
-    tests/unit/surface_shell_real_model/main.cpp
-)
+slicesoft_add_test_executable(NAME texture_white_carrier_policy_unit_tests SRC tests/unit/texture_white_carrier_policy/Main.cpp LIB slicer_core)
 
-target_link_libraries(surface_shell_real_model_unit_tests PRIVATE slicer_core)
+slicesoft_add_test_executable(NAME output_resolution_config_unit_tests SRC tests/unit/output_resolution_config/Main.cpp LIB slicer_core)
 
-add_executable(surface_shell_robustness_unit_tests
-    tests/unit/surface_shell_robustness/main.cpp
-)
+slicesoft_add_test_executable(NAME preview_output_policy_unit_tests SRC tests/unit/preview_output_policy/Main.cpp LIB slicer_core)
 
-target_link_libraries(surface_shell_robustness_unit_tests PRIVATE slicer_core)
+slicesoft_add_test_executable(NAME rip_reader_resolution_unit_tests SRC tests/unit/rip_reader_resolution/Main.cpp LIB slicer_core)
 
-add_executable(production_admission_policy_unit_tests
-    tests/unit/production_admission_policy/main.cpp
-)
+slicesoft_add_test_executable(NAME tiff_layer_source_unit_tests SRC tests/unit/tiff_layer_source/Main.cpp LIB slicer_core)
 
-target_link_libraries(production_admission_policy_unit_tests PRIVATE slicer_core)
-
-add_executable(experimental_config_unit_tests
-    tests/unit/experimental_config/main.cpp
-)
-
-target_link_libraries(experimental_config_unit_tests PRIVATE slicer_core)
-
-add_executable(texture_white_carrier_policy_unit_tests
-    tests/unit/texture_white_carrier_policy/Main.cpp
-)
-
-target_link_libraries(texture_white_carrier_policy_unit_tests PRIVATE slicer_core)
-
-add_executable(output_resolution_config_unit_tests
-    tests/unit/output_resolution_config/Main.cpp
-)
-
-target_link_libraries(output_resolution_config_unit_tests PRIVATE slicer_core)
-
-add_executable(preview_output_policy_unit_tests
-    tests/unit/preview_output_policy/Main.cpp
-)
-
-target_link_libraries(preview_output_policy_unit_tests PRIVATE slicer_core)
-
-add_executable(rip_reader_resolution_unit_tests
-    tests/unit/rip_reader_resolution/Main.cpp
-)
-
-target_link_libraries(rip_reader_resolution_unit_tests PRIVATE slicer_core)
-
-add_executable(tiff_layer_source_unit_tests
-    tests/unit/tiff_layer_source/Main.cpp
-)
-
-target_link_libraries(tiff_layer_source_unit_tests PRIVATE slicer_core)
-
-add_executable(tiff_writer_contract_unit_tests
-    tests/unit/tiff_writer_contract/Main.cpp
-)
-
-target_link_libraries(tiff_writer_contract_unit_tests PRIVATE slicer_core)
+slicesoft_add_test_executable(NAME tiff_writer_contract_unit_tests SRC tests/unit/tiff_writer_contract/Main.cpp LIB slicer_core)
 
 if(TARGET TIFF::TIFF)
     add_executable(tiff_row_layout_unit_tests tests/unit/tiff_row_layout/Main.cpp)
@@ -1597,32 +1527,16 @@ if(TARGET TIFF::TIFF)
     add_test(NAME tiff_row_layout_unit_tests COMMAND tiff_row_layout_unit_tests)
 endif()
 
-add_executable(json_parse_depth_unit_tests
-    tests/unit/json_parse_depth/Main.cpp
-)
-
-target_link_libraries(json_parse_depth_unit_tests PRIVATE slicer_base)
+slicesoft_add_test_executable(NAME json_parse_depth_unit_tests SRC tests/unit/json_parse_depth/Main.cpp LIB slicer_base)
 
 # F-34：与 json_parse_depth 同族的输入规模闸门用例（见 analysis/09）。
-add_executable(model_import_size_limit_unit_tests
-    tests/unit/model_import_size_limit/Main.cpp
-)
-
-target_link_libraries(model_import_size_limit_unit_tests PRIVATE slicer_base)
+slicesoft_add_test_executable(NAME model_import_size_limit_unit_tests SRC tests/unit/model_import_size_limit/Main.cpp LIB slicer_base)
 
 # F-35：进程内整文件读取的上限用例，与上条同族。
-add_executable(in_process_read_limit_unit_tests
-    tests/unit/in_process_read_limit/Main.cpp
-)
-
-target_link_libraries(in_process_read_limit_unit_tests PRIVATE slicer_base)
+slicesoft_add_test_executable(NAME in_process_read_limit_unit_tests SRC tests/unit/in_process_read_limit/Main.cpp LIB slicer_base)
 
 # F-52：TIFF 声明尺寸与文件实际大小的对账，同族最后一条。
-add_executable(tiff_decoded_size_guard_unit_tests
-    tests/unit/tiff_decoded_size_guard/Main.cpp
-)
-
-target_link_libraries(tiff_decoded_size_guard_unit_tests PRIVATE slicer_base)
+slicesoft_add_test_executable(NAME tiff_decoded_size_guard_unit_tests SRC tests/unit/tiff_decoded_size_guard/Main.cpp LIB slicer_base)
 
 # F-09：八个搬出单元的公开入口单测（R-12 验证 Gate 第 4 条）。
 # 批次 5 起按 TU 拆分并由 Main.cpp 汇总返回码：既不撞 G1 的 500 行，也不再加目标块。
@@ -1634,18 +1548,10 @@ add_executable(slicer_extracted_units_unit_tests
 target_link_libraries(slicer_extracted_units_unit_tests PRIVATE slicer_engine)
 
 # 第三批另起目标而非续写上面那个文件：该文件已 399 行，续写会越过 G1 的 500 行阈值。
-add_executable(slicer_relief_sampler_unit_tests
-    tests/unit/slicer_relief_sampler/Main.cpp
-)
-
-target_link_libraries(slicer_relief_sampler_unit_tests PRIVATE slicer_engine)
+slicesoft_add_test_executable(NAME slicer_relief_sampler_unit_tests SRC tests/unit/slicer_relief_sampler/Main.cpp LIB slicer_engine)
 
 # 第四批：掩膜栅格化单元的核心入口（模型采样、外光油壳、上表面支撑边界）。
-add_executable(slicer_mask_rasterizer_unit_tests
-    tests/unit/slicer_mask_rasterizer/Main.cpp
-)
-
-target_link_libraries(slicer_mask_rasterizer_unit_tests PRIVATE slicer_engine)
+slicesoft_add_test_executable(NAME slicer_mask_rasterizer_unit_tests SRC tests/unit/slicer_mask_rasterizer/Main.cpp LIB slicer_engine)
 
 add_executable(worker_protocol_bounds_unit_tests
     tests/unit/worker_protocol_bounds/Main.cpp
@@ -1658,319 +1564,138 @@ target_include_directories(worker_protocol_bounds_unit_tests PRIVATE
 )
 target_link_libraries(worker_protocol_bounds_unit_tests PRIVATE slicer_base)
 
-add_executable(tiff_backend_build_info_unit_tests
-    tests/unit/tiff_backend_build_info/Main.cpp
-)
-
-target_link_libraries(tiff_backend_build_info_unit_tests PRIVATE slicer_core)
+slicesoft_add_test_executable(NAME tiff_backend_build_info_unit_tests SRC tests/unit/tiff_backend_build_info/Main.cpp LIB slicer_core)
 target_compile_definitions(
     tiff_backend_build_info_unit_tests
     PRIVATE
         SLICESOFT_TEST_EXPECTED_TIFF_BACKEND="${SLICESOFT_TIFF_BACKEND}"
 )
 
-add_executable(tiff_writer_backend_unit_tests
-    tests/unit/tiff_writer_backend/Main.cpp
+slicesoft_add_test_executable(NAME tiff_writer_backend_unit_tests SRC tests/unit/tiff_writer_backend/Main.cpp LIB slicer_core)
+
+slicesoft_add_test_executable(NAME tiff_writer_equivalence_unit_tests SRC tests/unit/tiff_writer_equivalence/Main.cpp LIB slicer_core)
+
+slicesoft_add_test_executable(NAME tiff_layer_cache_unit_tests SRC tests/unit/tiff_layer_cache/Main.cpp LIB slicer_core)
+
+slicesoft_add_test_executable(
+    NAME texture_fill_partition_semantic_preview_unit_tests
+    SRC  tests/unit/texture_fill_partition_semantic_preview/Main.cpp
+    LIB  slicer_core
 )
 
-target_link_libraries(tiff_writer_backend_unit_tests PRIVATE slicer_core)
+slicesoft_add_test_executable(NAME material_preview_composer_unit_tests SRC tests/unit/material_preview_composer/Main.cpp LIB slicer_core)
 
-add_executable(tiff_writer_equivalence_unit_tests
-    tests/unit/tiff_writer_equivalence/Main.cpp
+slicesoft_add_test_executable(NAME outer_varnish_discretization_unit_tests SRC tests/unit/outer_varnish_discretization/Main.cpp LIB slicer_core)
+
+slicesoft_add_test_executable(NAME non_square_raster_pipeline_unit_tests SRC tests/unit/non_square_raster_pipeline/Main.cpp LIB slicer_core)
+
+slicesoft_add_test_executable(NAME texture_fill_partition_service_unit_tests SRC tests/unit/texture_fill_partition_service/main.cpp LIB slicer_core)
+
+slicesoft_add_test_executable(NAME legacy_cpu_global_distance_unit_tests SRC tests/unit/legacy_cpu_global_distance/main.cpp LIB slicer_core)
+
+slicesoft_add_test_executable(NAME openvdb_texture_fill_conformance_unit_tests SRC tests/unit/openvdb_texture_fill_conformance/main.cpp LIB slicer_core)
+
+slicesoft_add_test_executable(
+    NAME texture_fill_partition_width_sweep_unit_tests
+    SRC  tests/unit/texture_fill_partition_width_sweep/main.cpp
+    LIB  slicer_core
+    SOURCE_DIR_DEFINE
 )
 
-target_link_libraries(tiff_writer_equivalence_unit_tests PRIVATE slicer_core)
-
-add_executable(tiff_layer_cache_unit_tests
-    tests/unit/tiff_layer_cache/Main.cpp
+slicesoft_add_test_executable(
+    NAME texture_fill_partition_report_unit_tests
+    SRC  tests/unit/texture_fill_partition_report/main.cpp
+    LIB  slicer_core
+    SOURCE_DIR_DEFINE
 )
 
-target_link_libraries(tiff_layer_cache_unit_tests PRIVATE slicer_core)
-
-add_executable(texture_fill_partition_semantic_preview_unit_tests
-    tests/unit/texture_fill_partition_semantic_preview/Main.cpp
+slicesoft_add_test_executable(
+    NAME texture_fill_partition_texture_transfer_unit_tests
+    SRC  tests/unit/texture_fill_partition_texture_transfer/main.cpp
+    LIB  slicer_core
+    SOURCE_DIR_DEFINE
 )
 
-target_link_libraries(texture_fill_partition_semantic_preview_unit_tests PRIVATE slicer_core)
-
-add_executable(material_preview_composer_unit_tests
-    tests/unit/material_preview_composer/Main.cpp
+slicesoft_add_test_executable(
+    NAME texture_fill_partition_diagnostic_composer_unit_tests
+    SRC  tests/unit/texture_fill_partition_diagnostic_composer/main.cpp
+    LIB  slicer_core
 )
 
-target_link_libraries(material_preview_composer_unit_tests PRIVATE slicer_core)
-
-add_executable(outer_varnish_discretization_unit_tests
-    tests/unit/outer_varnish_discretization/Main.cpp
+slicesoft_add_test_executable(
+    NAME texture_fill_partition_diagnostic_facade_unit_tests
+    SRC  tests/unit/texture_fill_partition_diagnostic_facade/Main.cpp
+    LIB  slicer_core
 )
 
-target_link_libraries(outer_varnish_discretization_unit_tests PRIVATE slicer_core)
-
-add_executable(non_square_raster_pipeline_unit_tests
-    tests/unit/non_square_raster_pipeline/Main.cpp
+slicesoft_add_test_executable(
+    NAME texture_fill_partition_closure_adapter_unit_tests
+    SRC  tests/unit/texture_fill_partition_closure_adapter/main.cpp
+    LIB  slicer_core
 )
 
-target_link_libraries(non_square_raster_pipeline_unit_tests PRIVATE slicer_core)
+slicesoft_add_test_executable(NAME texture_fill_partition_raster_mapper_unit_tests SRC tests/unit/texture_fill_partition_raster_mapper/main.cpp LIB slicer_core)
 
-add_executable(texture_fill_partition_service_unit_tests
-    tests/unit/texture_fill_partition_service/main.cpp
+slicesoft_add_test_executable(
+    NAME texture_fill_partition_full_closure_adapter_unit_tests
+    SRC  tests/unit/texture_fill_partition_full_closure_adapter/main.cpp
+    LIB  slicer_core
 )
 
-target_link_libraries(texture_fill_partition_service_unit_tests PRIVATE slicer_core)
-
-add_executable(legacy_cpu_global_distance_unit_tests
-    tests/unit/legacy_cpu_global_distance/main.cpp
+slicesoft_add_test_executable(
+    NAME texture_fill_partition_release_benchmark_unit_tests
+    SRC  tests/unit/texture_fill_partition_release_benchmark/main.cpp
+    LIB  slicer_core
 )
 
-target_link_libraries(legacy_cpu_global_distance_unit_tests PRIVATE slicer_core)
+slicesoft_add_test_executable(NAME model_fill_material_resolver_unit_tests SRC tests/unit/model_fill_material_resolver/Main.cpp LIB slicer_core)
 
-add_executable(openvdb_texture_fill_conformance_unit_tests
-    tests/unit/openvdb_texture_fill_conformance/main.cpp
+slicesoft_add_test_executable(
+    NAME texture_fill_partition_positive_matrix_unit_tests
+    SRC  tests/unit/texture_fill_partition_positive_matrix/Main.cpp
+    LIB  slicer_core
+    SOURCE_DIR_DEFINE
 )
 
-target_link_libraries(openvdb_texture_fill_conformance_unit_tests PRIVATE slicer_core)
+slicesoft_add_test_executable(NAME repaired_asset_intake_unit_tests SRC tests/unit/repaired_asset_intake/Main.cpp LIB slicer_core SOURCE_DIR_DEFINE)
 
-add_executable(texture_fill_partition_width_sweep_unit_tests
-    tests/unit/texture_fill_partition_width_sweep/main.cpp
-)
+slicesoft_add_test_executable(NAME geometry_kernel_service_unit_tests SRC tests/unit/geometry_kernel_service/main.cpp LIB slicer_core)
 
-target_link_libraries(texture_fill_partition_width_sweep_unit_tests PRIVATE slicer_core)
-target_compile_definitions(texture_fill_partition_width_sweep_unit_tests PRIVATE
-    SLICESOFT_SOURCE_DIR="${CMAKE_CURRENT_SOURCE_DIR}"
-)
+slicesoft_add_test_executable(NAME openvdb_sdf_utility_report_unit_tests SRC tests/unit/openvdb_sdf_utility_report/main.cpp LIB slicer_core)
 
-add_executable(texture_fill_partition_report_unit_tests
-    tests/unit/texture_fill_partition_report/main.cpp
-)
+slicesoft_add_test_executable(NAME stage16_geometry_sampling_fixture_tests SRC tests/stage16/GeometrySamplingFixtureTests.cpp LIB slicer_core SOURCE_DIR_DEFINE)
 
-target_link_libraries(texture_fill_partition_report_unit_tests PRIVATE slicer_core)
-target_compile_definitions(texture_fill_partition_report_unit_tests PRIVATE
-    SLICESOFT_SOURCE_DIR="${CMAKE_CURRENT_SOURCE_DIR}"
-)
+slicesoft_add_test_executable(NAME stage16_layer_occupancy_provider_tests SRC tests/stage16/LayerOccupancyProviderTests.cpp LIB slicer_core)
 
-add_executable(texture_fill_partition_texture_transfer_unit_tests
-    tests/unit/texture_fill_partition_texture_transfer/main.cpp
-)
+slicesoft_add_test_executable(NAME stage16c06_memory_budget_unit_tests SRC tests/stage16/RasterMemoryBudgetTests.cpp LIB slicer_core)
 
-target_link_libraries(texture_fill_partition_texture_transfer_unit_tests PRIVATE slicer_core)
-target_compile_definitions(texture_fill_partition_texture_transfer_unit_tests PRIVATE
-    SLICESOFT_SOURCE_DIR="${CMAKE_CURRENT_SOURCE_DIR}"
-)
+slicesoft_add_test_executable(NAME stage16c06_owned_layer_consumer_unit_tests SRC tests/stage16/OwnedLayerConsumerTests.cpp LIB slicer_core SOURCE_DIR_DEFINE)
 
-add_executable(texture_fill_partition_diagnostic_composer_unit_tests
-    tests/unit/texture_fill_partition_diagnostic_composer/main.cpp
-)
+slicesoft_add_test_executable(NAME stage16c06_bounded_support_demand_unit_tests SRC tests/stage16/BoundedSupportDemandTests.cpp LIB slicer_core STRICT_WARNINGS)
 
-target_link_libraries(texture_fill_partition_diagnostic_composer_unit_tests PRIVATE slicer_core)
-
-add_executable(texture_fill_partition_diagnostic_facade_unit_tests
-    tests/unit/texture_fill_partition_diagnostic_facade/Main.cpp
-)
-
-target_link_libraries(texture_fill_partition_diagnostic_facade_unit_tests PRIVATE slicer_core)
-
-add_executable(texture_fill_partition_closure_adapter_unit_tests
-    tests/unit/texture_fill_partition_closure_adapter/main.cpp
-)
-
-target_link_libraries(texture_fill_partition_closure_adapter_unit_tests PRIVATE slicer_core)
-
-add_executable(texture_fill_partition_raster_mapper_unit_tests
-    tests/unit/texture_fill_partition_raster_mapper/main.cpp
-)
-
-target_link_libraries(texture_fill_partition_raster_mapper_unit_tests PRIVATE slicer_core)
-
-add_executable(texture_fill_partition_full_closure_adapter_unit_tests
-    tests/unit/texture_fill_partition_full_closure_adapter/main.cpp
-)
-
-target_link_libraries(texture_fill_partition_full_closure_adapter_unit_tests PRIVATE slicer_core)
-
-add_executable(texture_fill_partition_release_benchmark_unit_tests
-    tests/unit/texture_fill_partition_release_benchmark/main.cpp
-)
-
-target_link_libraries(texture_fill_partition_release_benchmark_unit_tests PRIVATE slicer_core)
-
-add_executable(model_fill_material_resolver_unit_tests
-    tests/unit/model_fill_material_resolver/Main.cpp
-)
-
-target_link_libraries(model_fill_material_resolver_unit_tests PRIVATE slicer_core)
-
-add_executable(texture_fill_partition_positive_matrix_unit_tests
-    tests/unit/texture_fill_partition_positive_matrix/Main.cpp
-)
-
-target_link_libraries(texture_fill_partition_positive_matrix_unit_tests PRIVATE slicer_core)
-target_compile_definitions(texture_fill_partition_positive_matrix_unit_tests PRIVATE
-    SLICESOFT_SOURCE_DIR="${CMAKE_CURRENT_SOURCE_DIR}"
-)
-
-add_executable(repaired_asset_intake_unit_tests
-    tests/unit/repaired_asset_intake/Main.cpp
-)
-
-target_link_libraries(repaired_asset_intake_unit_tests PRIVATE slicer_core)
-target_compile_definitions(repaired_asset_intake_unit_tests PRIVATE
-    SLICESOFT_SOURCE_DIR="${CMAKE_CURRENT_SOURCE_DIR}"
-)
-
-add_executable(geometry_kernel_service_unit_tests
-    tests/unit/geometry_kernel_service/main.cpp
-)
-
-target_link_libraries(geometry_kernel_service_unit_tests PRIVATE slicer_core)
-
-add_executable(openvdb_sdf_utility_report_unit_tests
-    tests/unit/openvdb_sdf_utility_report/main.cpp
-)
-
-target_link_libraries(openvdb_sdf_utility_report_unit_tests PRIVATE slicer_core)
-
-add_executable(stage16_geometry_sampling_fixture_tests
-    tests/stage16/GeometrySamplingFixtureTests.cpp
-)
-
-target_link_libraries(stage16_geometry_sampling_fixture_tests PRIVATE slicer_core)
-target_compile_definitions(stage16_geometry_sampling_fixture_tests PRIVATE
-    SLICESOFT_SOURCE_DIR="${CMAKE_CURRENT_SOURCE_DIR}"
-)
-
-add_executable(stage16_layer_occupancy_provider_tests
-    tests/stage16/LayerOccupancyProviderTests.cpp
-)
-
-target_link_libraries(stage16_layer_occupancy_provider_tests PRIVATE slicer_core)
-
-add_executable(stage16c06_memory_budget_unit_tests
-    tests/stage16/RasterMemoryBudgetTests.cpp
-)
-
-target_link_libraries(stage16c06_memory_budget_unit_tests PRIVATE slicer_core)
-
-add_executable(stage16c06_owned_layer_consumer_unit_tests
-    tests/stage16/OwnedLayerConsumerTests.cpp
-)
-
-target_compile_definitions(stage16c06_owned_layer_consumer_unit_tests PRIVATE
-    SLICESOFT_SOURCE_DIR="${CMAKE_CURRENT_SOURCE_DIR}"
-)
-
-target_link_libraries(stage16c06_owned_layer_consumer_unit_tests PRIVATE slicer_core)
-
-add_executable(stage16c06_bounded_support_demand_unit_tests
-    tests/stage16/BoundedSupportDemandTests.cpp
-)
-
-target_link_libraries(stage16c06_bounded_support_demand_unit_tests PRIVATE slicer_core)
-if(MSVC)
-    target_compile_options(stage16c06_bounded_support_demand_unit_tests PRIVATE /W4 /WX)
-endif()
-
-add_executable(stage16c06_scene_layer_barrier_unit_tests
-    tests/stage16/SceneLayerBarrierTests.cpp
-)
-
-target_link_libraries(stage16c06_scene_layer_barrier_unit_tests PRIVATE slicer_core)
-if(MSVC)
-    target_compile_options(stage16c06_scene_layer_barrier_unit_tests PRIVATE /W4 /WX)
-endif()
+slicesoft_add_test_executable(NAME stage16c06_scene_layer_barrier_unit_tests SRC tests/stage16/SceneLayerBarrierTests.cpp LIB slicer_core STRICT_WARNINGS)
 
 add_test(NAME stage16c06_scene_layer_barrier_unit_tests COMMAND stage16c06_scene_layer_barrier_unit_tests)
 
-add_executable(stage16c06_slice_peak_memory_estimate_unit_tests
-    tests/stage16/SlicePeakMemoryEstimateTests.cpp
-)
+slicesoft_add_test_executable(NAME stage16c06_slice_peak_memory_estimate_unit_tests SRC tests/stage16/SlicePeakMemoryEstimateTests.cpp LIB slicer_core STRICT_WARNINGS)
 
-target_link_libraries(stage16c06_slice_peak_memory_estimate_unit_tests PRIVATE slicer_core)
-if(MSVC)
-    target_compile_options(stage16c06_slice_peak_memory_estimate_unit_tests PRIVATE /W4 /WX)
-endif()
+slicesoft_add_test_executable(NAME stage16c06_bounded_relief_support_plan_unit_tests SRC tests/stage16/BoundedReliefSupportPlanTests.cpp LIB slicer_core STRICT_WARNINGS)
 
-add_executable(stage16c06_bounded_relief_support_plan_unit_tests
-    tests/stage16/BoundedReliefSupportPlanTests.cpp
-)
+slicesoft_add_test_executable(NAME stage16c06_bounded_support_discovery_unit_tests SRC tests/stage16/BoundedSupportDiscoveryTests.cpp LIB slicer_core STRICT_WARNINGS)
 
-target_link_libraries(stage16c06_bounded_relief_support_plan_unit_tests PRIVATE slicer_core)
-if(MSVC)
-    target_compile_options(stage16c06_bounded_relief_support_plan_unit_tests PRIVATE /W4 /WX)
-endif()
+slicesoft_add_test_executable(NAME stage16c06_bounded_support_shape_unit_tests SRC tests/stage16/BoundedSupportShapeScanTests.cpp LIB slicer_core STRICT_WARNINGS)
 
-add_executable(stage16c06_bounded_support_discovery_unit_tests
-    tests/stage16/BoundedSupportDiscoveryTests.cpp
-)
+slicesoft_add_test_executable(NAME stage16c06_bounded_support_final_replay_unit_tests SRC tests/stage16/BoundedSupportFinalReplayTests.cpp LIB slicer_core STRICT_WARNINGS)
 
-target_link_libraries(stage16c06_bounded_support_discovery_unit_tests PRIVATE slicer_core)
-if(MSVC)
-    target_compile_options(stage16c06_bounded_support_discovery_unit_tests PRIVATE /W4 /WX)
-endif()
+slicesoft_add_test_executable(NAME matvol_facts_unit_tests SRC tests/matvol/MatvolFactsTests.cpp LIB slicer_core SOURCE_DIR_DEFINE STRICT_WARNINGS)
 
-add_executable(stage16c06_bounded_support_shape_unit_tests
-    tests/stage16/BoundedSupportShapeScanTests.cpp
-)
+slicesoft_add_test_executable(NAME matvol_topology_unit_tests SRC tests/matvol/MatvolTopologyTests.cpp LIB slicer_core STRICT_WARNINGS)
 
-target_link_libraries(stage16c06_bounded_support_shape_unit_tests PRIVATE slicer_core)
-if(MSVC)
-    target_compile_options(stage16c06_bounded_support_shape_unit_tests PRIVATE /W4 /WX)
-endif()
+slicesoft_add_test_executable(NAME matvol_interval_unit_tests SRC tests/matvol/MatvolIntervalTests.cpp LIB slicer_core STRICT_WARNINGS)
 
-add_executable(stage16c06_bounded_support_final_replay_unit_tests
-    tests/stage16/BoundedSupportFinalReplayTests.cpp
-)
+slicesoft_add_test_executable(NAME matvol_rgb_compose_unit_tests SRC tests/matvol/MatvolRgbComposeTests.cpp LIB slicer_core STRICT_WARNINGS)
 
-target_link_libraries(stage16c06_bounded_support_final_replay_unit_tests PRIVATE slicer_core)
-if(MSVC)
-    target_compile_options(stage16c06_bounded_support_final_replay_unit_tests PRIVATE /W4 /WX)
-endif()
-
-add_executable(matvol_facts_unit_tests
-    tests/matvol/MatvolFactsTests.cpp
-)
-
-target_link_libraries(matvol_facts_unit_tests PRIVATE slicer_core)
-target_compile_definitions(matvol_facts_unit_tests PRIVATE
-    SLICESOFT_SOURCE_DIR="${CMAKE_CURRENT_SOURCE_DIR}"
-)
-if(MSVC)
-    target_compile_options(matvol_facts_unit_tests PRIVATE /W4 /WX)
-endif()
-
-add_executable(matvol_topology_unit_tests
-    tests/matvol/MatvolTopologyTests.cpp
-)
-
-target_link_libraries(matvol_topology_unit_tests PRIVATE slicer_core)
-if(MSVC)
-    target_compile_options(matvol_topology_unit_tests PRIVATE /W4 /WX)
-endif()
-
-add_executable(matvol_interval_unit_tests
-    tests/matvol/MatvolIntervalTests.cpp
-)
-
-target_link_libraries(matvol_interval_unit_tests PRIVATE slicer_core)
-if(MSVC)
-    target_compile_options(matvol_interval_unit_tests PRIVATE /W4 /WX)
-endif()
-
-add_executable(matvol_rgb_compose_unit_tests
-    tests/matvol/MatvolRgbComposeTests.cpp
-)
-
-target_link_libraries(matvol_rgb_compose_unit_tests PRIVATE slicer_core)
-if(MSVC)
-    target_compile_options(matvol_rgb_compose_unit_tests PRIVATE /W4 /WX)
-endif()
-
-add_executable(matvol_white_carrier_integration_tests
-    tests/matvol/MatvolWhiteCarrierTests.cpp
-)
-
-target_link_libraries(matvol_white_carrier_integration_tests PRIVATE slicer_core)
-if(MSVC)
-    target_compile_options(matvol_white_carrier_integration_tests PRIVATE /W4 /WX)
-endif()
+slicesoft_add_test_executable(NAME matvol_white_carrier_integration_tests SRC tests/matvol/MatvolWhiteCarrierTests.cpp LIB slicer_core STRICT_WARNINGS)
 
 # 宿主 Profile 往返门禁：全仓首个同时编译纯 C 宿主翻译单元并链接 slicer_core 的目标。
 # 缺了它，宿主发射的字段取值与切片侧合法集合之间的漂移没有任何门禁能发现
@@ -2033,137 +1758,41 @@ if(MSVC)
     )
 endif()
 
-add_executable(matvol_reality_plan_tests
-    tests/matvol/MatvolRealityPlanTests.cpp
-)
-target_link_libraries(matvol_reality_plan_tests PRIVATE slicer_core)
-target_compile_definitions(matvol_reality_plan_tests PRIVATE
-    SLICESOFT_SOURCE_DIR="${CMAKE_CURRENT_SOURCE_DIR}"
-)
-if(MSVC)
-    target_compile_options(matvol_reality_plan_tests PRIVATE /W4 /WX)
-endif()
+slicesoft_add_test_executable(NAME matvol_reality_plan_tests SRC tests/matvol/MatvolRealityPlanTests.cpp LIB slicer_core SOURCE_DIR_DEFINE STRICT_WARNINGS)
 
-add_executable(matvol_transfer_resolver_unit_tests
-    tests/matvol_t/MatvolTransferResolverTests.cpp
-)
-target_link_libraries(matvol_transfer_resolver_unit_tests PRIVATE slicer_core)
-target_compile_definitions(matvol_transfer_resolver_unit_tests PRIVATE
-    SLICESOFT_SOURCE_DIR="${CMAKE_CURRENT_SOURCE_DIR}"
-)
-if(MSVC)
-    target_compile_options(matvol_transfer_resolver_unit_tests PRIVATE /W4 /WX)
-endif()
+slicesoft_add_test_executable(NAME matvol_transfer_resolver_unit_tests SRC tests/matvol_t/MatvolTransferResolverTests.cpp LIB slicer_core SOURCE_DIR_DEFINE STRICT_WARNINGS)
 
-add_executable(matvol_transfer_volume_plan_tests
-    tests/matvol_t/TransferMaterialVolumePlanTests.cpp
-)
-target_link_libraries(matvol_transfer_volume_plan_tests PRIVATE slicer_core)
-target_compile_definitions(matvol_transfer_volume_plan_tests PRIVATE
-    SLICESOFT_SOURCE_DIR="${CMAKE_CURRENT_SOURCE_DIR}"
-)
-if(MSVC)
-    target_compile_options(matvol_transfer_volume_plan_tests PRIVATE /W4 /WX)
-endif()
+slicesoft_add_test_executable(NAME matvol_transfer_volume_plan_tests SRC tests/matvol_t/TransferMaterialVolumePlanTests.cpp LIB slicer_core SOURCE_DIR_DEFINE STRICT_WARNINGS)
 
-add_executable(matvol_rgbwsvt_composer_tests
-    tests/matvol_t/RgbwsvtComposerTests.cpp
-)
-target_link_libraries(matvol_rgbwsvt_composer_tests PRIVATE slicer_core)
-if(MSVC)
-    target_compile_options(matvol_rgbwsvt_composer_tests PRIVATE /W4 /WX)
-endif()
+slicesoft_add_test_executable(NAME matvol_rgbwsvt_composer_tests SRC tests/matvol_t/RgbwsvtComposerTests.cpp LIB slicer_core STRICT_WARNINGS)
 
-add_executable(matvol_rgbwsvt_tiff_io_tests
-    tests/matvol_t/RgbwsvtTiffIoTests.cpp
-)
-target_link_libraries(matvol_rgbwsvt_tiff_io_tests PRIVATE slicer_core)
-target_compile_definitions(matvol_rgbwsvt_tiff_io_tests PRIVATE
-    SLICESOFT_SOURCE_DIR="${CMAKE_CURRENT_SOURCE_DIR}"
-)
-if(MSVC)
-    target_compile_options(matvol_rgbwsvt_tiff_io_tests PRIVATE /W4 /WX)
-endif()
+slicesoft_add_test_executable(NAME matvol_rgbwsvt_tiff_io_tests SRC tests/matvol_t/RgbwsvtTiffIoTests.cpp LIB slicer_core SOURCE_DIR_DEFINE STRICT_WARNINGS)
 
-add_executable(matvol_legacy_transfer_session_tests
-    tests/matvol_t/LegacyTransferChannelSessionTests.cpp
-)
-target_link_libraries(matvol_legacy_transfer_session_tests PRIVATE slicer_core)
-target_compile_definitions(matvol_legacy_transfer_session_tests PRIVATE
-    SLICESOFT_SOURCE_DIR="${CMAKE_CURRENT_SOURCE_DIR}"
+slicesoft_add_test_executable(
+    NAME matvol_legacy_transfer_session_tests
+    SRC  tests/matvol_t/LegacyTransferChannelSessionTests.cpp
+    LIB  slicer_core
+    SOURCE_DIR_DEFINE
 )
 if(MSVC)
     target_compile_options(matvol_legacy_transfer_session_tests PRIVATE /W4 /WX)
 endif()
 
-add_executable(matvol_rgbwsvt_legacy_package_metadata_tests
-    tests/matvol_t/RgbwsvtLegacyPackageMetadataTests.cpp
-)
-target_link_libraries(matvol_rgbwsvt_legacy_package_metadata_tests PRIVATE slicer_core)
-if(MSVC)
-    target_compile_options(matvol_rgbwsvt_legacy_package_metadata_tests PRIVATE /W4 /WX)
-endif()
+slicesoft_add_test_executable(NAME matvol_rgbwsvt_legacy_package_metadata_tests SRC tests/matvol_t/RgbwsvtLegacyPackageMetadataTests.cpp LIB slicer_core STRICT_WARNINGS)
 
-add_executable(matvol_rgbwsvt_legacy_package_tests
-    tests/matvol_t/LegacyRgbwsvtPackageTests.cpp
-)
-target_link_libraries(matvol_rgbwsvt_legacy_package_tests PRIVATE slicer_core)
-target_compile_definitions(matvol_rgbwsvt_legacy_package_tests PRIVATE
-    SLICESOFT_SOURCE_DIR="${CMAKE_CURRENT_SOURCE_DIR}"
-)
-if(MSVC)
-    target_compile_options(matvol_rgbwsvt_legacy_package_tests PRIVATE /W4 /WX)
-endif()
+slicesoft_add_test_executable(NAME matvol_rgbwsvt_legacy_package_tests SRC tests/matvol_t/LegacyRgbwsvtPackageTests.cpp LIB slicer_core SOURCE_DIR_DEFINE STRICT_WARNINGS)
 
-add_executable(matvol_rgbwsvt_cli_candidate_tests
-    tests/matvol_t/LegacyRgbwsvtCliCandidateTests.cpp
-)
-target_link_libraries(matvol_rgbwsvt_cli_candidate_tests PRIVATE slicer_core)
-target_compile_definitions(matvol_rgbwsvt_cli_candidate_tests PRIVATE
-    SLICESOFT_SOURCE_DIR="${CMAKE_CURRENT_SOURCE_DIR}"
-)
-if(MSVC)
-    target_compile_options(matvol_rgbwsvt_cli_candidate_tests PRIVATE /W4 /WX)
-endif()
+slicesoft_add_test_executable(NAME matvol_rgbwsvt_cli_candidate_tests SRC tests/matvol_t/LegacyRgbwsvtCliCandidateTests.cpp LIB slicer_core SOURCE_DIR_DEFINE STRICT_WARNINGS)
 
-add_executable(matvol_t_production_matrix_tests
-    tests/matvol_t/MatvolTProductionMatrixTests.cpp
-)
-target_link_libraries(matvol_t_production_matrix_tests PRIVATE slicer_core)
-target_compile_definitions(matvol_t_production_matrix_tests PRIVATE
-    SLICESOFT_SOURCE_DIR="${CMAKE_CURRENT_SOURCE_DIR}"
-)
-if(MSVC)
-    target_compile_options(matvol_t_production_matrix_tests PRIVATE /W4 /WX)
-endif()
+slicesoft_add_test_executable(NAME matvol_t_production_matrix_tests SRC tests/matvol_t/MatvolTProductionMatrixTests.cpp LIB slicer_core SOURCE_DIR_DEFINE STRICT_WARNINGS)
 
-add_executable(stage16_contact_posture_metrics_tests
-    tests/stage16/ContactPostureMetricsTests.cpp
-)
+slicesoft_add_test_executable(NAME stage16_contact_posture_metrics_tests SRC tests/stage16/ContactPostureMetricsTests.cpp LIB slicer_core)
 
-target_link_libraries(stage16_contact_posture_metrics_tests PRIVATE slicer_core)
+slicesoft_add_test_executable(NAME stage16_posture_baseline SRC apps/stage16_posture_baseline/Main.cpp LIB slicer_core SOURCE_DIR_DEFINE)
 
-add_executable(stage16_posture_baseline
-    apps/stage16_posture_baseline/Main.cpp
-)
+slicesoft_add_test_executable(NAME stage16_contact_leveling_analyzer_tests SRC tests/stage16/ContactLevelingAnalyzerTests.cpp LIB slicer_core)
 
-target_link_libraries(stage16_posture_baseline PRIVATE slicer_core)
-target_compile_definitions(stage16_posture_baseline PRIVATE
-    SLICESOFT_SOURCE_DIR="${CMAKE_CURRENT_SOURCE_DIR}"
-)
-
-add_executable(stage16_contact_leveling_analyzer_tests
-    tests/stage16/ContactLevelingAnalyzerTests.cpp
-)
-target_link_libraries(stage16_contact_leveling_analyzer_tests PRIVATE slicer_core)
-
-add_executable(stage16_contact_leveling_diagnostic
-    apps/stage16_contact_leveling_diagnostic/Main.cpp
-)
-target_link_libraries(stage16_contact_leveling_diagnostic PRIVATE slicer_core)
-target_compile_definitions(stage16_contact_leveling_diagnostic PRIVATE
-    SLICESOFT_SOURCE_DIR="${CMAKE_CURRENT_SOURCE_DIR}"
-)
+slicesoft_add_test_executable(NAME stage16_contact_leveling_diagnostic SRC apps/stage16_contact_leveling_diagnostic/Main.cpp LIB slicer_core SOURCE_DIR_DEFINE)
 
 add_executable(stage16_sampling_matrix
     apps/stage16_sampling_matrix/Main.cpp
@@ -2174,73 +1803,25 @@ target_compile_definitions(stage16_sampling_matrix PRIVATE
     SLICESOFT_BUILD_CONFIG="$<CONFIG>"
 )
 
-add_executable(stage16_posture_matrix
-    apps/stage16_posture_matrix/Main.cpp
-)
-target_link_libraries(stage16_posture_matrix PRIVATE slicer_core)
-target_compile_definitions(stage16_posture_matrix PRIVATE
-    SLICESOFT_SOURCE_DIR="${CMAKE_CURRENT_SOURCE_DIR}"
-)
+slicesoft_add_test_executable(NAME stage16_posture_matrix SRC apps/stage16_posture_matrix/Main.cpp LIB slicer_core SOURCE_DIR_DEFINE)
 
-add_executable(material_closure_report_unit_tests
-    tests/unit/material_closure_report/main.cpp
-)
+slicesoft_add_test_executable(NAME material_closure_report_unit_tests SRC tests/unit/material_closure_report/main.cpp LIB slicer_core)
 
-target_link_libraries(material_closure_report_unit_tests PRIVATE slicer_core)
+slicesoft_add_test_executable(NAME material_closure_candidate_detector_unit_tests SRC tests/unit/material_closure_candidate_detector/main.cpp LIB slicer_core)
 
-add_executable(material_closure_candidate_detector_unit_tests
-    tests/unit/material_closure_candidate_detector/main.cpp
-)
+slicesoft_add_test_executable(NAME material_closure_semantic_detector_unit_tests SRC tests/unit/material_closure_semantic_detector/main.cpp LIB slicer_core)
 
-target_link_libraries(material_closure_candidate_detector_unit_tests PRIVATE slicer_core)
+slicesoft_add_test_executable(NAME surface_shell_texture_service_unit_tests SRC tests/unit/surface_shell_texture_service/main.cpp LIB slicer_core)
 
-add_executable(material_closure_semantic_detector_unit_tests
-    tests/unit/material_closure_semantic_detector/main.cpp
-)
+slicesoft_add_test_executable(NAME material_channel_composer_unit_tests SRC tests/unit/material_channel_composer/main.cpp LIB slicer_core)
 
-target_link_libraries(material_closure_semantic_detector_unit_tests PRIVATE slicer_core)
+slicesoft_add_test_executable(NAME mesh_repair_contract_unit_tests SRC tests/unit/mesh_repair_contract/main.cpp LIB slicer_core SOURCE_DIR_DEFINE)
 
-add_executable(surface_shell_texture_service_unit_tests
-    tests/unit/surface_shell_texture_service/main.cpp
-)
+slicesoft_add_test_executable(NAME mesh_repair_eligibility_unit_tests SRC tests/unit/mesh_repair_eligibility/main.cpp LIB slicer_core)
 
-target_link_libraries(surface_shell_texture_service_unit_tests PRIVATE slicer_core)
+slicesoft_add_test_executable(NAME model_preflight_contract_unit_tests SRC tests/unit/model_preflight_contract/main.cpp LIB slicer_core SOURCE_DIR_DEFINE)
 
-add_executable(material_channel_composer_unit_tests
-    tests/unit/material_channel_composer/main.cpp
-)
-
-target_link_libraries(material_channel_composer_unit_tests PRIVATE slicer_core)
-
-add_executable(mesh_repair_contract_unit_tests
-    tests/unit/mesh_repair_contract/main.cpp
-)
-
-target_link_libraries(mesh_repair_contract_unit_tests PRIVATE slicer_core)
-target_compile_definitions(mesh_repair_contract_unit_tests PRIVATE
-    SLICESOFT_SOURCE_DIR="${CMAKE_CURRENT_SOURCE_DIR}"
-)
-
-add_executable(mesh_repair_eligibility_unit_tests
-    tests/unit/mesh_repair_eligibility/main.cpp
-)
-
-target_link_libraries(mesh_repair_eligibility_unit_tests PRIVATE slicer_core)
-
-add_executable(model_preflight_contract_unit_tests
-    tests/unit/model_preflight_contract/main.cpp
-)
-
-target_link_libraries(model_preflight_contract_unit_tests PRIVATE slicer_core)
-target_compile_definitions(model_preflight_contract_unit_tests PRIVATE
-    SLICESOFT_SOURCE_DIR="${CMAKE_CURRENT_SOURCE_DIR}"
-)
-
-add_executable(model_transform_unit_tests
-    tests/unit/model_transform/Main.cpp
-)
-
-target_link_libraries(model_transform_unit_tests PRIVATE slicer_core)
+slicesoft_add_test_executable(NAME model_transform_unit_tests SRC tests/unit/model_transform/Main.cpp LIB slicer_core)
 
 add_executable(frame_geometry_unit_tests tests/unit/frame_geometry/Main.cpp)
 add_executable(frame_scene_tests tests/unit/frame_geometry/Scene.cpp)
@@ -2288,147 +1869,57 @@ add_executable(mtl_material_parser_unit_tests
 
 target_link_libraries(mtl_material_parser_unit_tests PRIVATE slicer_core)
 
-add_executable(material_opacity_varnish_unit_tests
-    tests/unit/material_opacity_varnish/Main.cpp
-)
+slicesoft_add_test_executable(NAME material_opacity_varnish_unit_tests SRC tests/unit/material_opacity_varnish/Main.cpp LIB slicer_core)
 
-target_link_libraries(material_opacity_varnish_unit_tests PRIVATE slicer_core)
+slicesoft_add_test_executable(NAME material_layer_naming_unit_tests SRC tests/unit/material_layer_naming/Main.cpp LIB slicer_core)
 
-add_executable(material_layer_naming_unit_tests
-    tests/unit/material_layer_naming/Main.cpp
-)
+slicesoft_add_test_executable(NAME auto_orient_unit_tests SRC tests/unit/auto_orient/Main.cpp LIB slicer_core)
 
-target_link_libraries(material_layer_naming_unit_tests PRIVATE slicer_core)
+slicesoft_add_test_executable(NAME scene_view_geometry_unit_tests SRC tests/unit/scene_view_geometry/Main.cpp LIB slicer_core)
 
-add_executable(auto_orient_unit_tests
-    tests/unit/auto_orient/Main.cpp
-)
+slicesoft_add_test_executable(NAME multimodel_scene_contract_unit_tests SRC tests/unit/multimodel_scene_contract/Main.cpp LIB slicer_core SOURCE_DIR_DEFINE)
 
-target_link_libraries(auto_orient_unit_tests PRIVATE slicer_core)
+slicesoft_add_test_executable(NAME grid_layout_policy_unit_tests SRC tests/unit/grid_layout_policy/Main.cpp LIB slicer_core)
 
-add_executable(scene_view_geometry_unit_tests
-    tests/unit/scene_view_geometry/Main.cpp
-)
+slicesoft_add_test_executable(NAME scene_collision_admission_unit_tests SRC tests/unit/scene_collision_admission/Main.cpp LIB slicer_core)
 
-target_link_libraries(scene_view_geometry_unit_tests PRIVATE slicer_core)
+slicesoft_add_test_executable(NAME multi_model_layer_composer_unit_tests SRC tests/unit/multi_model_layer_composer/Main.cpp LIB slicer_core)
 
-add_executable(multimodel_scene_contract_unit_tests
-    tests/unit/multimodel_scene_contract/Main.cpp
-)
+slicesoft_add_test_executable(NAME scene_layer_adapters_unit_tests SRC tests/unit/scene_layer_adapters/Main.cpp LIB slicer_core SOURCE_DIR_DEFINE)
 
-target_link_libraries(multimodel_scene_contract_unit_tests PRIVATE slicer_core)
-target_compile_definitions(multimodel_scene_contract_unit_tests PRIVATE
-    SLICESOFT_SOURCE_DIR="${CMAKE_CURRENT_SOURCE_DIR}"
-)
-
-add_executable(grid_layout_policy_unit_tests
-    tests/unit/grid_layout_policy/Main.cpp
-)
-
-target_link_libraries(grid_layout_policy_unit_tests PRIVATE slicer_core)
-
-add_executable(scene_collision_admission_unit_tests
-    tests/unit/scene_collision_admission/Main.cpp
-)
-
-target_link_libraries(scene_collision_admission_unit_tests PRIVATE slicer_core)
-
-add_executable(multi_model_layer_composer_unit_tests
-    tests/unit/multi_model_layer_composer/Main.cpp
-)
-
-target_link_libraries(multi_model_layer_composer_unit_tests PRIVATE slicer_core)
-
-add_executable(scene_layer_adapters_unit_tests
-    tests/unit/scene_layer_adapters/Main.cpp
-)
-
-target_link_libraries(scene_layer_adapters_unit_tests PRIVATE slicer_core)
-target_compile_definitions(scene_layer_adapters_unit_tests PRIVATE
-    SLICESOFT_SOURCE_DIR="${CMAKE_CURRENT_SOURCE_DIR}"
-)
-
-add_executable(multi_model_package_writer_unit_tests
-    tests/unit/multi_model_package_writer/Main.cpp
-)
-
-target_link_libraries(multi_model_package_writer_unit_tests PRIVATE slicer_core)
+slicesoft_add_test_executable(NAME multi_model_package_writer_unit_tests SRC tests/unit/multi_model_package_writer/Main.cpp LIB slicer_core)
 
 # MF-05 多实例内存验证台：不是回归用例，不注册 add_test。
 # 它按 <层厚> <实例数> 跑场景生产，用于观察峰值随层数的斜率。
-add_executable(stage16c06_scene_memory_bench
-    tests/stage16/SceneMemoryBench.cpp
-)
-
-target_link_libraries(stage16c06_scene_memory_bench PRIVATE slicer_core)
-target_compile_definitions(stage16c06_scene_memory_bench PRIVATE
-    SLICESOFT_SOURCE_DIR="${CMAKE_CURRENT_SOURCE_DIR}"
-)
+slicesoft_add_test_executable(NAME stage16c06_scene_memory_bench SRC tests/stage16/SceneMemoryBench.cpp LIB slicer_core SOURCE_DIR_DEFINE)
 if(WIN32)
     target_link_libraries(stage16c06_scene_memory_bench PRIVATE psapi)
 endif()
 
-add_executable(multi_model_production_service_unit_tests
-    tests/unit/multi_model_production_service/Main.cpp
+slicesoft_add_test_executable(
+    NAME multi_model_production_service_unit_tests
+    SRC  tests/unit/multi_model_production_service/Main.cpp
+    LIB  slicer_core
+    SOURCE_DIR_DEFINE
 )
 
-target_link_libraries(multi_model_production_service_unit_tests PRIVATE slicer_core)
-target_compile_definitions(multi_model_production_service_unit_tests PRIVATE
-    SLICESOFT_SOURCE_DIR="${CMAKE_CURRENT_SOURCE_DIR}"
-)
+slicesoft_add_test_executable(NAME translated_scene_raster_reuse_unit_tests SRC tests/unit/translated_scene_raster_reuse/Main.cpp LIB slicer_core)
 
-add_executable(translated_scene_raster_reuse_unit_tests
-    tests/unit/translated_scene_raster_reuse/Main.cpp
-)
+slicesoft_add_test_executable(NAME multi_model_scene_matrix_report_unit_tests SRC tests/unit/multi_model_scene_matrix_report/Main.cpp LIB slicer_core)
 
-target_link_libraries(translated_scene_raster_reuse_unit_tests PRIVATE slicer_core)
+slicesoft_add_test_executable(NAME diagnostic_effective_config_unit_tests SRC tests/unit/diagnostic_effective_config/Main.cpp LIB slicer_core SOURCE_DIR_DEFINE)
 
-add_executable(multi_model_scene_matrix_report_unit_tests
-    tests/unit/multi_model_scene_matrix_report/Main.cpp
-)
+slicesoft_add_test_executable(NAME model_preflight_service_unit_tests SRC tests/unit/model_preflight_service/main.cpp LIB slicer_core SOURCE_DIR_DEFINE)
 
-target_link_libraries(multi_model_scene_matrix_report_unit_tests PRIVATE slicer_core)
+slicesoft_add_test_executable(NAME model_preflight_admission_unit_tests SRC tests/unit/model_preflight_admission/main.cpp LIB slicer_core)
 
-add_executable(diagnostic_effective_config_unit_tests
-    tests/unit/diagnostic_effective_config/Main.cpp
-)
+slicesoft_add_test_executable(NAME transformed_model_preflight_unit_tests SRC tests/unit/transformed_model_preflight/Main.cpp LIB slicer_core SOURCE_DIR_DEFINE)
 
-target_link_libraries(diagnostic_effective_config_unit_tests PRIVATE slicer_core)
-target_compile_definitions(diagnostic_effective_config_unit_tests PRIVATE
-    SLICESOFT_SOURCE_DIR="${CMAKE_CURRENT_SOURCE_DIR}"
-)
-
-add_executable(model_preflight_service_unit_tests
-    tests/unit/model_preflight_service/main.cpp
-)
-
-target_link_libraries(model_preflight_service_unit_tests PRIVATE slicer_core)
-target_compile_definitions(model_preflight_service_unit_tests PRIVATE
-    SLICESOFT_SOURCE_DIR="${CMAKE_CURRENT_SOURCE_DIR}"
-)
-
-add_executable(model_preflight_admission_unit_tests
-    tests/unit/model_preflight_admission/main.cpp
-)
-
-target_link_libraries(model_preflight_admission_unit_tests PRIVATE slicer_core)
-
-add_executable(transformed_model_preflight_unit_tests
-    tests/unit/transformed_model_preflight/Main.cpp
-)
-
-target_link_libraries(transformed_model_preflight_unit_tests PRIVATE slicer_core)
-target_compile_definitions(transformed_model_preflight_unit_tests PRIVATE
-    SLICESOFT_SOURCE_DIR="${CMAKE_CURRENT_SOURCE_DIR}"
-)
-
-add_executable(stage14d08_r3_scene_preflight_tests
-    tests/stage14d_08_r3/SceneFullPreflightServiceTests.cpp
-)
-
-target_link_libraries(stage14d08_r3_scene_preflight_tests PRIVATE slicer_engine)
-target_compile_definitions(stage14d08_r3_scene_preflight_tests PRIVATE
-    SLICESOFT_SOURCE_DIR="${CMAKE_CURRENT_SOURCE_DIR}"
+slicesoft_add_test_executable(
+    NAME stage14d08_r3_scene_preflight_tests
+    SRC  tests/stage14d_08_r3/SceneFullPreflightServiceTests.cpp
+    LIB  slicer_engine
+    SOURCE_DIR_DEFINE
 )
 if(MSVC)
     target_compile_options(stage14d08_r3_scene_preflight_tests PRIVATE /W4 /WX)
@@ -2451,80 +1942,45 @@ if(MSVC)
     target_compile_options(stage14d08_r3_worker_preflight_tests PRIVATE /W4 /WX)
 endif()
 
-add_executable(model_preflight_pipeline_gate_unit_tests
-    tests/unit/model_preflight_pipeline_gate/main.cpp
+slicesoft_add_test_executable(NAME model_preflight_pipeline_gate_unit_tests SRC tests/unit/model_preflight_pipeline_gate/main.cpp LIB slicer_core)
+
+slicesoft_add_test_executable(NAME slice_pipeline_router_unit_tests SRC tests/unit/slice_pipeline_router/Main.cpp LIB slicer_core)
+
+slicesoft_add_test_executable(
+    NAME global_surface_shell_production_layer_adapter_unit_tests
+    SRC  tests/unit/global_surface_shell_production_layer_adapter/Main.cpp
+    LIB  slicer_core
 )
 
-target_link_libraries(model_preflight_pipeline_gate_unit_tests PRIVATE slicer_core)
+slicesoft_add_test_executable(NAME rgbwsv_production_package_writer_unit_tests SRC tests/unit/rgbwsv_production_package_writer/Main.cpp LIB slicer_core)
 
-add_executable(slice_pipeline_router_unit_tests
-    tests/unit/slice_pipeline_router/Main.cpp
+slicesoft_add_test_executable(
+    NAME global_surface_shell_production_pipeline_unit_tests
+    SRC  tests/unit/global_surface_shell_production_pipeline/Main.cpp
+    LIB  slicer_core
 )
 
-target_link_libraries(slice_pipeline_router_unit_tests PRIVATE slicer_core)
-
-add_executable(global_surface_shell_production_layer_adapter_unit_tests
-    tests/unit/global_surface_shell_production_layer_adapter/Main.cpp
+slicesoft_add_test_executable(
+    NAME global_surface_shell_material_evidence_unit_tests
+    SRC  tests/unit/global_surface_shell_material_evidence/Main.cpp
+    LIB  slicer_core
 )
 
-target_link_libraries(global_surface_shell_production_layer_adapter_unit_tests PRIVATE slicer_core)
+slicesoft_add_test_executable(NAME mesh_repair_fixture_golden_unit_tests SRC tests/unit/mesh_repair_fixture_golden/main.cpp LIB slicer_core SOURCE_DIR_DEFINE)
 
-add_executable(rgbwsv_production_package_writer_unit_tests
-    tests/unit/rgbwsv_production_package_writer/Main.cpp
+slicesoft_add_test_executable(NAME mesh_repair_preflight_unit_tests SRC tests/unit/mesh_repair_preflight/main.cpp LIB slicer_core)
+
+slicesoft_add_test_executable(NAME mesh_repair_cleanup_unit_tests SRC tests/unit/mesh_repair_cleanup/main.cpp LIB slicer_core)
+
+slicesoft_add_test_executable(NAME mesh_repair_evidence_validator_unit_tests SRC tests/unit/mesh_repair_evidence_validator/main.cpp LIB slicer_core)
+
+slicesoft_add_test_executable(NAME mesh_non_manifold_pattern_classifier_unit_tests SRC tests/unit/mesh_non_manifold_pattern_classifier/main.cpp LIB slicer_core)
+
+slicesoft_add_test_executable(
+    NAME mesh_complete_self_intersection_analyzer_unit_tests
+    SRC  tests/unit/mesh_complete_self_intersection_analyzer/main.cpp
+    LIB  slicer_core
 )
-
-target_link_libraries(rgbwsv_production_package_writer_unit_tests PRIVATE slicer_core)
-
-add_executable(global_surface_shell_production_pipeline_unit_tests
-    tests/unit/global_surface_shell_production_pipeline/Main.cpp
-)
-
-target_link_libraries(global_surface_shell_production_pipeline_unit_tests PRIVATE slicer_core)
-
-add_executable(global_surface_shell_material_evidence_unit_tests
-    tests/unit/global_surface_shell_material_evidence/Main.cpp
-)
-
-target_link_libraries(global_surface_shell_material_evidence_unit_tests PRIVATE slicer_core)
-
-add_executable(mesh_repair_fixture_golden_unit_tests
-    tests/unit/mesh_repair_fixture_golden/main.cpp
-)
-
-target_link_libraries(mesh_repair_fixture_golden_unit_tests PRIVATE slicer_core)
-target_compile_definitions(mesh_repair_fixture_golden_unit_tests PRIVATE
-    SLICESOFT_SOURCE_DIR="${CMAKE_CURRENT_SOURCE_DIR}"
-)
-
-add_executable(mesh_repair_preflight_unit_tests
-    tests/unit/mesh_repair_preflight/main.cpp
-)
-
-target_link_libraries(mesh_repair_preflight_unit_tests PRIVATE slicer_core)
-
-add_executable(mesh_repair_cleanup_unit_tests
-    tests/unit/mesh_repair_cleanup/main.cpp
-)
-
-target_link_libraries(mesh_repair_cleanup_unit_tests PRIVATE slicer_core)
-
-add_executable(mesh_repair_evidence_validator_unit_tests
-    tests/unit/mesh_repair_evidence_validator/main.cpp
-)
-
-target_link_libraries(mesh_repair_evidence_validator_unit_tests PRIVATE slicer_core)
-
-add_executable(mesh_non_manifold_pattern_classifier_unit_tests
-    tests/unit/mesh_non_manifold_pattern_classifier/main.cpp
-)
-
-target_link_libraries(mesh_non_manifold_pattern_classifier_unit_tests PRIVATE slicer_core)
-
-add_executable(mesh_complete_self_intersection_analyzer_unit_tests
-    tests/unit/mesh_complete_self_intersection_analyzer/main.cpp
-)
-
-target_link_libraries(mesh_complete_self_intersection_analyzer_unit_tests PRIVATE slicer_core)
 
 find_package(Python3 QUIET COMPONENTS Interpreter)
 
