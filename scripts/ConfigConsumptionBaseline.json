@@ -1,0 +1,8 @@
+{
+  "schemaVersion": 1,
+  "heavyThreshold": 10,
+  "heavyFileBaseline": 5,
+  "heavyFileBaselineNote": "2026-09-18 实测值。当前 5 个：config.cpp(25)、slicer.cpp(20)、GlobalSurfaceShellProductionPipeline.cpp(13)、SliceMaterialTexture.cpp(11)、RetainedMaterialLayerComposer.cpp(11)。棘轮只防新增，不冻结清单，也不替任何专项承接这 5 个既有的。收敛下来后应把本值一并收紧。",
+  "deadMemberAllowlist": [],
+  "deadMemberAllowlistNote": "登记「确实经别名或引用访问、因而文本匹配器看不到」的成员，每条都要写明经哪条路径访问。2026-09-18 实测为空——25 个成员全部有 config.cpp 之外的消费者。优先补 CONFIG_ALIASES 而不是往这里加条目：这份清单是消音器，加进来就不再报了。"
+}

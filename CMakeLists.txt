@@ -2168,6 +2168,19 @@ if(Python3_Interpreter_FOUND)
             "${CMAKE_CURRENT_SOURCE_DIR}/scripts/ValidateSourceSizeGuard.py"
             --census
     )
+    # R-13 方案 a / F-10：配置消费面门禁。守两件事——任何 SliceConfig 成员都要有消费者
+    # （零消费者即「收下却无人读取」的死旋钮），以及重度消费文件数的棘轮。
+    add_test(
+        NAME slicer_config_consumption_self_test
+        COMMAND ${Python3_EXECUTABLE}
+            "${CMAKE_CURRENT_SOURCE_DIR}/scripts/ValidateConfigConsumption.py"
+            --self-test
+    )
+    add_test(
+        NAME slicer_config_consumption_test
+        COMMAND ${Python3_EXECUTABLE}
+            "${CMAKE_CURRENT_SOURCE_DIR}/scripts/ValidateConfigConsumption.py"
+    )
     add_test(
         NAME third_party_notice_contract_test
         COMMAND ${Python3_EXECUTABLE}

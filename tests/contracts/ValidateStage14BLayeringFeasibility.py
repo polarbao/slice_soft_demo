@@ -162,15 +162,40 @@ def Main() -> int:
     # 同命名空间、同角色，未产生 base -> engine 边；且 model.cpp 因此由 1982 缩减至 1941 行，
     # 属本合同期望的抽取方向而非依赖累积。授权留痕见
     # docs/slice/DOC/DOC_DECISION_MATOPQ_材质不透明度识别与光油通道映射专项.md 第 12 节。
+    # FRAME / UNIPATH G-02（用户 2026-09-18 授权）：两条 base 层依赖并入名单。
+    #
+    # 【新判据，与 MATOPQ 那条并列】允许「新增 base 层单元、由 model.cpp 调用」的依赖，
+    # 条件是 model.cpp 的净增不超过 5 行——即逻辑放到了外面，而不是长在里面。
+    # MATOPQ 的原判据（model.cpp 因抽取而缩减）是本判据的【特例】，不是唯一合法形态。
+    #
+    # 两条的实测（放行依据，不是事后解释）：
+    #   model/FrameGeometry.h      e7628f7b feat(frame)  2026-09-07
+    #       新单元 FrameGeometry.{h,cpp} 共 174 行，model.cpp 仅 +4 行
+    #   model/AssetReferencePath.h d85c6190 fix(unipath)  2026-09-08
+    #       把重复的路径编码逻辑收成共享助手（MtlMaterialParser.cpp 也用），model.cpp 净 0 行
+    # 两者均在 src/slicer_core/model/ 下、经 AssignLayer 判为 base、未产生 base -> engine 边。
+    #
+    # 【为什么由 P0FIX 代办】两个专项都已无活的归属方：AGENTS.md 里 FRAME 是 COMPLETE、
+    # UNIPATH 连专项条目都没有，且两个提交早已在 product 线上。本门禁自 2026-09-07 起持续红，
+    # 「退回原专项」等于让它永久红着——而常红的门禁不再具备判别力。
     expectedModelIncludes = [
         "src/slicer_core/model.h",
+        "src/slicer_core/model/AssetReferencePath.h",
         "src/slicer_core/model/ObjFaceParser.h",
         "src/slicer_core/model/MtlMaterialParser.h",
+        "src/slicer_core/model/FrameGeometry.h",
     ]
     if modelIncludes != expectedModelIncludes:
         raise AssertionError(
             "model.cpp acquired a project dependency outside the frozen base parser boundary: "
-            f"{modelIncludes}"
+            f"{modelIncludes}\n"
+            "expected: "
+            f"{expectedModelIncludes}\n"
+            "如果这条新依赖是【新增 base 层单元并由 model.cpp 调用】且 model.cpp 净增不超过 5 行，"
+            "请把它登记进本文件的 expectedModelIncludes，并在上方注释里补一行实测依据"
+            "（新单元行数 / model.cpp 净增 / 引入提交）。否则请把逻辑移出 model.cpp。\n"
+            "本门禁曾因【失败信息没写该去哪儿登记】被连续漏更新两次（FRAME 2026-09-07、"
+            "UNIPATH 2026-09-08），故此处写明。"
         )
     if "OpenVdb" in modelSource.read_text(encoding="utf-8"):
         raise AssertionError("model.cpp must not depend on OpenVDB")
