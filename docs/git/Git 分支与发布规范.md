@@ -2,39 +2,65 @@
 
 > **本文是 `Git 版本发布流程 + 测试分支规划.md`（2026-08-05 初版）的修订版。**
 > 初版描述的是一套教科书式 git-flow，但**它描述的仓库不是这个仓库**——照它第一步
-> `git checkout develop` 就会失败，因为本仓（含远端）**没有任何 develop 分支**。
+> `git checkout develop` 在当时会直接失败——**2026-09-18 首次实测时本仓（含远端）一条 develop 都没有**。
 > 修订依据是 2026-09-18 对仓库实际状态的逐条实测，每处更正都标注了证据。
 > 初版保留在同目录，供对照；**以本文为准**。
+>
+> **2026-09-18 第二次修订**：用户裁定采纳 `develop`，并把 `main` 快进到产品线。
+> 本文随之改写第一、二、三、五节——`develop` 不是照搬初版，而是拿到了一个**有实测依据的职责**
+> （见第一节「develop 的职责」）。
 
 ---
 
 ## 一、实际分支模型（按实测，不是按理想）
 
-**初版说核心是 `main` + `develop`。实测：`develop` 本地与远端各 0 条，`main` 落后真正的产品线 481 条。**
+**初版说核心是 `main` + `develop`。2026-09-18 首次实测时：`develop` 本地与远端各 0 条，`main` 落后真正的产品线 481 条。**（同日用户裁定采纳 develop 并把 main 快进，现状见下表；初版的问题不在于要不要 develop，而在于它当时**不存在**却被当作流程基础。）
 本仓实际是「双产品线 + agent 工作分支」模型：
 
 | 分支 | 作用 | 实际状态（2026-09-18） |
 |---|---|---|
 | `product/packaged-slicer` | **真正的产品线**，封装宿主 + 能力模块拓扑 | 与 origin 同步，发布基线 |
 | `product/legacy-slicer` | 并行 legacy 线，手工运行时 | 领先 origin 2 条；有独立工作树且含未提交改动 |
-| `main` | 仓库名义默认分支（`origin/HEAD` 指向它） | **停在 2026-08-05，落后 product 481 条** |
+| `develop` | **集成线**：功能分支合回此处，累积到里程碑再进产品线 | 2026-09-18 建于 `a0a4f742` |
+| `main` | 仓库名义默认分支（`origin/HEAD` 指向它） | **2026-09-18 已快进至产品线**（`b5fc0fb3 → a0a4f742`，489 条落差归零） |
 | `codex/feature-<专项>-<描述>` | agent 工作分支 | 用完合入 product 后删除 |
 | `feature/<描述>` | 早期人工分支 | origin 上尚存 2 条历史遗留 |
 | `archive/<原因>-<日期>` | 归档快照 | origin 上 2 条 + 同名标签 |
 
-> ⚠ **一处需要裁定的不一致**：`main` 是 `origin/HEAD` 指向的默认分支，却落后产品线 481 条。
-> 新来的人会从 `main` 起步并拿到 8 月 5 日的代码。三个选项：
-> ① 把 `main` 快进到 product 并以它为产品线；② 把 `origin/HEAD` 改指 `product/packaged-slicer`；
-> ③ 明确 `main` 只是历史入口并在 README 写清。**这不是技术决策，未裁定前本文不擅自改。**
+> ⚠ **仍需裁定一项**：`main` 虽已快进到产品线，但 `origin/HEAD` 依然指向 `main`。
+> 若确定以 `product/packaged-slicer` 为唯一入口，应把 `origin/HEAD` 改指过去；
+> 若保留 `main` 作入口，则它必须**跟随** product 而不是领先——不要在 `main` 上直接提交。
+> **两种都行，但要选一个并写进 README。**
 
-### 为什么不引入 develop
+### develop 的职责（为什么这次它不是空转的）
 
-初版的四类临时分支（feature/test/release/hotfix）建立在 develop 之上。本仓的实际情况是
-**单人 + AI agent 协作、无 CI**（F-16 用户 2026-08-10 裁决暂缓），而且 `gh` CLI 在本环境不可用，
-所以初版「禁止直接提交、只能通过 PR 合并、需至少 1 人评审」**当前无法执行**。
-强行照搬只会得到一条空转的 develop 和一堆没人走的 PR 流程。
+初版把 develop 当成「开发主分支」，那在本仓会空转——**单人 + AI agent 协作、无 CI**
+（F-16 用户 2026-08-10 裁决暂缓），`gh` CLI 在本环境不可用，所以初版
+「禁止直接提交、只能通过 PR 合并、需至少 1 人评审」**当前无法执行**。
+照搬只会得到一条没人走的流程。
 
-**现状下等效的质量闸门是验证而非评审**——见第三节。
+**这次给它的职责来自实测的闸门成本差**。三档验证耗时差了一个量级：
+
+| 档 | 项数 | 实测 |
+|---|---|---|
+| `slicesoft-debug-core` | 155 | **12~18 秒** |
+| `slicesoft-debug-fast` | 262 | 约 3 分钟 |
+| `slicesoft-debug-full` | 270 | 约 16 分钟（另加全量重建与字节级基线） |
+
+**于是三层分支对应三档闸门**：
+
+```
+claude|codex/feature-*   ── 核心档 12~18 秒 ──┐  自测
+                                              ↓
+develop                  ── 快集档 约 3 分钟 ─┐  集成线
+                                              ↓
+product/packaged-slicer  ── 全量档 约 16 分钟 ┘  发布线（+ 字节级基线）
+```
+
+**develop 的收益是可量化的**：几个功能可以在它上面累积、每次只付 3 分钟的快集闸门，
+不必每合一个就付 16 分钟的里程碑闸门。这是省时间，不是走流程。
+
+**反过来说，如果哪天有了 CI，develop 的这层职责就该交给 CI**——届时重新评估它是否还需要存在。
 
 ---
 
@@ -54,12 +80,15 @@ claude/feature-<专项slug>-<短描述>     # claude 开的工作分支
 
 ### 2.2 从哪里拉
 
-**一律从 `product/packaged-slicer` 拉**，不是从 `main`（它落后 481 条）：
+**功能分支从 `develop` 拉**，不是从 `main`（它只是入口，跟随 product）：
 
 ```bash
 git fetch origin
-git checkout -b codex/feature-p0fix-xxx origin/product/packaged-slicer
+git checkout -b codex/feature-p0fix-xxx origin/develop
 ```
+
+**热修复例外**：从 `product/packaged-slicer` 拉，修完合回 product 与 develop 两侧——
+否则下一次 develop 进 product 会把修复覆盖掉。
 
 ### 2.3 提交信息
 
@@ -83,13 +112,20 @@ type(专项slug): 【功能分类】中文摘要
 
 ### 2.4 合回产品线
 
-**能快进就快进，不要制造无意义的合并提交**：
+**能快进就快进，不要制造无意义的合并提交。** 分两步走：
 
 ```bash
-# 在工作分支上先把 product 合进来，解掉冲突、跑完验证
-git merge --no-ff product/packaged-slicer
-# 验证通过后，product 侧快进
-git -C <product 工作树> merge --ff-only codex/feature-xxx
+# ① 功能分支 → develop（跑快集档）
+git merge --no-ff develop            # 先把 develop 合进来，解冲突、跑验证
+ctest --preset slicesoft-debug-fast  # 闸门
+git checkout develop && git merge --ff-only codex/feature-xxx
+git push origin develop
+
+# ② develop → product（里程碑，跑全量 + 基线）
+cmake --build <构建目录> --config Debug          # 全量重建，不加 --target
+python scripts/CaptureSliceOutputBaseline.py --verify
+ctest --preset slicesoft-debug-full
+git checkout product/packaged-slicer && git merge --ff-only develop
 git push origin product/packaged-slicer
 ```
 
@@ -140,6 +176,21 @@ git push origin product/packaged-slicer
    `stage14f03_single_model_s1_gate`、`stage16c06_bounded_support_shape_unit_tests`、
    `scene_layer_adapters_unit_tests`、`slicer_stage14e02_qt_host_boundary_test`。
 
+### 一条刻意的豁免：纯文档改动只跑核心档
+
+改动**完全落在** `*.md` / `docs/` / `analysis/` 之内时，合入 `develop` 只需核心档（12~18 秒），
+不必跑快集档的 3 分钟。
+
+**为什么要写下这条而不是"看情况"**：一条要求为改错别字跑 3 分钟测试的规则会被忽略，
+而被忽略的规则比没有规则更糟——它让人以为有闸门。写明豁免边界，闸门才在真正需要时还被遵守。
+
+**边界是"完全落在"，不是"主要是文档"**：只要有一个文件在 `src/` `apps/` `tests/` `scripts/`
+`cmake/` `CMakeLists.txt` `CMakePresets.json` 里，就按正常档走。判据用
+`git diff --name-only <base> HEAD` 自己看一眼，不靠印象。
+
+**产品线那一跳不豁免**——`develop` → `product` 永远要全量档 + 字节级基线。
+里程碑的意义就在于它不打折。
+
 > 并行度已按实测定档：核心档 `jobs: 8`，快集与全量 `jobs: 4` 且带 `--repeat until-pass:2`。
 > **不要把它们"对齐"成构建侧的 16**——起进程与 Qt 的测试在并行下墙钟膨胀 10~25 倍，
 > 会撞自己的内部期限而假失败。理由写在每个 preset 的 `description` 字段里。
@@ -180,15 +231,15 @@ git push origin product/packaged-slicer
 
 ## 五、发布流程
 
-没有 develop，所以流程比初版短一节：
+两跳：功能分支 → `develop`（快集闸门）→ `product/packaged-slicer`（全量闸门 + 基线）。
+初版的 `release/vX.Y.Z` 这一跳**本仓不设**——发布就是给 product 上打标签，
+再多一条冻结分支在单人协作下只会多一个要同步的地方。
 
 ```bash
-# 1. 工作分支验证通过（第三节三条闸门）
-# 2. product 侧快进并推送
-git -C <product 工作树> merge --ff-only <工作分支>
-git push origin product/packaged-slicer
+# 1. 功能分支 → develop（见 2.4 ①）
+# 2. 里程碑：develop → product（见 2.4 ②，必须过第三节三条闸门）
 
-# 3. 发布时打标签
+# 3. 发布时在 product 上打标签
 git tag -a v0.2.0 -m "v0.2.0：<新增/修复/已知问题>"
 git push origin v0.2.0
 
@@ -196,8 +247,8 @@ git push origin v0.2.0
 git branch -d <工作分支>
 ```
 
-**热修复**：从 `product/packaged-slicer` 拉 `hotfix/<描述>`，修完走同一套闸门与快进。
-不需要「合并回 develop」这一步——没有 develop。
+**热修复**：从 `product/packaged-slicer` 拉 `hotfix/<描述>`，过第三节闸门后快进到 product，
+**再合回 `develop`**——漏了这一步，下一次 develop 进 product 会把修复覆盖掉。
 
 ---
 
@@ -216,7 +267,7 @@ git branch -d <工作分支>
 ## 附：这份规范怎么维护
 
 - 改动前**先实测**再落笔。初版之所以需要大改，不是因为写得不好，而是因为它写的是
-  一套通用模型而非这个仓库——六处与实际不符的地方（无 develop、main 非生产分支、
+  一套通用模型而非这个仓库——六处与实际不符的地方（当时无 develop、main 非生产分支、
   引用不存在的目录、版本派生方式相反、不存在的维护分支、"运控 SDK" 来自另一项目），
   每一处单独看都很合理，合起来就不能用。
 - 与 `AGENTS.md` 冲突时**以 `AGENTS.md` 为准**并在此标注更正，不要两边各写一套。
