@@ -1,6 +1,6 @@
 # 分支模型迁移记录：`product/` 退场，集成线改名 `develop/packaged-slicer`
 
-> **状态：本地已执行，远程待确认。** 第五节逐步标注了哪些已做、哪些待你点头。
+> **状态：已全部执行完毕（2026-09-18 17:5x）。** 第五节记录了每一步的实际结果。
 > 用户裁定（2026-09-18 第三次）：`product/` 分支退场，集成线用 `develop/<名字>` 形态，
 > 功能分支统一为 `feature/<agent>-<专项slug>-<描述>`。
 > 专项归属：**GITOPS**（见 `AGENTS.md`「各专项状态」）。
@@ -131,38 +131,74 @@ git branch -d claude/feature-gitops-branch-model
 # ✅ 4. 文档同步：本规范、AGENTS.md 第 11 条 a/b/c、本记录
 ```
 
-**遗留待处理**：`develop/packaged-slicer` 目前仍追踪 `origin/develop`（名字已不对应），
-推送时需 `git push -u origin develop/packaged-slicer` 重设上游。
+~~**遗留待处理**：`develop/packaged-slicer` 仍追踪 `origin/develop`。~~
+**已解决**：`git push -u` 时一并重设，现追踪 `origin/develop/packaged-slicer`。
 
-### 待确认后执行（里程碑闸门）
+### 已执行：里程碑闸门（2026-09-18 17:22~17:50）
+
+跑在最终树 `97ee3dab` 上——**中途补了 5 个文档文件之后重跑了一次**，
+因为闸门必须覆盖实际要合入的那棵树，「只差几个 .md」不是豁免理由。
+
+| 项 | 结果 |
+|---|---|
+| 全量重建 Debug（不加 `--target`） | `BUILD_EXIT=0`，0 个错误 |
+| 字节级基线 | **PASS**，11 个用例 / 738 个产物逐字节一致 |
+| 全量档 270 项 | 7 失败 = 基线 4 项 + F-53 已归因 3 项，**无未归因新失败** |
+
+失败集合与同日快集档那轮**完全一致**，且字节级基线逐字节通过——功能面零变化。
+按第三节判据放行。
+
+### 已执行：合并与推送
 
 ```bash
-# 5. 集成线 → main 前必须过全量档与基线，失败集合与基线比对
-cmake --build build-slicesoft/main --config Debug -- -m
-ctest --preset slicesoft-debug-full
-python scripts/CaptureSliceOutputBaseline.py --verify
-
-# 6. main 快进到集成线
-git checkout main
-git merge --ff-only develop/packaged-slicer
+# ✅ 5. main 快进：a0a4f742 → 97ee3dab
+# ✅ 6. git push origin main
+# ✅ 7. git push origin --delete develop        ← 必须在第 8 步之前，见下
+# ✅ 8. git push -u origin develop/packaged-slicer
+# ✅ 9. git push origin --delete product/packaged-slicer
+#      git push origin --delete feature/12e-08c-mesh-repair
+#      git push origin --delete feature/14-slicer-capability-package
+# ✅ 10. git branch -d product/packaged-slicer   （-d 安全模式通过，未用 -D）
 ```
 
-### 待确认后执行（远程，不可撤销）
+> **执行中的发现：推送顺序不能按原计划。** 原计划先推 `develop/packaged-slicer` 再删远程 `develop`，
+> 结果被远程拒绝：
+>
+> ```text
+> ! [remote rejected] develop/packaged-slicer -> develop/packaged-slicer
+>   (cannot lock ref 'refs/heads/develop/packaged-slicer': 'refs/heads/develop' exists;
+>    cannot create 'refs/heads/develop/packaged-slicer')
+> ```
+>
+> **第三节那条「裸名与同名命名空间互斥」的约束在远程同样成立**，我只在本地验过就以为够了。
+> 正确顺序是**先删旧名、再推新名**。删除前已验证 `origin/develop`（`ff7ec864`）
+> 是 `origin/main` 的祖先、独有提交 0 条，不丢任何提交。
 
-```bash
-# 7. 推送
-git push origin main
-git push -u origin develop/packaged-slicer
+#### 删除前的核验与安全网
 
-# 8. 删除远程已退场分支
-git push origin --delete product/packaged-slicer
-git push origin --delete develop
-git push origin --delete feature/12e-08c-mesh-repair
-git push origin --delete feature/14-slicer-capability-package
+四条分支删除前都验过「独有提交数为 0」（对照已推送的 `origin/main`），SHA 记录如下：
 
-# 9. 本地删除退场分支
-git branch -D product/packaged-slicer
+| 分支 | 删除前 SHA |
+|---|---|
+| `origin/product/packaged-slicer` | `a0a4f7427726ea808490a99de9ec5aa203c38f9b` |
+| `origin/develop` | `ff7ec8641895747c9d5d9f979706387dc23e050a` |
+| `origin/feature/12e-08c-mesh-repair` | `4fd009784ac8a6da66ab1847acff592adb6975fa` |
+| `origin/feature/14-slicer-capability-package` | `4fd009784ac8a6da66ab1847acff592adb6975fa` |
+
+（两条历史遗留 feature 分支指向同一个提交。）
+
+### 迁移后的实际状态
+
+```text
+本地                                        远程
+  develop/packaged-slicer  97ee3dab  ──→  origin/develop/packaged-slicer
+  main                     97ee3dab  ──→  origin/main   （origin/HEAD 指向它）
+  product/legacy-slicer    d538a843  ──→  origin/product/legacy-slicer（领先 2 条，未动）
+                                          origin/archive/*  2 条归档，未动
 ```
+
+`main` 与集成线当前停在同一提交——这是里程碑刚合完的正常状态，
+下一个功能进集成线后就会分开；与退场前 `main`/`product` 那种**两条都是发布级**的重合不同。
 
 #### 第 8 步删除清单的依据
 
@@ -193,12 +229,30 @@ git branch -D product/packaged-slicer
 | `analysis/04_问题清单与改动空间.md`（6 处） | 历史记录。改写它会让「当时发生了什么」失真 |
 | `AGENTS.md`「各专项状态」（第 45/52/67/91/92 行） | 同上，记的是各专项当时的分支事实 |
 
-### 尚未处理
+### 已逐条判断的其余 32 处
 
-其余约 30 个 `.md`（各 1~3 处）分布在 `docs/slice/REPORT/`、`docs/codex_task/`、`docs/slice/DOC/`。
-**它们大多是已完成工作的报告，按上面同一条理由倾向不改**；
-但其中的任务清单类文件若仍在指导后续工作，则应更新。
-**需要逐类判断，不宜批量替换**——这一项单独列出，未包含在本次改动内。
+判据是**时态**：陈述「当前在哪条分支 / 适用哪条产品线」的句子在退场后会变成**假命题**，必须改；
+记录「已合入 X」「分叉自 X」「从 X 新建」「X 从 a 快进至 b」的是当时的事实，改了会让历史失真。
+
+**改了 5 个文件 6 处**（全部是现在时陈述）：
+
+| 文件 | 原句要害 |
+|---|---|
+| `PRODUCT_LINE.md` | 「本分支是 `product/packaged-slicer`」——文件本身将位于 `main` |
+| `.agents/docs/build-and-test.md` | 「On `product/packaged-slicer`, the runtime directory contains」——给 agent 的说明 |
+| `docs/user_guides/QT_DEBUG_UI_操作手册.md` | 「新版 `product/packaged-slicer` 已改为⋯」 |
+| `docs/user_guides/SLICE_PRODUCT_PACKAGED_新版切片软件使用手册.md` | 「适用产品线：`product/packaged-slicer`」 |
+| `docs/codex_task/current/TASKS_USER_GUIDE_双分支切片软件使用手册任务清单.md` | 「适用分支」与「以当前 `product/packaged-slicer` 源码为准」 |
+
+**其余 32 处一律不动**，包括 `docs/slice/REPORT/` 的 9 处收口报告、
+`docs/slice/DOC/` 的 5 处设计与可行性分析、`docs/codex_task/current/` 的历史执行记录、
+`analysis/04` 的 6 处、以及 `AGENTS.md`「各专项状态」里的分支事实。
+逐条看过语境后确认它们全是过去时记录——
+例如 MATOPQ 任务清单里那行 `--base-ref product/packaged-slicer` 是**验证结果记录**
+（「改前基线 exit 0；改后 exit 0⋯PASS」），不是待执行指令。
+
+**旧名到新名的映射靠本文档承担**：读到历史记录里的 `product/packaged-slicer` 时，
+从这里可以查到它退场的时间与去向，不需要把每份报告都改一遍。
 
 ---
 
