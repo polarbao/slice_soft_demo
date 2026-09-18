@@ -45,7 +45,7 @@ LOGDUMP   SLICER DELIVERY COMPLETE / MERGED TO LOCAL PRODUCT（2026-09-15，G01.
           product/packaged-slicer已从d28b6451快进至7354a616，后续仅提交状态文档；未推送。
           清洁源码0.2.471-dev全目标Release重建、完整包启动落盘通过；67项62通过/5条既有及依赖失败。
           新SDK23文件独立构建和真实打印后端消费2/2通过；E01B待打印P23入口，不等于生产全验收。
-          ~~当前产品工作树slice_soft_demo-logdump；原slice_soft_demo仍为P0FIX~~【2026-09-18 已过期】P0FIX 合入后两者内容相同，产品线已移回 slice_soft_demo，logdump 工作树改为 detached 保留（15GB，含独立构建目录，删除需授权）。
+          ~~当前产品工作树slice_soft_demo-logdump；原slice_soft_demo仍为P0FIX~~【2026-09-18 更新】产品线已移回 slice_soft_demo，logdump 工作树改为 detached。**但它不是冗余残留、不要删**：E01B 未完成（缺 P23 loader），而 E01A 验收报告引用的 `slice_soft_demo-logdump/runtime/logdump/Release/slicer_module.dll` 仍在原位，是外部项目 ry_print_demo/PrintSolution 集成消费的那一个；另有 10 余份 LOGDUMP 文档引用该路径。
           最新 docs/slice/REPORT/REPORT_LOGDUMP_G_产品合入与复用交付收口.md
           以下为G之前各轮历史证据：
           2026-09-14 LD-00..03 / A00..A03（含A01D）/ B01..02 / C01..02 本地完成。
@@ -92,7 +92,7 @@ GITOPS    ▶【进行中】分支模型与发布规范治理
           ✅ 2026-09-18 采纳 develop 并给出实测职责：三档验证映射三层分支闸门
           ✅ main 已快进至产品线（b5fc0fb3 → a0a4f742，489 条落差归零）并推送
           ✅ 约束落进本文第 11 条——规范放在 docs/ 里 agent 不会主动读
-          ⏸ 待裁定：origin/HEAD 仍指向 main；若以 product 为唯一入口应改指向
+          ✅ 入口已定：保留 main 作 origin/HEAD 入口，但它**只跟随 product、绝不直接提交**；发布流程末尾把 main 快进到 product
 
 FRAME     COMPLETE：2026-09-07 nail-Default 非打印定位素材专项 FRAME-00..04 完成；gubao05 多图层透明核心工艺 600 DPI/0.033 mm、148 层真实包与空区/RIP strict PASS，Release 部署/自检通过；GUI 人工交互和物理打印未验证；卡 docs/codex_task/current/TASKS_FRAME_非打印定位素材与输出画幅专项任务清单.md
 
@@ -248,8 +248,8 @@ MEMFLOW   ▶ MF-00..03B4A COMPLETE；MF-03B4B PREPARED；生产仍为 Retained 
 10. New commits must use `type(scope): 【功能分类】中文摘要`; use Chinese body items such as `【模块】`, `【验证】`, and `【边界】`. Do not rewrite published remote history solely to restyle old messages.
 11. **新建分支必须遵守 `docs/git/Git 分支与发布规范.md`。** 硬约束五条，细节见该文：
     a. 命名 `codex/feature-<专项slug>-<短描述>` 或 `claude/feature-<专项slug>-<短描述>`；`<专项slug>` 取本文「各专项状态」里的 slug，**没有对应专项就先立一条**——分支不该比专项先存在。
-    b. **功能分支从 `develop` 拉、合回 `develop`**；`develop` 在里程碑时合入 `product/packaged-slicer`。热修复从 `product/packaged-slicer` 拉，合回 product 与 develop 两侧。**不要从 `main` 拉**——它只是 `origin/HEAD` 指向的入口，跟随 product 而非领先它。
-    c. **三层分支对应三档闸门**（耗时差一个量级，故分层）：功能分支自测跑 `slicesoft-debug-core`（155 项、12~18 秒）；合入 `develop` 跑 `slicesoft-debug-fast`（262 项、约 3 分钟）；**合入 `product/packaged-slicer` 必须跑全量**——`slicesoft-debug-full`（270 项、约 16 分钟）外加**全量重建**（见 8b）与**字节级基线 PASS**（`scripts/CaptureSliceOutputBaseline.py --verify`），并按**失败集合**比对（见 8c）。没有 CI 也没有 PR 评审，验证就是唯一闸门。**一条豁免**：改动完全落在 `*.md` / `docs/` / `analysis/` 之内时，进 `develop` 只需核心档；但 `develop` → `product` 那一跳**永不豁免**。
+    b. **功能分支从 `develop` 拉、合回 `develop`**；`develop` 在里程碑时合入 `product/packaged-slicer`。热修复从 `product/packaged-slicer` 拉，合回 product 与 develop 两侧。**不要从 `main` 拉**——它只是 `origin/HEAD` 指向的入口，跟随 product 而非领先它。**`main` 上永不直接提交**，它只由发布流程末尾的快进更新。
+    c. **三层分支对应三档闸门**（耗时差一个量级，故分层）：功能分支自测跑 `slicesoft-debug-core`（155 项、12~18 秒）；合入 `develop` 跑 `slicesoft-debug-fast`（262 项、约 3 分钟）；**合入 `product/packaged-slicer` 必须跑全量**——`slicesoft-debug-full`（270 项、约 16 分钟）外加**全量重建**（见 8b）与**字节级基线 PASS**（`scripts/CaptureSliceOutputBaseline.py --verify`），并按**失败集合**比对（见 8c）。没有 CI 也没有 PR 评审，验证就是唯一闸门。**一条豁免**：改动完全落在 `*.md` / `docs/` / `analysis/` 之内时，进 `develop` 只需核心档；但 `develop` → `product` 那一跳**永不豁免**。**失败集合比对时，未归因的新失败挡住合入、已归因的已知抖动项放行但须留痕**；「归因」要有隔离重跑的分布、具体判据、以及为何与本次改动无关三样，缺一即按未归因处理（当前已知抖动项与门槛见规范第三节）。
     d. 改写历史前**必须建 `backup/pre-<原因>-<日期>` 备份**，改写后用`git diff --diff-filter=A --name-only HEAD <backup>` 验证零内容丢失（应为空）；合入并**推送成功后**才可删备份。**绝不 force-push 任何在 origin 上存在的分支。**
     e. 删分支先用 `git branch -d`（安全模式）。它在「已并入 HEAD 但未并入自身 origin 上游」时会拒绝——那正是需要人看一眼的情形；确要删则先逐条验证提交全部可达，再 `-D`。
 

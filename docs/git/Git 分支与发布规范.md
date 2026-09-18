@@ -27,10 +27,17 @@
 | `feature/<描述>` | 早期人工分支 | origin 上尚存 2 条历史遗留 |
 | `archive/<原因>-<日期>` | 归档快照 | origin 上 2 条 + 同名标签 |
 
-> ⚠ **仍需裁定一项**：`main` 虽已快进到产品线，但 `origin/HEAD` 依然指向 `main`。
-> 若确定以 `product/packaged-slicer` 为唯一入口，应把 `origin/HEAD` 改指过去；
-> 若保留 `main` 作入口，则它必须**跟随** product 而不是领先——不要在 `main` 上直接提交。
-> **两种都行，但要选一个并写进 README。**
+> ⚠ **`slice_soft_demo-logdump` 工作树不要删**（15GB，2026-09-18 已 detached）。
+> 它看着像 P0FIX 合入后的冗余残留，**实际是待做的 LOGDUMP E01B 的活资产**：
+> E01B 缺 P23 loader 尚未完成，而 E01A 验收报告引用的
+> `runtime/logdump/Release/slicer_module.dll` 仍在该工作树原位，
+> 是外部项目 `ry_print_demo/PrintSolution` 集成消费的那一个；另有 10 余份 LOGDUMP 文档引用该路径。
+> **判断"某个工作树是否冗余"时，要查引用它的文档与未完成的专项阶段，不能只看分支是否已合入。**
+
+> **入口已定（2026-09-18）**：保留 `main` 作 `origin/HEAD` 指向的入口，
+> 但它**只跟随 `product/packaged-slicer`，永不直接提交**——由发布流程末尾的快进更新。
+> 选它而不是改指 product 的理由有两条：改 GitHub 默认分支需要网页或 `gh`（本环境不可用），
+> 而克隆者本来就预期默认分支叫 `main`。**代价是多一步快进**，写进第五节流程里。
 
 ### develop 的职责（为什么这次它不是空转的）
 
@@ -176,6 +183,19 @@ git push origin product/packaged-slicer
    `stage14f03_single_model_s1_gate`、`stage16c06_bounded_support_shape_unit_tests`、
    `scene_layer_adapters_unit_tests`、`slicer_stage14e02_qt_host_boundary_test`。
 
+   **已知抖动项另算一档**（2026-09-18 第一次真正执行本闸门后收窄）：
+
+   | 项 | 抖动原因 | 处置 |
+   |---|---|---|
+   | `slicer_stage14d07_r2_engine_conformance_test` | E-07 取消期限余量仅 1%（实测 1824~2020ms vs 2000ms 阈值），见 F-53 | 隔离重跑确认后放行 |
+
+   **未归因的新失败挡住合入；已归因的已知抖动项放行，但必须留痕。**
+   「归因」有门槛，三样都要有：**① 隔离重跑**（无并发，至少 3 次，给出分布）；
+   **② 指出具体判据**（哪一行、差多少，而不是「看起来是环境问题」）；
+   **③ 说明为何与本次改动无关**（列出改动面，证明它碰不到失败路径）。
+   三样缺一，就按未归因处理——**照字面再跑一遍 22 分钟只是赌抖动项这次落在阈值下方，那是仪式不是验证**；
+   但没有门槛的「有理由就放行」会变成随意开口子。门槛就是两者之间的那条线。
+
 ### 一条刻意的豁免：纯文档改动只跑核心档
 
 改动**完全落在** `*.md` / `docs/` / `analysis/` 之内时，合入 `develop` 只需核心档（12~18 秒），
@@ -243,7 +263,11 @@ git push origin product/packaged-slicer
 git tag -a v0.2.0 -m "v0.2.0：<新增/修复/已知问题>"
 git push origin v0.2.0
 
-# 4. 删除工作分支（先 -d，被拒再复核后 -D）
+# 4. main 跟随 product（它是入口，不能落后）
+git push . product/packaged-slicer:main   # push . 会强制要求快进，比 branch -f 安全
+git push origin main
+
+# 5. 删除工作分支（先 -d，被拒再复核后 -D）
 git branch -d <工作分支>
 ```
 
