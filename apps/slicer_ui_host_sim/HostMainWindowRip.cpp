@@ -10,6 +10,38 @@
 #include <QTabWidget>
 #include <QUrl>
 
+namespace
+{
+// inspector 嵌在「工作区」顶层页里。切片完成时顶层刚被切到「结果」，
+// 此时只切 inspector 会把 RIP 进度渲染到**不可见**的面板上——
+// 用户看不到 RIP 在跑、跑到哪、是否失败，只剩状态栏一行字。
+// 故切 inspector 前先把它所在的顶层页带到前面。
+//
+// 沿 parent 链找那一级，而不是写死 index 0：顶层标签将来重排时，
+// 写死的下标会悄悄指错页，而这种失效没有任何报错。
+void ShowInspectorPanel(
+    QTabWidget* workspaceTabs, QTabWidget* inspectorTabs, QWidget* panel)
+{
+    if (inspectorTabs == nullptr || panel == nullptr)
+    {
+        return;
+    }
+    if (workspaceTabs != nullptr)
+    {
+        for (QWidget* page = inspectorTabs->parentWidget(); page != nullptr;
+             page = page->parentWidget())
+        {
+            if (workspaceTabs->indexOf(page) >= 0)
+            {
+                workspaceTabs->setCurrentWidget(page);
+                break;
+            }
+        }
+    }
+    inspectorTabs->setCurrentWidget(panel);
+}
+}  // namespace
+
 void HostMainWindow::OnRipSettingsChanged()
 {
     QString error;
@@ -65,7 +97,8 @@ bool HostMainWindow::StartRipForPackage(
             QStringLiteral("切片成功 · RIP 启动失败：%1").arg(detail));
         if (automatic)
         {
-            m_inspectorTabs->setCurrentWidget(m_ripSettingsPanel);
+            ShowInspectorPanel(
+                m_workspaceTabs, m_inspectorTabs, m_ripSettingsPanel);
         }
         RefreshSliceJobReadiness();
         return false;
@@ -75,7 +108,7 @@ bool HostMainWindow::StartRipForPackage(
         automatic ? QStringLiteral("自动运行") : QStringLiteral("手动运行"),
         QStringLiteral("RIP 已提交"));
     SetWorkflowEditingEnabled(false);
-    m_inspectorTabs->setCurrentWidget(m_ripSettingsPanel);
+    ShowInspectorPanel(m_workspaceTabs, m_inspectorTabs, m_ripSettingsPanel);
     m_statusLabel->setText(
         QStringLiteral("切片成功 · RIP 正在运行 · %1")
             .arg(packageDirectory));
@@ -115,7 +148,7 @@ void HostMainWindow::OnRunManualRip()
         QStringLiteral("手动运行"),
         QStringLiteral("RIP 已提交 · %1").arg(inputDirectory));
     SetWorkflowEditingEnabled(false);
-    m_inspectorTabs->setCurrentWidget(m_ripSettingsPanel);
+    ShowInspectorPanel(m_workspaceTabs, m_inspectorTabs, m_ripSettingsPanel);
     m_statusLabel->setText(
         QStringLiteral("手动 RIP 正在运行 · %1 → %2")
             .arg(inputDirectory, outputDirectory));
@@ -247,8 +280,12 @@ void HostMainWindow::RefreshRipRequestStatus()
     const QString packageDirectory = m_ripSettingsPanel->PackageDirectory();
     if (packageDirectory.isEmpty())
     {
+        // 原文只说「尚无已校验切片包」——它说明了缺什么，却没说该怎么办。
+        // RIP 的输入唯一来自切片成功后的包目录，用户在此处看到的是一个
+        // 灰掉的运行按钮，而标签本身恒亮可点，没有任何地方提示先决条件。
         m_ripSettingsPanel->SetRequestStatus(
-            false, QStringLiteral("RIP 未运行 · 尚无已校验切片包"));
+            false,
+            QStringLiteral("RIP 未运行 · 尚无已校验切片包 · 请先完成一次切片"));
         return;
     }
     QString error;

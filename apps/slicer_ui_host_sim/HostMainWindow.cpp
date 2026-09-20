@@ -229,7 +229,10 @@ void HostMainWindow::BuildInterface()
     form->addRow(QStringLiteral("显示合同"), contractLabel);
     settingsLayout->addWidget(displayGroup);
     settingsLayout->addStretch(1);
-    m_workspaceTabs->addTab(settingsPage, QStringLiteral("设置"));
+    // 这一页只有「显示设置」一个分组（默认视图 / 3D 投影），不改变切片数据。
+    // 原名「设置」与 inspector 的「切片设置」区分度不足，而用户找切片参数时
+    // 的自然第一落点恰是顶层「设置」——改名拉开区分度。
+    m_workspaceTabs->addTab(settingsPage, QStringLiteral("显示"));
 
     auto* diagnosticPage = new QWidget(m_workspaceTabs);
     auto* diagnosticLayout = new QVBoxLayout(diagnosticPage);
