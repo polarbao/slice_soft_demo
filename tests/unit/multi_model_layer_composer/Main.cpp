@@ -710,6 +710,77 @@ bool CrossInstanceMaterialConflictFailsClosed()
             "material conflict has both instance IDs");
 }
 
+bool PlateTransferOverlapFailsClosed()
+{
+    // MW3-03：两件缩裹的模型像素撞在一起。T 跟随 Model 归属，
+    // 故这落在【既有】的 InstanceOverlap 上，不需要为 T 另写拒绝。
+    // 本条把那个结论钉死：若哪天 T 被改成另一类归属，这里就会红。
+    slicer_core::SceneLayerComposeRequest request = MakeRequest();
+    request.globalgrid = MakeGrid(1, 1, 1);
+    slicer_core::SceneInstanceRaster first =
+        MakeInstance("first", request.globalgrid);
+    slicer_core::SceneInstanceRaster second =
+        MakeInstance("second", request.globalgrid);
+    AddModel(first, 0, 0, 0, {1U, 2U, 3U, 255U});
+    AddTransfer(first, 0, 0, 0);
+    AddModel(second, 0, 0, 0, {4U, 5U, 6U, 255U});
+    AddTransfer(second, 0, 0, 0);
+    request.instances = {first, second};
+    // 挂上整版出口，走的才是整版缩裹那条路。
+    request.platemasksink =
+        [](const int,
+           const std::span<const std::uint8_t>,
+           const std::span<const std::uint8_t>) {};
+
+    const slicer_core::SceneLayerComposeResult result =
+        slicer_core::ComposeSceneLayers(request);
+    return ExpectTrue(
+               HasError(
+                   result,
+                   slicer_core::SceneRasterErrorCode::InstanceOverlap),
+               "cross-instance transfer overlap fails closed as InstanceOverlap")
+        && ExpectTrue(
+            result.error->instanceid == "second"
+                && result.error->otherinstanceid == "first",
+            "transfer overlap still identifies both instances");
+}
+
+bool PlateTransferAgainstOuterVarnishFailsClosed()
+{
+    // MW3-03：一件的缩裹（Model 归属）撞上另一件的外圈光油（OuterVarnish）。
+    // 同样落在【既有】的 MaterialConflict 上。
+    //
+    // 这一条尤其要有：V 与 T 互斥是 matvol-t 的既定语义，模型内相撞由
+    // slicer.cpp 的 E_MATOPQ_VARNISH_TRANSFER_OVERLAP 挡；跨实例相撞
+    // 归合成器管，二者是两条独立的路径，别把它们混为一谈。
+    slicer_core::SceneLayerComposeRequest request = MakeRequest();
+    request.globalgrid = MakeGrid(1, 1, 1);
+    slicer_core::SceneInstanceRaster varnish =
+        MakeInstance("varnish", request.globalgrid);
+    slicer_core::SceneInstanceRaster wrap =
+        MakeInstance("wrap", request.globalgrid);
+    AddOuterVarnish(varnish, 0, 0, 0);
+    AddModel(wrap, 0, 0, 0, {4U, 5U, 6U, 255U});
+    AddTransfer(wrap, 0, 0, 0);
+    request.instances = {varnish, wrap};
+    request.platemasksink =
+        [](const int,
+           const std::span<const std::uint8_t>,
+           const std::span<const std::uint8_t>) {};
+
+    const slicer_core::SceneLayerComposeResult result =
+        slicer_core::ComposeSceneLayers(request);
+    return ExpectTrue(
+               HasError(
+                   result,
+                   slicer_core::SceneRasterErrorCode::MaterialConflict),
+               "cross-instance transfer/outer-varnish conflict fails closed")
+        && ExpectTrue(
+            result.error->instanceid == "wrap"
+                && result.error->otherinstanceid == "varnish",
+            "transfer/varnish conflict has both instance IDs");
+}
+
 bool AdmissionAndIdentityFailuresAreStable()
 {
     slicer_core::SceneLayerComposeRequest request = MakeRequest();
@@ -1068,6 +1139,8 @@ int main()
         {"whole_plate_transfer_mask_follows_model_ownership", WholePlateTransferMaskFollowsModelOwnership},
         {"transfer_mask_is_empty_under_non_model_ownership", TransferMaskIsEmptyUnderNonModelOwnership},
         {"plate_seven_channel_assembly_writes_transfer_only", PlateSevenChannelAssemblyWritesTransferOnly},
+        {"plate_transfer_overlap_fails_closed", PlateTransferOverlapFailsClosed},
+        {"plate_transfer_against_outer_varnish_fails_closed", PlateTransferAgainstOuterVarnishFailsClosed},
     };
 
     bool passed{true};

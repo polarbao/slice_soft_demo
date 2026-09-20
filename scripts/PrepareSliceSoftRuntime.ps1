@@ -485,19 +485,35 @@ function AssertRuntimeDirectoryNotInUse
     {
         foreach ($process in @(Get-Process -Name $processName -ErrorAction SilentlyContinue))
         {
+            # 僵尸进程（已退出但句柄未释放）会让 .Path 取到空串，
+            # 而 GetFullPath("") 抛的是 ArgumentException、不是下方 catch 的
+            # Win32Exception，于是整个部署以「The path is not of a legal form」
+            # 失败——一条完全指不到真因的错误。实测遇到过：一个 0 线程、
+            # 6 小时前就已死掉的 slice_soft_test 挂在进程表里，Stop-Process
+            # 还因拒绝访问收不掉，部署就此卡死。
+            #
+            # 路径取不到时无法判断它是否在 RuntimeDir 里，跳过即可：
+            # 本函数是「别覆盖正在运行的 exe」这条保护，而拿不到路径的进程
+            # 要么已死、要么不归我们管，两种情况都不该阻断部署。
+            $processPath = $null
             try
             {
-                $processPath = [System.IO.Path]::GetFullPath($process.Path)
-                if ($processPath.StartsWith(
-                    $runtimePrefix,
-                    [System.StringComparison]::OrdinalIgnoreCase))
-                {
-                    throw "Runtime process is still running: $processPath (PID $($process.Id)). Close it before deploying '$RuntimeDir'."
-                }
+                $processPath = $process.Path
             }
             catch [System.ComponentModel.Win32Exception]
             {
                 continue
+            }
+            if ([string]::IsNullOrWhiteSpace($processPath))
+            {
+                continue
+            }
+            $processPath = [System.IO.Path]::GetFullPath($processPath)
+            if ($processPath.StartsWith(
+                $runtimePrefix,
+                [System.StringComparison]::OrdinalIgnoreCase))
+            {
+                throw "Runtime process is still running: $processPath (PID $($process.Id)). Close it before deploying '$RuntimeDir'."
             }
         }
     }
