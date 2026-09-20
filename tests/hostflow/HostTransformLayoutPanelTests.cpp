@@ -1,4 +1,5 @@
 #include "apps/slicer_ui_host_sim/HostModelImportWorkflow.h"
+#include "apps/slicer_ui_host_sim/HostModelListPanel.h"
 #include "apps/slicer_ui_host_sim/HostTransformLayoutPanel.h"
 
 #include <QApplication>
@@ -74,6 +75,14 @@ int main(int argc, char* argv[])
         return 4;
     }
 
+    // 排版控件已迁往模型列表面板。按生产路径同样先 AddModel——
+    // 「执行规则排版」的启用判据是展示列表里有模型，这与导入流程一致
+    //（HostMainWindowImport 对每个导入结果都调一次 AddModel）。
+    HostModelListPanel listPanel;
+    listPanel.SetCommandsEnabled(true);
+    listPanel.AddModel(first);
+    listPanel.AddModel(second);
+
     HostTransformLayoutPanel panel;
     panel.SetCommandsEnabled(true);
     panel.SetSceneState(workflow.InstanceCount(), workflow.SceneRevision());
@@ -122,9 +131,12 @@ int main(int argc, char* argv[])
             landCommitted = workflow.LandOnBuildPlate(
                 instanceIds, &transformResult, &error);
         });
+    // 排版控件已迁往模型列表面板：它们在导入执行的那一刻被读，
+    // 与「添加模型」按钮同页才不会让用户勾了个无效的开关。
+    // 断言留在本用例，只是改由 listPanel 提供控件。
     QObject::connect(
-        &panel,
-        &HostTransformLayoutPanel::SigLayoutRequested,
+        &listPanel,
+        &HostModelListPanel::SigLayoutRequested,
         [&](const int maxColumns,
             const int maxRows,
             const double columnGapMm,
@@ -157,19 +169,19 @@ int main(int argc, char* argv[])
         QStringLiteral("hostTransformApplyButton"));
     auto* land = panel.findChild<QPushButton*>(
         QStringLiteral("hostTransformLandButton"));
-    auto* columns = panel.findChild<QSpinBox*>(
+    auto* columns = listPanel.findChild<QSpinBox*>(
         QStringLiteral("hostLayoutColumnsSpin"));
-    auto* rows = panel.findChild<QSpinBox*>(
+    auto* rows = listPanel.findChild<QSpinBox*>(
         QStringLiteral("hostLayoutRowsSpin"));
-    auto* autoLayout = panel.findChild<QCheckBox*>(
+    auto* autoLayout = listPanel.findChild<QCheckBox*>(
         QStringLiteral("hostLayoutAutoApplyCheck"));
-    auto* autoOrient = panel.findChild<QCheckBox*>(
+    auto* autoOrient = listPanel.findChild<QCheckBox*>(
         QStringLiteral("hostImportAutoOrientCheck"));
-    auto* importOriginX = panel.findChild<QDoubleSpinBox*>(
+    auto* importOriginX = listPanel.findChild<QDoubleSpinBox*>(
         QStringLiteral("hostImportOriginXSpin"));
-    auto* importOriginY = panel.findChild<QDoubleSpinBox*>(
+    auto* importOriginY = listPanel.findChild<QDoubleSpinBox*>(
         QStringLiteral("hostImportOriginYSpin"));
-    auto* applyLayout = panel.findChild<QPushButton*>(
+    auto* applyLayout = listPanel.findChild<QPushButton*>(
         QStringLiteral("hostLayoutApplyButton"));
     if (!Check(deltaX != nullptr && deltaZ != nullptr && rotateX != nullptr
                    && rotateY != nullptr && rotateZ != nullptr
@@ -187,7 +199,7 @@ int main(int argc, char* argv[])
     {
         return 5;
     }
-    const hostgridlayoutrequest defaultLayout = panel.LayoutRequest();
+    const hostgridlayoutrequest defaultLayout = listPanel.LayoutRequest();
     if (!Check(
             defaultLayout.maxcolumns == 11
                 && defaultLayout.maxrows == 2
@@ -204,9 +216,9 @@ int main(int argc, char* argv[])
     autoOrient->setChecked(false);
     importOriginX->setValue(4.5);
     importOriginY->setValue(-1.25);
-    const hostmodelimportoptions sourceOptions = panel.ImportOptions();
+    const hostmodelimportoptions sourceOptions = listPanel.ImportOptions();
     if (!Check(
-            !panel.AutoLayoutEnabled()
+            !listPanel.AutoLayoutEnabled()
                 && !sourceOptions.autoorientenabled
                 && std::abs(sourceOptions.originxmm - 4.5) < 1.0e-9
                 && std::abs(sourceOptions.originymm + 1.25) < 1.0e-9
@@ -220,9 +232,9 @@ int main(int argc, char* argv[])
         return 15;
     }
     autoLayout->setChecked(true);
-    const hostmodelimportoptions layoutOptions = panel.ImportOptions();
+    const hostmodelimportoptions layoutOptions = listPanel.ImportOptions();
     if (!Check(
-            panel.AutoLayoutEnabled()
+            listPanel.AutoLayoutEnabled()
                 && !layoutOptions.autoorientenabled
                 && std::abs(layoutOptions.originxmm) < 1.0e-9
                 && std::abs(layoutOptions.originymm) < 1.0e-9

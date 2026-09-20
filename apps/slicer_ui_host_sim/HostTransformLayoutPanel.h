@@ -45,17 +45,9 @@ public:
     /** @brief 成功 Commit 后重置增量变换输入。 */
     void ResetTransformInputs();
 
-    /**
-     * @brief 返回当前显示给操作员的网格值。
-     * @return 自动和手动布局使用的由宿主持有的布局请求。
-     */
-    [[nodiscard]] hostgridlayoutrequest LayoutRequest() const;
-
-    /** @brief 返回操作员是否启用了导入后的自动规则排版。 */
-    [[nodiscard]] bool AutoLayoutEnabled() const;
-
-    /** @brief 返回下一批模型的自动定向与 XY 原点偏移。 */
-    [[nodiscard]] hostmodelimportoptions ImportOptions() const;
+    // 「导入落位与规则排版」已迁往 HostModelListPanel：那组开关在导入执行的
+    // 那一刻被读，与「添加模型」按钮同属一页才不会让用户勾了个无效的开关。
+    // LayoutRequest / AutoLayoutEnabled / ImportOptions 随之迁走。
 
 signals:
     /** @brief 请求对所选实例变换执行一次原子 Commit。 */
@@ -75,17 +67,9 @@ signals:
     /** @brief 请求将选中实例立即贴到构建平台 Z=0。 */
     void SigLandOnBuildPlateRequested(const QStringList& instanceIds);
 
-    /** @brief 请求一次权威的 applyGridLayout 提交。 */
-    void SigLayoutRequested(
-        int maxColumns,
-        int maxRows,
-        double columnGapMm,
-        double rowGapMm);
-
 private slots:
     void OnApplyTransform();
     void OnLandOnBuildPlate();
-    void OnApplyLayout();
 
 private:
     void UpdateControls();
@@ -105,15 +89,6 @@ private:
     QCheckBox* m_autoLandCheck{nullptr};
     QPushButton* m_applyTransformButton{nullptr};
     QPushButton* m_landOnBuildPlateButton{nullptr};
-    QSpinBox* m_columnsSpin{nullptr};
-    QSpinBox* m_rowsSpin{nullptr};
-    QDoubleSpinBox* m_columnGapSpin{nullptr};
-    QDoubleSpinBox* m_rowGapSpin{nullptr};
-    QCheckBox* m_autoOrientCheck{nullptr};
-    QCheckBox* m_autoLayoutCheck{nullptr};
-    QDoubleSpinBox* m_importOriginXSpin{nullptr};
-    QDoubleSpinBox* m_importOriginYSpin{nullptr};
-    QPushButton* m_applyLayoutButton{nullptr};
     int m_instanceCount{0};
     quint64 m_sceneRevision{0};
     bool m_commandsEnabled{false};

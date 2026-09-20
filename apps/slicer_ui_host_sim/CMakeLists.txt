@@ -833,6 +833,10 @@ add_executable(hostflow_hb03_transform_layout_tests
     HostModelImportWorkflow.cpp
     HostModelImportWorkflow.h
     HostModelImportWorkflowScene.cpp
+    # 「导入落位与规则排版」已迁往模型列表面板，本用例的排版断言随之
+    # 改由它提供控件，故要一并编入。
+    HostModelListPanel.cpp
+    HostModelListPanel.h
     HostTransformLayoutPanel.cpp
     HostTransformLayoutPanel.h
     ModuleClient.cpp

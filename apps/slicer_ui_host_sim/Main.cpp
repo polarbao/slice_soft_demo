@@ -454,8 +454,10 @@ int RunHostFlowPanelOwnershipSelfTest(const QString& modulePath)
     // 这张表就是「谁该在哪一页」的唯一事实来源。
     static const PanelOwnership kExpected[] = {
         {"hostImportModelButton", "hostSceneInspectorTabs", "模型"},
-        {"hostImportAutoOrientCheck", "hostSceneInspectorTabs", "变换与排版"},
-        {"hostLayoutAutoApplyCheck", "hostSceneInspectorTabs", "变换与排版"},
+        // 2026-09-20 由「变换与排版」迁到「模型」：这两个开关在导入执行的
+        // 那一刻被读，与「添加模型」按钮同页才不会让用户勾了个无效的开关。
+        {"hostImportAutoOrientCheck", "hostSceneInspectorTabs", "模型"},
+        {"hostLayoutAutoApplyCheck", "hostSceneInspectorTabs", "模型"},
         {"hostRipAutoAfterSliceCheck", "hostSceneInspectorTabs", "RIP 设置"},
         {"defaultViewModeCombo", "hostWorkspaceTabs", "显示"},
     };
