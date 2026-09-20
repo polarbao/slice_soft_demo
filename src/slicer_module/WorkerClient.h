@@ -13,6 +13,19 @@
 namespace slicesoft::module
 {
 
+/**
+ * @brief Worker 不自行退出时，模块在强杀前等待的优雅退出宽限期。
+ *
+ * 这个值是**取消到终态的时间下界**：`WorkerClient.cpp` 的运行循环先等满它，
+ * 到点才 `TerminateJobObject`；而作业状态要等 `Run()` 返回才转终态
+ * （`WorkerJobService.cpp` 的 Finalize 路径）。
+ *
+ * 因此**任何取消期限门禁都必须大于它**，否则「worker 未自行退出」这条路径
+ * 必然判失败。2026-09-18 的 F-53 正是这么来的：门禁期限与本值同为 2000ms，
+ * 余量为负。不变式由 `tests/contracts/ValidateCancelDeadlineInvariant.py` 看守。
+ */
+inline constexpr std::chrono::milliseconds kDefaultCancelGracePeriod{2000};
+
 /** @brief 由 file_contract_v1 冻结的稳定进程退出分类。 */
 enum class WorkerExitCategory
 {
@@ -76,7 +89,7 @@ struct WorkerLaunchOptions
     std::filesystem::path workingDirectory;
     std::filesystem::path cancellationMarkerPath;
     std::chrono::milliseconds timeout{5000};
-    std::chrono::milliseconds cancelGracePeriod{2000};
+    std::chrono::milliseconds cancelGracePeriod{kDefaultCancelGracePeriod};
     bool requireTerminalProgress{true};
     WorkerProgressSink progressSink;
     // Optional telemetry; callback exceptions never affect the Worker contract.

@@ -16,6 +16,24 @@
 
 namespace stage14d07
 {
+namespace
+{
+
+// E-07 的取消期限**从模块的宽限期推导**，不再各写各的。
+// 取消到终态的下界就是 `kDefaultCancelGracePeriod`（worker 不自行退出时，
+// 模块等满它才强杀），期限若等于宽限期则该路径必然判失败 —— 即 F-53。
+// 授权见 docs/slice/DOC/DOC_DECISION_F53_2026_09_20_取消期限与宽限期不变式授权.md。
+constexpr double kCancelGraceMs =
+    static_cast<double>(module::kDefaultCancelGracePeriod.count());
+// 强杀 + 上报的预算。实测该附加开销最大 190ms；余量取得更宽，
+// 是因为读数里还混入了测试自身的残留遍历耗时（见 F-56，尚未修复）。
+constexpr double kForcedTerminationBudgetMs = 1000.0;
+constexpr double kCancelDeadlineMs = kCancelGraceMs + kForcedTerminationBudgetMs;
+static_assert(
+    kCancelDeadlineMs > kCancelGraceMs,
+    "cancel deadline must exceed the worker cancel grace period; see F-53");
+
+}  // namespace
 
 WorkerOutcome RunSlice(
     module::WorkerClient& client,
@@ -326,14 +344,16 @@ void RunGate()
     const bool e07 = cancelAccepted
         && cancelled.run.stopReason == module::WorkerStopReason::Cancelled
         && cancelled.run.errorCode == "PM-SLICER-CANCELLED-0070"
-        && cancelElapsedMs <= 2000.0
+        && cancelElapsedMs <= kCancelDeadlineMs
         && residueFree
         && packageUnchanged;
     WriteTheme(
         "E-07", "e07_cancel_recovery.json", e07,
         {{"cancelAccepted", cancelAccepted},
          {"cancelDeadlineMs", cancelElapsedMs},
-         {"deadlinePassed", cancelElapsedMs <= 2000.0},
+         {"deadlinePassed", cancelElapsedMs <= kCancelDeadlineMs},
+         {"cancelDeadlineLimitMs", kCancelDeadlineMs},
+         {"cancelGracePeriodMs", kCancelGraceMs},
          {"stableExitCode", cancelled.run.errorCode},
          {"stagingCleanup", residueFree},
          {"existingPackageUnchanged", packageUnchanged}});

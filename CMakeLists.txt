@@ -2186,6 +2186,19 @@ if(Python3_Interpreter_FOUND)
         COMMAND ${Python3_EXECUTABLE}
             "${CMAKE_CURRENT_SOURCE_DIR}/tests/contracts/ValidateThirdPartyNotices.py"
     )
+    # 取消期限不变式：门禁期限必须大于 worker 的优雅退出宽限期。
+    # 自测先跑（它证明本门禁确实会红），再跑门禁本体。见 F-53。
+    add_test(
+        NAME cancel_deadline_invariant_self_test
+        COMMAND ${Python3_EXECUTABLE}
+            "${CMAKE_CURRENT_SOURCE_DIR}/tests/contracts/ValidateCancelDeadlineInvariant.py"
+            --self-test
+    )
+    add_test(
+        NAME cancel_deadline_invariant_test
+        COMMAND ${Python3_EXECUTABLE}
+            "${CMAKE_CURRENT_SOURCE_DIR}/tests/contracts/ValidateCancelDeadlineInvariant.py"
+    )
     set_tests_properties(
         json_schema_contract_test
         file_contract_v1_test

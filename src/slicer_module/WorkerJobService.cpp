@@ -597,7 +597,7 @@ struct WorkerJobService::Implementation
             options.workingDirectory = execution->workerExecutable.parent_path();
             options.cancellationMarkerPath = execution->cancelPath;
             options.timeout = execution->route.timeout;
-            options.cancelGracePeriod = std::chrono::milliseconds{2000};
+            options.cancelGracePeriod = kDefaultCancelGracePeriod;
             options.requireTerminalProgress =
                 execution->route.workerCapability == "slice.rgbwsv"
                 || execution->route.workerCapability == "slice.rgbwsvt";

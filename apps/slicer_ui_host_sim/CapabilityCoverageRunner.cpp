@@ -12,7 +12,20 @@
 
 namespace
 {
-constexpr int kCancelLatencyLimitMs{2000};
+// UI-M5 的取消期限。**必须大于 slicesoft::module::kDefaultCancelGracePeriod
+// （src/slicer_module/WorkerClient.h，当前 2000ms）**：worker 不自行退出时，
+// 模块先等满宽限期才强杀，作业状态要等 Run() 返回才转终态，
+// 所以那条路径的耗时下界就是宽限期。期限若等于宽限期则它必然判失败 —— 即 F-53。
+//
+// 这里不能 include 模块头：宿主经 LoadLibrary + C ABI 加载模块，
+// 引入模块内部头会破坏三进程拓扑。不变式改由
+// tests/contracts/ValidateCancelDeadlineInvariant.py 看守，
+// 任一处漂移它都会变红并指出是哪一处。
+//
+// 2000（宽限期）+ 1000（强杀与上报预算；实测附加开销最大 190ms，
+// 余量取宽是因为读数里还混入了残留遍历耗时，见 F-56）。
+// 授权见 docs/slice/DOC/DOC_DECISION_F53_2026_09_20_取消期限与宽限期不变式授权.md。
+constexpr int kCancelLatencyLimitMs{3000};
 
 QByteArray Compact(const QJsonObject& value)
 {
