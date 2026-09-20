@@ -897,6 +897,7 @@ MultiModelProductionResult RunMultiModelProductionServiceImpl(
         slot->adapterRequest.instance = item.instance;
         slot->adapterRequest.modelreportoverride = &model->second.model;
         slot->adapterRequest.canceltoken = request.canceltoken;
+        slot->adapterRequest.transferplatecomputeonly = request.transferchannel;
         producerSlots.push_back(std::move(slot));
     }
 

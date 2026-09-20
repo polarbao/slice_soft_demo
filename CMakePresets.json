@@ -157,7 +157,7 @@
       },
       "filter": {
         "exclude": {
-          "name": "^hostflow_|^hostux_|^matvol_|^frame_|^stage16_|^stage14d|^stage14e|^stage14f|^slicer_stage14d|^slicer_stage14e|^textured_scene_|^ripflow_|^rip_|^test_spi|^stage16c06_bounded_support_shape_unit_tests$|^scene_layer_adapters_unit_tests$"
+          "name": "^monowrap_plate_transfer_vs_varnish_tests$|^hostflow_|^hostux_|^matvol_|^frame_|^stage16_|^stage14d|^stage14e|^stage14f|^slicer_stage14d|^slicer_stage14e|^textured_scene_|^ripflow_|^rip_|^test_spi|^stage16c06_bounded_support_shape_unit_tests$|^scene_layer_adapters_unit_tests$"
         }
       }
     },
@@ -179,7 +179,7 @@
       },
       "filter": {
         "exclude": {
-          "name": "^hostflow_hd02_real_asset_matrix$|^frame_production_tests$|^stage14d08_r2_slice_executor_tests$|^stage16_contact_leveling_diagnostic_tests$|^hostux_preset_after_import$|^matvol_production_wiring_tests$|^hostux_restored_preset_after_import$|^matvol_rgbwsvt_legacy_package_tests$"
+          "name": "^monowrap_plate_transfer_vs_varnish_tests$|^hostflow_hd02_real_asset_matrix$|^frame_production_tests$|^stage14d08_r2_slice_executor_tests$|^stage16_contact_leveling_diagnostic_tests$|^hostux_preset_after_import$|^matvol_production_wiring_tests$|^hostux_restored_preset_after_import$|^matvol_rgbwsvt_legacy_package_tests$"
         }
       }
     },

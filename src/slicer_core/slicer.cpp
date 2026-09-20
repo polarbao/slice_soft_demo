@@ -136,10 +136,15 @@ void EnsureLegacyPipelineAcceptsConfig(const SliceConfig& config, const SliceRun
         || options.modelreportoverride != nullptr;
     const bool transferSceneProductionOptIn =
         IsTransferSceneProductionOptIn(config, options);
+    // MW3-06：整版缩裹的逐实例运行经适配器但一个字节都不写盘，故按
+    // directCompute 放行。仍要求三个写盘开关全关——标志只是准入，不是豁免：
+    // 若哪天有人给它开了写盘，这里照样挡下。
+    const bool writesNothing = !options.write_tiff_layers
+        && !options.write_preview_files && !options.write_reports;
     ValidateLegacyTransferChannelRunBoundary(
         config.transfer_channel_policy,
-        !options.write_tiff_layers && !options.write_preview_files
-            && !options.write_reports && !usesAdapter,
+        writesNothing
+            && (!usesAdapter || options.transfer_plate_compute_only),
         options.write_tiff_layers && options.write_reports
             && (!usesAdapter || transferSceneProductionOptIn));
     if (!IsOpenVdbCandidateConfig(config))

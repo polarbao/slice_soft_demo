@@ -1154,7 +1154,8 @@ static SceneLayerComposeResult ComposeSceneLayersWithInstances(
                     output.channels,
                     pixelIndex,
                     pixelOwnership,
-                    request.protocol))
+                    request.protocol,
+                    globalTransferMask))
             {
                 const int owner = ownerindices.at(pixelIndex);
                 const SceneInstanceRaster* instance =

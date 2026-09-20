@@ -157,6 +157,7 @@ SceneRasterAdapterResult AdaptLegacySceneLayers(
     options.write_tiff_layers = false;
     options.write_preview_files = false;
     options.write_reports = false;
+    options.transfer_plate_compute_only = request.transferplatecomputeonly;
     // 透传同步取消点：MaterialVolumePlan 构建发生在 gridcallback 之前，
     // 仅靠回调取消覆盖不到那个窗口。
     if (request.canceltoken != nullptr)

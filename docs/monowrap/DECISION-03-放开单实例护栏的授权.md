@@ -12,6 +12,7 @@
 | --- | --- | --- | --- |
 | ① | `apps/slicer_worker/slice/WorkerSliceRequestMaterializer.cpp:405` | `PM-SLICER-LAYOUT-0022` | Worker 物化请求时，执行前 |
 | ② | `src/slicer_core/engine/ProductionSliceFacadeFactory.cpp:287` | `PM-SLICER-LAYOUT-0023` | 核心生产入口，执行中 |
+| ③ | `src/slicer_core/materials/transfer/LegacyTransferChannelSession.cpp:15` | `E_MATVOL_T_PROTOCOL_INVALID` | `run_slicer` 入口（**盘点时漏了，实施中撞出**） |
 
 两道说的是同一句话：`slice.rgbwsvt` 要求场景里**恰好一个可见实例**。
 
@@ -53,9 +54,9 @@ MW3-06 只有在下列各项全绿时才可落地，缺一即停：
       > `manifest.json` 与 `package_report.json` 的 `configPath`/`packageDir`。
       > 处理办法不是「看一眼觉得没事就放过」：把两边运行根换成同一占位符后
       > **要求整份文件完全相等**，相等即证明差异恰好只有那条路径、再无其它。
-- [ ] MW3-10：12 件整版实跑，一个包；**与单材料光油对拍**，打印像素的逐像素
-      几何完全相同，只是落在 V 与 T 两个不同通道上（用户 2026-09-20 以光油为准）
-- [ ] MW3-12：全量档失败集合 == 基线，11 例字节级基线 PASS
+- [x] MW3-10：12 件整版实跑，一个包；**与单材料光油对拍**通过——12 实例、23 层、
+      75574 个打印像素，V 与 T 逐像素几何完全相同且 T 像素前六通道全空
+- [x] MW3-12：全量档 275 项、失败集合 == 基线 4 项；字节级基线 PASS（738 产物）
 
 > 第三项尤其要紧：放开护栏**不得改变单实例的行为**。
 > 若单实例产出变了，说明改道动了它本不该动的东西，此时应当先查，而不是放开。

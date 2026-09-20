@@ -27,7 +27,8 @@ bool OutputPixelHasClosure(
     const std::vector<std::uint8_t>& channels,
     const std::size_t pixelIndex,
     const SceneRasterOwnership ownership,
-    const RgbwsvProtocol& protocol)
+    const RgbwsvProtocol& protocol,
+    const std::span<const std::uint8_t> plateTransferMask = {})
 {
     const std::size_t base = pixelIndex * kChannelCount;
     for (std::size_t channel{0U}; channel < kChannelCount; ++channel)
@@ -77,5 +78,12 @@ bool OutputPixelHasClosure(
             return true;
         }
     }
-    return false;
+    // MW3-06：整版缩裹的模型像素印在【第七通道】上，六通道全空正是正确形态。
+    // 与逐实例闭合同一条道理：不变量问的是「有没有真的印出东西」，
+    // 不是「有没有印在这六个通道里」。
+    //
+    // 掩膜只在产整版 T 的运行里非空，六通道运行下恒为空、本分支永不触发，
+    // 故「模型像素不得凭空空白」这条保证对六通道一字未改。
+    return pixelIndex < plateTransferMask.size()
+        && plateTransferMask[pixelIndex] != 0U;
 }

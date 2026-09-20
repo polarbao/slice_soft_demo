@@ -91,9 +91,8 @@ struct SliceRunOwnedLayer
     RgbwsvProductionLayer output;
     MaterialClosureSemanticLayerInput semantic;
 
-    /// MW3-05：本层缩裹（T）占位，供场景侧合成整版掩膜；六通道运行恒为空。
-    /// `output` 装的是【叠 T 之前】的六通道层——整版要先合成再叠 T，
-    /// 故必须交出「六通道层 + 掩膜」而非叠好的七通道层。
+    /// MW3-05：本层缩裹占位，供场景侧合成整版掩膜；六通道运行恒为空。
+    /// `output` 是【叠 T 之前】的六通道层：整版要先合成再叠 T。
     std::vector<std::uint8_t> transfermask;
 };
 
@@ -151,6 +150,9 @@ struct SliceRunOptions {
     std::optional<SliceRunInputOverride> inputoverride;
     const TransferSceneProductionAdmission*
         transfer_scene_production_admission{nullptr};
+
+    /// MW3-06：整版缩裹逐实例运行经适配器但【只算不写】，T 边界检查据此放行。
+    bool transfer_plate_compute_only{false};
 
     /**
      * @brief Optional already-imported model used by scene orchestration.

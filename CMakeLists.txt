@@ -1766,6 +1766,9 @@ slicesoft_add_test_executable(NAME matvol_reality_plan_tests SRC tests/matvol/Ma
 slicesoft_add_test_executable(NAME matvol_transfer_resolver_unit_tests SRC tests/matvol_t/MatvolTransferResolverTests.cpp LIB slicer_core SOURCE_DIR_DEFINE STRICT_WARNINGS)
 
 slicesoft_add_test_executable(NAME matvol_transfer_volume_plan_tests SRC tests/matvol_t/TransferMaterialVolumePlanTests.cpp LIB slicer_core SOURCE_DIR_DEFINE STRICT_WARNINGS)
+# MW3-10：整版缩裹与单材料光油的逐像素几何对拍。需要真实资产，缺失时以
+# SKIP_RETURN_CODE 退出而非失败（与 14F05 同一机制，改动须两处同步）。
+slicesoft_add_test_executable(NAME monowrap_plate_transfer_vs_varnish_tests SRC tests/monowrap/PlateTransferVsVarnish.cpp LIB slicer_core SOURCE_DIR_DEFINE STRICT_WARNINGS)
 
 slicesoft_add_test_executable(NAME matvol_rgbwsvt_composer_tests SRC tests/matvol_t/RgbwsvtComposerTests.cpp LIB slicer_core STRICT_WARNINGS)
 
@@ -2640,6 +2643,13 @@ add_test(NAME matvol_reality_plan_tests COMMAND matvol_reality_plan_tests)
 add_test(NAME matvol_production_wiring_tests COMMAND matvol_production_wiring_tests)
 add_test(NAME matvol_transfer_resolver_unit_tests COMMAND matvol_transfer_resolver_unit_tests)
 add_test(NAME matvol_transfer_volume_plan_tests COMMAND matvol_transfer_volume_plan_tests)
+add_test(NAME monowrap_plate_transfer_vs_varnish_tests COMMAND monowrap_plate_transfer_vs_varnish_tests)
+set_tests_properties(
+    monowrap_plate_transfer_vs_varnish_tests
+    PROPERTIES
+        SKIP_RETURN_CODE 111
+        RUN_SERIAL TRUE
+        TIMEOUT 900)
 add_test(NAME matvol_rgbwsvt_composer_tests COMMAND matvol_rgbwsvt_composer_tests)
 add_test(NAME matvol_rgbwsvt_tiff_io_tests COMMAND matvol_rgbwsvt_tiff_io_tests)
 add_test(NAME matvol_legacy_transfer_session_tests COMMAND matvol_legacy_transfer_session_tests)

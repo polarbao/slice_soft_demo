@@ -106,6 +106,10 @@ tests/fixtures/*
 !tests/matvol/**
 !tests/matvol_t/
 !tests/matvol_t/**
+# MONOWRAP 专项新建目录。新建后实测被 tests/* 吞掉（git check-ignore 命中
+# 本文件第 18 行），故在此放行——否则本地全绿、他人拉取后因文件不存在而编译失败。
+!tests/monowrap/
+!tests/monowrap/**
 !tests/stage14e_02/
 !tests/stage14e_02/**
 !tests/version/

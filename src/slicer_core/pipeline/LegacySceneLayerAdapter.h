@@ -25,6 +25,10 @@ struct LegacySceneLayerAdapterRequest
     const ModelReport* modelreportoverride{nullptr};
     SliceRunProgressCallback progresscallback;
 
+    /// MW3-06：本次是整版缩裹的逐实例运行。透传给 SliceRunOptions，
+    /// 让 T 通道边界检查知道这份层会被整版合成器正确地叠上 T。
+    bool transferplatecomputeonly{false};
+
     /**
      * @brief MF-05 步骤 2：逐层出口。非空时 adapter【不再累积】raster.layers。
      *
