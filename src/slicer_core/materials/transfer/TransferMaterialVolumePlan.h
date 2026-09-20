@@ -21,9 +21,10 @@ struct TransferMaterialVolumePlan
     int layerCount{0};
     std::size_t columnCount{0U};
 
+    /// 整模模式没有 volume：它的区域就是模型本身，见 MaterializeTransferLayerMask。
     [[nodiscard]] bool HasRegion() const noexcept
     {
-        return material.present && volume.has_value();
+        return material.present && (material.wholeModel || volume.has_value());
     }
 };
 

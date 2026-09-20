@@ -137,12 +137,23 @@ void ValidateTransferChannelConfiguration(
         throw std::runtime_error(
             "p0.rgbwsvt.1 channelOrder must be exactly R G B W S V T");
     }
-    if (policy.match_source != "material_diffuse_rgb")
+    const bool wholeModel = policy.match_source == "whole_model";
+    if (policy.match_source != "material_diffuse_rgb" && !wholeModel)
     {
         throw std::runtime_error(
-            "transferChannelPolicy.matchSource must be material_diffuse_rgb");
+            "transferChannelPolicy.matchSource must be material_diffuse_rgb or whole_model");
     }
-    if (policy.material_diffuse_rgb_values.empty())
+    // whole_model 不做颜色匹配，颜色列表按定义就该是空的；给了反而是配置矛盾。
+    if (wholeModel)
+    {
+        if (!policy.material_diffuse_rgb_values.empty())
+        {
+            throw std::runtime_error(
+                "transferChannelPolicy.materialDiffuseRgbValues must be empty "
+                "when matchSource is whole_model");
+        }
+    }
+    else if (policy.material_diffuse_rgb_values.empty())
     {
         throw std::runtime_error(
             "transferChannelPolicy.materialDiffuseRgbValues must not be empty");

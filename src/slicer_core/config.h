@@ -260,6 +260,9 @@ struct MaterialVolumePolicyConfig {
  */
 struct TransferChannelPolicyConfig {
     bool enabled{false};
+    /// 取值：`material_diffuse_rgb`（按漫反射 RGB 精确匹配唯一材质）
+    /// 或 `whole_model`（整模即缩裹材料，忽略材质表）。
+    /// `whole_model` 供无 mtl 的纯几何资产使用，此时 materialDiffuseRgbValues 可为空。
     std::string match_source{"material_diffuse_rgb"};
     std::vector<std::array<std::uint8_t, 3>> material_diffuse_rgb_values;
     std::string missing_region{"allow_empty"};

@@ -16,12 +16,20 @@ TransferMaterialMatch ResolveTransferMaterial(
     {
         return {};
     }
-    if (policy.match_source != "material_diffuse_rgb"
-        || policy.material_diffuse_rgb_values.empty())
+    const bool wholeModel = policy.match_source == "whole_model";
+    if (!wholeModel
+        && (policy.match_source != "material_diffuse_rgb"
+            || policy.material_diffuse_rgb_values.empty()))
     {
         throw TransferChannelError(
             TransferChannelErrorCode::ConfigInvalid,
             "exact material diffuse RGB matching requires at least one configured colour");
+    }
+    if (wholeModel && !policy.material_diffuse_rgb_values.empty())
+    {
+        throw TransferChannelError(
+            TransferChannelErrorCode::ConfigInvalid,
+            "whole_model transfer matching must not configure diffuse colours");
     }
     if (policy.missing_region != "allow_empty"
         && policy.missing_region != "fail_closed")
@@ -35,6 +43,16 @@ TransferMaterialMatch ResolveTransferMaterial(
         throw TransferChannelError(
             TransferChannelErrorCode::ConfigInvalid,
             "multipleMatches must be fail_closed");
+    }
+
+    if (wholeModel)
+    {
+        // 整模命中不看材质表：无 mtl 的资产材质表本就是空的。
+        TransferMaterialMatch match;
+        match.present = true;
+        match.wholeModel = true;
+        match.materialName = kWholeModelTransferMaterialName;
+        return match;
     }
 
     std::vector<const MaterialInfo*> matches;

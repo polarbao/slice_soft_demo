@@ -98,10 +98,27 @@
 
 逐项状态以 [TASKS-01](TASKS-01-任务清单.md) 的任务表为准。摘要：
 
-- ✅ MONOWRAP-00 现状调研与改动面盘点
-- ✅ MONOWRAP-01 G-1 链路读通与方案（建议方案 B，已裁定采纳）
-- ✅ MONOWRAP-02 G-2 两方案比较（建议同版本放宽，已裁定采纳）
-- ⬜ MONOWRAP-01b 起，开发中
+- ✅ MONOWRAP-00 / 01 / 01b / 02 开工门四问全部回答
+- ✅ MONOWRAP-04/05/06 整模识别落地（**经过一次方向更正**，见下）
+- ✅ MONOWRAP-07 报告 schema 同版本放宽，五种形态证伪通过
+- ✅ MONOWRAP-08 CLI 工艺 `samples/configs/matvol_t/monowrap_whole_model_rgbwsvt.json`
+- ✅ MONOWRAP-09 目标目录 **10/10 实跑通过**，每件 `transferPrintPixels` 精确等于 `modelPixels`
+- ⬜ MONOWRAP-10/11 单测门禁与全量回归
+- ⬜ 后续任务见 [TASKS-02](TASKS-02-后续任务.md)：UI 预设、配置整合、标签栏交互
+
+### 一次关键的方向更正
+
+初版让整模缩裹走体积求解，10 件资产只有 5 件能切。
+**用户指出「单材料光油工艺能正常切这批模型」**，据此查明光油的整模模式
+是在已栅格化像素上直接赋值、不经体积求解。改成同构做法后 **10/10 全通**，
+且实现反而更小。细节见 [TASKS-01 §3.5](TASKS-01-任务清单.md)。
+
+### UI 里暂时还选不到
+
+两条原因：`configs/material_process/` 下的工艺**不是逐个可选的 UI 选项**
+（见 [ANALYSIS-01 §4.5](ANALYSIS-01-现状与改动面.md)）；
+且宿主材质策略是个 C ABI 枚举，六个取值里**没有「只写 T」**。
+**CLI 已可用**；UI 预设是 [TASKS-02](TASKS-02-后续任务.md) 的 UI-01，用户已授权。
 
 **开发分支**：`feature/claude-monowrap-whole-model-transfer`（分叉自 `develop/packaged-slicer`）。
 

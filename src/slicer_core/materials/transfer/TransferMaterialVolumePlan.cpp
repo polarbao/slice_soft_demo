@@ -28,6 +28,16 @@ TransferMaterialVolumePlan BuildTransferMaterialVolumePlan(
     {
         return result;
     }
+    // 整模模式：区域就是模型本身，不需要按材质求体积区间。
+    //
+    // 这与 materialPolicy.varnish.mode == "all_model" 同构——那条路径也是在
+    // 已栅格化的模型像素上直接赋值（SliceMaterialTexture.cpp），不经体积求解。
+    // 走体积求解会平白引入对流形与自交的要求：实测 alg_suoguo 的 10 件资产里
+    // 有 5 件因此被拒，而它们在光油整模工艺下切得好好的。
+    if (result.material.wholeModel)
+    {
+        return result;
+    }
 
     MaterialVolumePolicyConfig volumePolicy;
     volumePolicy.enabled = true;
@@ -80,6 +90,16 @@ void MaterializeTransferLayerMask(
     {
         std::fill(transferMaskOut.begin(), transferMaskOut.end(), 0U);
         std::fill(ownerScratch.begin(), ownerScratch.end(), kNoMaterialOwner);
+        return;
+    }
+    if (plan.material.wholeModel)
+    {
+        // 整模即缩裹：本层的缩裹区域就是本层的模型区域，逐像素照搬。
+        std::fill(ownerScratch.begin(), ownerScratch.end(), kNoMaterialOwner);
+        for (std::size_t index{0U}; index < plan.columnCount; ++index)
+        {
+            transferMaskOut[index] = modelMask[index] != 0U ? 1U : 0U;
+        }
         return;
     }
 

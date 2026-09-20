@@ -173,6 +173,50 @@ T 通道的区域来自「按配置的漫反射 RGB 精确匹配出唯一一个�
 
 ---
 
+## 4.5 UI 侧的架构约束（2026-09-20 实测，A 级）
+
+**查「UI 里能不能选到缩裹工艺」时发现的，它决定了这件事是多大的活。**
+
+`<程序目录>/configs/material_process/` 下的 `*_rgbwsvt.json`
+**不是逐个可选的 UI 工艺选项**。`HostProcessPresetCatalog::Presets()` 的做法是：
+
+```cpp
+hosttransferchannelsettings transfer;
+if (HostTransferProcessPresetLoader::LoadDeployedPolicy(&transfer, nullptr))
+{
+    for (int index = 0; index < baseCount; ++index)
+        if (presets.at(index).transfereligible)
+            AppendTransferPreset(presets.at(index), transfer, &presets);
+}
+```
+
+即**从部署目录派生出唯一一条 T 策略**，再给每个 `transfereligible` 的基础工艺
+追加一个 T 变体。而 `LoadDeployedPolicy` 是**取目录里第一个能加载成功的**：
+
+```cpp
+for (const QString& fileName : DeployedProfileFileNames())
+    if (Load(fileName, transferSettings, nullptr)) return true;
+```
+
+所以「哪一份当选」依赖文件名排序。`matvol_t_host_profile` 有一条断言正是为此而设：
+**部署的所有 T 工艺 `transferChannelPolicy` 必须完全一致**，否则报
+「部署 T 工艺副本漂移……宿主派生所取策略将随目录排序而变」。
+
+**这意味着**：往该目录放一份 `whole_model` 工艺**不会多出一个 UI 选项**，
+只会破坏「单一策略」这个不变量并让上述断言变红（实测确认）。
+
+**所以本专项的工艺文件放在 `samples/configs/matvol_t/`（与
+`transfer_rgbwsvt_prototype.json` 同级），不进 `process_profiles/`**——
+该目录是整目录自动部署的（`apps/slicer_ui_host_sim/CMakeLists.txt:310` 等四处 `copy_directory`）。
+CLI 用 `--config` 指定它即可，已实测可用。
+
+**要让 UI 里能选缩裹，需要的是宿主侧改造**，不是加一个配置文件：
+让 T 变体可以来自多条策略（按工艺选择），而不是全局派生一条。
+`HostProcessPresetCatalog.cpp` 的注释明确写着这类改动
+**「改这些需另行授权」**，故不在本专项擅自进行。
+
+---
+
 ## 5. 与既有专项的边界
 
 - **MATVOL_T** 是 RGBWSVT 缩裹材料通道专项，本专项改的正是它的配置面与报告契约。

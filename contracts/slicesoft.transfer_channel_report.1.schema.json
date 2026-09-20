@@ -13,9 +13,9 @@
     "packageProtocol": { "const": "p0.rgbwsvt.1" },
     "statisticsSource": { "const": "persisted_tiff_bytes" },
     "enabled": { "const": true },
-    "matchSource": { "const": "material_diffuse_rgb" },
+    "matchSource": { "enum": ["material_diffuse_rgb", "whole_model"] },
     "configuredMaterialDiffuseRgbValues": {
-      "type": "array", "minItems": 1, "items": { "$ref": "#/$defs/rgb" }
+      "type": "array", "items": { "$ref": "#/$defs/rgb" }
     },
     "regionPresent": { "type": "boolean" },
     "materialName": { "type": "string" },
@@ -52,6 +52,32 @@
     "errors": { "type": "array", "items": { "type": "string" } }
   },
   "additionalProperties": false,
+  "allOf": [
+    {
+      "$comment": "material_diffuse_rgb 需要至少一种配置颜色，与放宽前的 minItems:1 等价。",
+      "if": {
+        "properties": { "matchSource": { "const": "material_diffuse_rgb" } },
+        "required": ["matchSource"]
+      },
+      "then": {
+        "properties": {
+          "configuredMaterialDiffuseRgbValues": { "minItems": 1 }
+        }
+      }
+    },
+    {
+      "$comment": "whole_model 不做颜色匹配，配置颜色按定义必须为空；给了即配置矛盾。",
+      "if": {
+        "properties": { "matchSource": { "const": "whole_model" } },
+        "required": ["matchSource"]
+      },
+      "then": {
+        "properties": {
+          "configuredMaterialDiffuseRgbValues": { "maxItems": 0 }
+        }
+      }
+    }
+  ],
   "$defs": {
     "rgb": {
       "type": "array",

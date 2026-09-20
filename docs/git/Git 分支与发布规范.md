@@ -210,6 +210,7 @@ git push origin main
    | 项 | 抖动原因 | 处置 |
    |---|---|---|
    | `module_logging_integration_tests` | `-j8` 下耗时膨胀约 3.5 倍（隔离 4.3~7.4 秒），撞上 `SliceSoftDiagnostics.cmake` 给它设的 `TIMEOUT 60`。2026-09-18、09-20 各红过一次，隔离与复跑均全绿 | 隔离重跑确认后放行 |
+   | `hostflow_he06_texture_white_preflight` | **测试自身设计里的竞态**：`HostTextureWhitePreflightTests.cpp:112-124` 连发两次 `RequestScan`，并断言 `discardedCount >= 1` 与 `decodecount == 1`——两者都假设第一次扫描在第二次到达时仍在飞行中；机器快时第一次先完成，断言即不成立。实测隔离 13 次挂 1 次（约 8%），`-j4` 下更易触发 | 隔离重跑确认后放行；**真修应让测试自己控制时序**，而不是依赖调度巧合 |
 
    **已移出本表**：`slicer_stage14d07_r2_engine_conformance_test`、
    `slicer_stage14e04b_capability_coverage_test`、`hostflow_ha03_qt_end_to_end`

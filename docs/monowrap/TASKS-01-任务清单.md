@@ -48,17 +48,19 @@
 |---|---|---|---|
 | MONOWRAP-00 | 现状调研与改动面盘点，产出上下文文档 | — | ✅ **完成**（2026-09-20） |
 | MONOWRAP-01 | 回答 G-1：读通链路并给方案 | 00 | ✅ **完成**（2026-09-20，建议方案 B） |
-| MONOWRAP-01b | **实测 `--scene-config` 入口是否接通 T 通道**——G-3 建议整盘切，但场景入口未实跑验证过 | 01 | ⬜ 未开始 |
-| MONOWRAP-02 | 回答 G-2：schema 两方案的改动清单与风险 | 00 | ✅ **完成**（2026-09-20，建议同版本放宽，**待裁定**） |
-| MONOWRAP-03 | 实测基线影响：确认既有工艺的报告形状不变、`scripts/SliceOutputBaseline.json` 的 738 产物不受影响 | 00 | ⬜ 未开始 |
-| MONOWRAP-04 | 配置层落地：`config.h` + `TransferChannelConfig.cpp` 放行整模模式，新值下不强制颜色列表非空 | 01,02 | ⬜ 未开始 |
-| MONOWRAP-05 | 解析层落地：`TransferMaterialResolver.cpp` 整模模式跳过颜色匹配 | 04 | ⬜ 未开始 |
-| MONOWRAP-06 | 报告层落地：`RgbwsvtLegacyPackageMetadata.cpp` 按裁定的 schema 方案产出 | 02,05 | ⬜ 未开始 |
-| MONOWRAP-07 | 契约落地：按 G-2 裁定改 `contracts/slicesoft.transfer_channel_report.*.schema.json` | 02 | ⬜ 未开始 |
-| MONOWRAP-08 | 回答 G-3 并新建工艺文件 `nail_transfer_only_rgbwsvt.json` | 03,06 | ⬜ 未开始 |
-| MONOWRAP-09 | 用目标目录 10 个 obj 实跑，产出 T 通道非空的包并人工核对 | 08 | ⬜ 未开始 |
-| MONOWRAP-10 | 单测与契约门禁：整模模式的正例 + **反例**（见 §4 证伪要求） | 05,07 | ⬜ 未开始 |
+| MONOWRAP-01b | 实测 `--scene-config` 入口是否接通 T 通道 | 01 | ✅ **完成**：接通。`p0.rgbwsvt.1` 的生产路径 `RunTransferProductionEntry` **本身就读场景有效配置**，场景制是设计正路 |
+| MONOWRAP-02 | 回答 G-2：schema 两方案的改动清单与风险 | 00 | ✅ **完成**（建议同版本放宽，已裁定采纳） |
+| MONOWRAP-03 | 实测基线影响：既有工艺报告形状不变、738 产物不受影响 | 00 | 🟡 **待全量档验证**（快集档已过，字节级基线在 MONOWRAP-11） |
+| MONOWRAP-04 | 配置层：放行 `whole_model`，该值下**要求**颜色列表为空 | 01,02 | ✅ **完成** |
+| MONOWRAP-05 | 解析层：`whole_model` 跳过颜色匹配，返回合成名命中 | 04 | ✅ **完成**（**重新设计**，见 §3.5） |
+| MONOWRAP-06 | 报告层：整模模式下的字段取值 | 02,05 | ✅ **完成**，实产报告已通过放宽后的 schema |
+| MONOWRAP-07 | 契约：`const`→`enum`，`minItems` 改为按 `matchSource` 条件约束 | 02 | ✅ **完成**，五种形态证伪全部符合预期 |
+| MONOWRAP-08 | 新建 CLI 工艺 `samples/configs/matvol_t/monowrap_whole_model_rgbwsvt.json` | 03,06 | ✅ **完成**（放在 `process_profiles/` **之外**，理由见 ANALYSIS-01 §4.5） |
+| MONOWRAP-09 | 目标目录 10 个 obj 实跑 | 08 | ✅ **完成，10/10 通过**，每件 `transferPrintPixels` 精确等于 `modelPixels` |
+| MONOWRAP-10 | 单测与契约门禁：整模模式的正例 + **反例** | 05,07 | ⬜ 未开始 |
 | MONOWRAP-11 | 全量回归 + 字节级基线，失败集合与基线比对 | 09,10 | ⬜ 未开始 |
+
+**后续任务（UI 预设、配置整合、标签栏交互）见 [TASKS-02](TASKS-02-后续任务.md)。**
 
 ---
 
@@ -71,6 +73,50 @@
 **不要先交一个工艺文件当作问题 ① 已解决**，那是假交付。
 
 工艺文件本身（MONOWRAP-08）是最后一步，且必须由 MONOWRAP-09 的实跑证明它产出非空 T 通道。
+
+---
+
+## 3.5 一次关键的方向更正：曾经只有 5/10 能切
+
+初版实现让整模缩裹走了 `BuildMaterialVolumePlan`，于是 10 件资产里只有 5 件能切：
+
+| 初版结果 | 件数 | 明细 |
+|---|---|---|
+| 切片成功 | 5 | 101、104、105、201、204 |
+| 自交超限（容限 64 对） | 4 | 203(68)、205(136)、202(171)、102(172) |
+| 非流形 | 1 | 103 |
+
+当时我准备把它当成「资产质量问题 vs 容限偏紧」交用户裁定。
+**用户指出「之前的单材料光油工艺能正常切这批模型」，这个观察推翻了那个方向。**
+
+查下来 `src/slicer_core/materials/SliceMaterialTexture.cpp:426-428`：
+
+```cpp
+if (config.material_policy.varnish.enabled) {
+    if (config.material_policy.varnish.mode == "all_model") {
+        pixel.v = config.material_policy.varnish.value;
+    }
+```
+
+**光油的整模模式是在已栅格化的模型像素上逐像素赋值，根本不经体积求解**，
+所以不要求流形、不查自交。而「整模即缩裹材料」与它语义同构——
+`transferMask` 就应该等于 `modelMask`，求任何体积区间都是多余的。
+
+**改法**：整模模式不建 volume，`MaterializeTransferLayerMask` 直接照搬 `modelMask`。
+这比初版**更小**：`MaterialVolumePlan` 与 `MaterialTopologyClassifier` 的改动全部撤回
+（合成材质名当初只是为了骗过体积求解的空材质名检查），合成名降级为纯报告标签。
+
+**结果 10/10 全部切通**：
+
+```text
+101 T=4554685  102 T=2287198  103 T=1383582  104 T=841902   105 T=700168
+201 T=1538079  202 T=3317260  203 T=897986   204 T=640161   205 T=1107332
+```
+
+包括原先非流形的 103 与四件自交超限的。**拓扑裁定随之消失，不需要抬任何容限。**
+
+**教训**：看到「A 能做而 B 不能」时，先比两者的实现路径，而不是先调 B 的参数。
+**参数是症状，路径才是原因。**
 
 ---
 
