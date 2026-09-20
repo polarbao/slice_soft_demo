@@ -10,6 +10,7 @@
 #include <functional>
 #include <cstdint>
 #include <optional>
+#include <span>
 #include <string>
 #include <string_view>
 #include <vector>
@@ -85,6 +86,17 @@ struct SceneInstanceRasterLayer
     std::vector<std::uint8_t> modelvarnishownership;
     std::vector<std::uint8_t> outervarnishownership;
     std::vector<std::uint8_t> supportownership;
+
+    /**
+     * @brief MW3-01：本实例本层的缩裹（T）占位，1 表示该像素只写 T。
+     *
+     * **可选**：六通道调用方一律留空，留空时合成器完全不碰 T 相关路径，
+     * 产出逐字节不变。非空时长度必须等于本层像素数。
+     *
+     * 语义与 `run_slicer` 单模型路径里交给 `ComposeRgbwsvtLayer` 的
+     * `transferMask` 一致——**它是模型掩膜的子集**，缩裹像素丢弃六通道只写 T。
+     */
+    std::vector<std::uint8_t> transfermask;
 };
 
 /**
@@ -152,6 +164,33 @@ struct SceneLayerComposeRequest
      */
     std::function<const SceneInstanceRasterLayer*(const SceneInstanceRaster&, int)>
         layerprovider;
+
+    /**
+     * @brief MW3-01/04：逐层交出**整版**的模型掩膜与缩裹掩膜，供七通道装配。
+     *
+     * 设置本回调即表示本次合成要产整版 T：合成器会分配整版掩膜缓冲、
+     * 在写像素时顺带填充缩裹掩膜，并在每层合成完毕时连同由归属现算的
+     * 模型掩膜一起交出（与 `layersink` 同批次、同一层）。
+     * **不设置时一个字节都不分配，六通道路径行为逐字节不变。**
+     *
+     * 两张掩膜都是 `ComposeRgbwsvtLayer` 的入参：模型掩膜在那里担着
+     * 「缩裹像素不得落在模型外」的守卫，**不可由缩裹掩膜自行派生**，
+     * 否则守卫恒真、整条空转。
+     *
+     * 只有 `Model` 归属的像素才可能带 T——缩裹是模型自身的一部分，
+     * 不是模型外的附加层（见 ANALYSIS-04 §5 的甲选裁定），
+     * 故恒有「缩裹掩膜 ⊆ 模型掩膜」。
+     * 回调内不得持有 span：出了回调即失效。
+     *
+     * @param layerIndex 全局层号
+     * @param modelMask  整版模型占位，1 表示该像素归某个实例的模型所有
+     * @param transferMask 整版缩裹占位，1 表示该像素只写 T
+     */
+    std::function<void(
+        int,
+        std::span<const std::uint8_t>,
+        std::span<const std::uint8_t>)>
+        platemasksink;
 
     /** @brief Synchronous, non-owning cancellation source for long loops. */
     const api::ICancelToken* canceltoken{nullptr};

@@ -1,9 +1,11 @@
+#include "slicer_core/output/rgbwsvt/RgbwsvtProtocol.h"
 #include "slicer_core/pipeline/SceneLayerComposer.h"
 
 #include <array>
 #include <cstddef>
 #include <cstdint>
 #include <iostream>
+#include <span>
 #include <string>
 #include <utility>
 #include <vector>
@@ -147,6 +149,25 @@ void AddModel(
     }
 }
 
+void AddTransfer(
+    slicer_core::SceneInstanceRaster& instance,
+    const int layerIndex,
+    const int x,
+    const int y)
+{
+    slicer_core::SceneInstanceRasterLayer& layer =
+        instance.layers.at(static_cast<std::size_t>(layerIndex));
+    const std::size_t pixelCount =
+        static_cast<std::size_t>(instance.localgrid.widthpx)
+        * static_cast<std::size_t>(instance.localgrid.heightpx);
+    if (layer.transfermask.empty())
+    {
+        layer.transfermask.assign(pixelCount, 0U);
+    }
+    layer.transfermask.at(
+        PixelIndex(instance.localgrid.widthpx, x, y)) = 1U;
+}
+
 void AddSupport(
     slicer_core::SceneInstanceRaster& instance,
     const int layerIndex,
@@ -219,6 +240,194 @@ bool HasError(
         && result.error->code == code
         && slicer_core::SceneRasterErrorCodeName(code)
             != "SCENE_RASTER_UNKNOWN";
+}
+
+bool WholePlateTransferMaskFollowsModelOwnership()
+{
+    // 整版缩裹：两个实例各带 T 掩膜，合成后整版 T 必须恰好落在
+    // 各实例 T 像素【被摆放到的】位置，而不是它们的局部位置。
+    slicer_core::SceneLayerComposeRequest request = MakeRequest();
+    request.globalgrid = MakeGrid(4, 1, 1);
+    slicer_core::SceneInstanceRaster first =
+        MakeInstance("left", MakeGrid(2, 1, 1));
+    slicer_core::SceneInstanceRaster second =
+        MakeInstance("right", MakeGrid(2, 1, 1, 0.2, 0.0, 0.0));
+    // 左实例两个像素都是模型，只有局部 x=1 是缩裹。
+    AddModel(first, 0, 0, 0, {10U, 20U, 30U, 255U});
+    AddModel(first, 0, 1, 0, {11U, 21U, 31U, 255U});
+    AddTransfer(first, 0, 1, 0);
+    // 右实例两个像素都是模型，只有局部 x=0 是缩裹。
+    AddModel(second, 0, 0, 0, {40U, 50U, 60U, 255U});
+    AddModel(second, 0, 1, 0, {41U, 51U, 61U, 255U});
+    AddTransfer(second, 0, 0, 0);
+    request.instances = {first, second};
+
+    std::vector<std::vector<std::uint8_t>> captured;
+    std::vector<std::vector<std::uint8_t>> capturedModel;
+    request.platemasksink =
+        [&captured, &capturedModel](
+            const int layerIndex,
+            const std::span<const std::uint8_t> modelMask,
+            const std::span<const std::uint8_t> mask)
+        {
+            (void)layerIndex;
+            capturedModel.emplace_back(modelMask.begin(), modelMask.end());
+            captured.emplace_back(mask.begin(), mask.end());
+        };
+
+    const slicer_core::SceneLayerComposeResult result =
+        slicer_core::ComposeSceneLayers(request);
+
+    // 整版 x=0,1 来自左实例，x=2,3 来自右实例（偏移 0.2mm / 0.1mm 间距 = 2 像素）。
+    // 故缩裹应落在 x=1（左的局部 1）与 x=2（右的局部 0）。
+    // 这个形状【非对称】是刻意的：全写 1、忽略偏移、只处理首个实例
+    // 三类 bug 都会得到不同的结果而被抓住。
+    const std::vector<std::uint8_t> expected{0U, 1U, 1U, 0U};
+    // 四个像素全是模型，但只有两个是缩裹——这组【互不相同】的期望值
+    // 同时钉住两张掩膜没有被写串。
+    const std::vector<std::uint8_t> expectedModel{1U, 1U, 1U, 1U};
+    return ExpectTrue(result.IsValid(), "whole-plate transfer compose is valid")
+        && ExpectTrue(
+            captured.size() == 1U,
+            "plate mask sink fires exactly once per composed layer")
+        && ExpectTrue(
+            !captured.empty() && captured.front() == expected,
+            "whole-plate transfer mask lands where each instance was placed")
+        && ExpectTrue(
+            !capturedModel.empty() && capturedModel.front() == expectedModel,
+            "whole-plate model mask covers every placed model pixel")
+        && ExpectTrue(
+            !captured.empty() && captured.front() != capturedModel.front(),
+            "model and transfer masks are not the same buffer");
+}
+
+bool TransferMaskIsEmptyUnderNonModelOwnership()
+{
+    // 缩裹是模型自身的一部分（甲选裁定），支撑与外圈光油归属下 T 恒为 0。
+    // 若把 T 写在了归属判断之外，这一条会变红。
+    slicer_core::SceneLayerComposeRequest request = MakeRequest();
+    request.globalgrid = MakeGrid(4, 1, 1);
+    slicer_core::SceneInstanceRaster only =
+        MakeInstance("only", MakeGrid(4, 1, 1));
+    AddModel(only, 0, 0, 0, {10U, 20U, 30U, 255U});
+    AddTransfer(only, 0, 0, 0);
+    AddSupport(only, 0, 2, 0);
+    // 故意给支撑像素也打上缩裹占位：归属不对就不该写出去。
+    AddTransfer(only, 0, 2, 0);
+    request.instances = {only};
+
+    std::vector<std::uint8_t> mask;
+    std::vector<std::uint8_t> modelMask;
+    request.platemasksink =
+        [&mask, &modelMask](
+            const int,
+            const std::span<const std::uint8_t> composedModel,
+            const std::span<const std::uint8_t> composed)
+        {
+            modelMask.assign(composedModel.begin(), composedModel.end());
+            mask.assign(composed.begin(), composed.end());
+        };
+
+    const slicer_core::SceneLayerComposeResult result =
+        slicer_core::ComposeSceneLayers(request);
+    const std::vector<std::uint8_t> expected{1U, 0U, 0U, 0U};
+    // 模型掩膜同样只认 Model 归属：支撑像素（x=2）不得计入。
+    const std::vector<std::uint8_t> expectedModel{1U, 0U, 0U, 0U};
+    return ExpectTrue(result.IsValid(), "support-only transfer compose is valid")
+        && ExpectTrue(
+            mask == expected,
+            "transfer stays on model pixels and never on support pixels")
+        && ExpectTrue(
+            modelMask == expectedModel,
+            "model mask counts model ownership only, never support");
+}
+
+bool PlateSevenChannelAssemblyWritesTransferOnly()
+{
+    // MW3-04：整版装配走的是【现有】ComposeRgbwsvtLayer，与单模型路径同一函数。
+    // 判据：缩裹像素必须丢弃全部六通道只写 T；非缩裹的模型像素必须原样保留
+    // 六通道且 T 留空。两个实例的 RGB 取值不同，便于区分摆放错误。
+    slicer_core::SceneLayerComposeRequest request = MakeRequest();
+    request.globalgrid = MakeGrid(4, 1, 1);
+    slicer_core::SceneInstanceRaster first =
+        MakeInstance("left", MakeGrid(2, 1, 1));
+    slicer_core::SceneInstanceRaster second =
+        MakeInstance("right", MakeGrid(2, 1, 1, 0.2, 0.0, 0.0));
+    AddModel(first, 0, 0, 0, {10U, 20U, 30U, 255U});
+    AddModel(first, 0, 1, 0, {11U, 21U, 31U, 255U});
+    AddTransfer(first, 0, 1, 0);
+    AddModel(second, 0, 0, 0, {40U, 50U, 60U, 255U});
+    AddModel(second, 0, 1, 0, {41U, 51U, 61U, 255U});
+    AddTransfer(second, 0, 0, 0);
+    request.instances = {first, second};
+
+    std::vector<std::uint8_t> modelMask;
+    std::vector<std::uint8_t> transferMask;
+    request.platemasksink =
+        [&modelMask, &transferMask](
+            const int,
+            const std::span<const std::uint8_t> composedModel,
+            const std::span<const std::uint8_t> composedTransfer)
+        {
+            modelMask.assign(composedModel.begin(), composedModel.end());
+            transferMask.assign(
+                composedTransfer.begin(), composedTransfer.end());
+        };
+
+    const slicer_core::SceneLayerComposeResult result =
+        slicer_core::ComposeSceneLayers(request);
+    if (!ExpectTrue(result.IsValid(), "plate compose is valid"))
+    {
+        return false;
+    }
+
+    const slicer_core::RgbwsvtProtocol protocol =
+        slicer_core::CurrentRgbwsvtProtocol();
+    const slicer_core::RgbwsvtProductionLayer plate =
+        slicer_core::ComposeRgbwsvtLayer(
+            result.layers.at(0U),
+            modelMask,
+            transferMask,
+            protocol.printValue);
+
+    const auto channelAt =
+        [&plate](const int x, const std::size_t channel)
+        {
+            return plate.channels.at(
+                static_cast<std::size_t>(x)
+                    * slicer_core::kRgbwsvtChannelCount
+                + channel);
+        };
+    const std::uint8_t empty = protocol.emptyValue;
+    const std::uint8_t print = protocol.printValue;
+    constexpr std::size_t kTransfer = slicer_core::kTransferChannelOffset;
+
+    bool passed = ExpectTrue(
+        plate.channels.size()
+            == 4U * slicer_core::kRgbwsvtChannelCount,
+        "plate layer is seven channels wide");
+    passed = ExpectTrue(
+                 channelAt(0, 0U) == 10U && channelAt(0, 1U) == 20U
+                     && channelAt(0, 2U) == 30U
+                     && channelAt(0, kTransfer) == empty,
+                 "left non-transfer pixel keeps six channels and leaves T empty")
+        && passed;
+    passed = ExpectTrue(
+                 channelAt(1, 0U) == empty && channelAt(1, 1U) == empty
+                     && channelAt(1, 3U) == empty && channelAt(1, 5U) == empty
+                     && channelAt(1, kTransfer) == print,
+                 "left transfer pixel discards all six channels and writes only T")
+        && passed;
+    passed = ExpectTrue(
+                 channelAt(2, 0U) == empty
+                     && channelAt(2, kTransfer) == print,
+                 "right transfer pixel also writes only T")
+        && passed;
+    return ExpectTrue(
+               channelAt(3, 0U) == 41U && channelAt(3, 1U) == 51U
+                   && channelAt(3, kTransfer) == empty,
+               "right non-transfer pixel is untouched")
+        && passed;
 }
 
 bool SingleInstancePreservesWriterReadyBytes()
@@ -856,6 +1065,9 @@ int main()
         {"opaque_white_rgb_only_model_pixel_has_actionable_failure", OpaqueWhiteRgbOnlyModelPixelHasActionableFailure},
         {"deterministic_composition_produces_identical_bytes", DeterministicCompositionProducesIdenticalBytes},
         {"grid_and_instance_protocol_failures_are_stable", GridAndInstanceProtocolFailuresAreStable},
+        {"whole_plate_transfer_mask_follows_model_ownership", WholePlateTransferMaskFollowsModelOwnership},
+        {"transfer_mask_is_empty_under_non_model_ownership", TransferMaskIsEmptyUnderNonModelOwnership},
+        {"plate_seven_channel_assembly_writes_transfer_only", PlateSevenChannelAssemblyWritesTransferOnly},
     };
 
     bool passed{true};

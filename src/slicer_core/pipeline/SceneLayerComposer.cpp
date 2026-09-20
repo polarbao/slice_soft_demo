@@ -698,10 +698,19 @@ void WriteOwnedPixel(
     const SceneInstanceRasterLayer& source,
     const std::size_t sourcePixel,
     const SceneRasterOwnership ownership,
-    const RgbwsvProtocol& protocol)
+    const RgbwsvProtocol& protocol,
+    const std::span<std::uint8_t> transferMaskOut)
 {
     const std::size_t destinationBase = destinationPixel * kChannelCount;
     const std::size_t sourceBase = sourcePixel * kChannelCount;
+    // MW3-01：整版 T 掩膜与六通道字节同进同出。空 span = 六通道模式，整条跳过。
+    //
+    // 这里必须【先清后写】，理由与下方 std::fill_n 相同：本像素可能是被
+    // 另一个实例改写过来的，上一任拥有者的 T 不能留下。
+    if (!transferMaskOut.empty())
+    {
+        transferMaskOut[destinationPixel] = 0U;
+    }
     std::fill_n(
         destination.begin() + static_cast<std::ptrdiff_t>(destinationBase),
         kChannelCount,
@@ -721,6 +730,13 @@ void WriteOwnedPixel(
                 destination.at(destinationBase + channel) =
                     source.output.channels.at(sourceBase + channel);
             }
+        }
+        // 只有 Model 归属才可能带 T：缩裹是模型自身的一部分，不是外加层。
+        // 外圈光油与支撑归属下 T 恒为 0，已由上方的清位保证。
+        if (!transferMaskOut.empty() && !source.transfermask.empty())
+        {
+            transferMaskOut[destinationPixel] =
+                source.transfermask.at(sourcePixel) != 0U ? 1U : 0U;
         }
     }
     else if (ownership == SceneRasterOwnership::OuterVarnish)
@@ -747,7 +763,8 @@ bool ResolveCrossInstancePixel(
     std::vector<int>& ownerindices,
     std::vector<std::uint8_t>& destination,
     const std::vector<InstancePlacement>& placements,
-    const int globalLayerIndex)
+    const int globalLayerIndex,
+    const std::span<std::uint8_t> transferMaskOut)
 {
     const SceneRasterOwnership currentOwnership =
         ownership.at(destinationPixel);
@@ -797,7 +814,8 @@ bool ResolveCrossInstancePixel(
             sourceLayer,
             sourcePixel,
             sourceOwnership,
-            request.protocol);
+            request.protocol,
+            transferMaskOut);
         ownership.at(destinationPixel) = sourceOwnership;
         ownerindices.at(destinationPixel) =
             static_cast<int>(placement.statisticsindex);
@@ -977,6 +995,14 @@ static SceneLayerComposeResult ComposeSceneLayersWithInstances(
         globalPixelCount,
         SceneRasterOwnership::Empty);
     std::vector<int> ownerindices(globalPixelCount, -1);
+    // MW3-01：只有请求整版 T 时才分配，否则一个字节都不占。
+    std::vector<std::uint8_t> globalTransferMask;
+    std::vector<std::uint8_t> globalModelMask;
+    if (request.platemasksink)
+    {
+        globalTransferMask.assign(globalPixelCount, 0U);
+        globalModelMask.assign(globalPixelCount, 0U);
+    }
     for (int globalLayerIndex{0};
          globalLayerIndex < request.globalgrid.layercount;
          ++globalLayerIndex)
@@ -991,6 +1017,8 @@ static SceneLayerComposeResult ComposeSceneLayersWithInstances(
             ownership.end(),
             SceneRasterOwnership::Empty);
         std::fill(ownerindices.begin(), ownerindices.end(), -1);
+        // 与 ownership 同步逐层重置：上一层的 T 不得渗进本层。
+        std::fill(globalTransferMask.begin(), globalTransferMask.end(), 0U);
 
         RgbwsvProductionLayer output;
         output.layerIndex = globalLayerIndex;
@@ -1096,7 +1124,8 @@ static SceneLayerComposeResult ComposeSceneLayersWithInstances(
                             ownerindices,
                             output.channels,
                             placements,
-                            globalLayerIndex))
+                            globalLayerIndex,
+                            globalTransferMask))
                     {
                         result.composems =
                             std::chrono::duration<double, std::milli>(
@@ -1175,6 +1204,22 @@ static SceneLayerComposeResult ComposeSceneLayersWithInstances(
             layerStatistics.printPixels[channel] =
                 static_cast<std::uint64_t>(globalPixelCount)
                 - layerStatistics.emptyPixels[channel];
+        }
+        if (request.platemasksink)
+        {
+            // MW3-01/04：本层两张整版掩膜已定案，与六通道层同批次交出。
+            // 必须在 output 被 move 走之前调用，保证三者同属本层。
+            //
+            // 模型掩膜在此由归属【现算】：归属数组本就逐像素维护着，
+            // 再开一个并行缓冲去热循环里写它是重复记账。这一趟转换
+            // 只在请求整版 T 时发生，六通道路径一行都不多跑。
+            for (std::size_t pixel{0U}; pixel < globalPixelCount; ++pixel)
+            {
+                globalModelMask[pixel] =
+                    ownership[pixel] == SceneRasterOwnership::Model ? 1U : 0U;
+            }
+            request.platemasksink(
+                globalLayerIndex, globalModelMask, globalTransferMask);
         }
         if (request.layersink)
         {

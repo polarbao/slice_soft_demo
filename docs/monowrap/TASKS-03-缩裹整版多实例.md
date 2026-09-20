@@ -36,10 +36,10 @@
 | 编号 | 任务 | 依赖 | 状态 |
 | --- | --- | --- | --- |
 | MW3-00 | 落基准：当前单实例缩裹产出的字节级快照，作为「行为不变」的判据 | — | ✅ **完成**：10/10 件、4135 产物，`E:\slicesoft-monowrap-mw300\snapshot-before.json` |
-| MW3-01 | `SceneInstanceRasterLayer` 加可选 `transfermask`；合成器在唯一的 `WriteOwnedPixel` 调用点顺带写整版 T 掩膜（见 ANALYSIS-04 §6d） | MW3-00 | ⬜ |
-| MW3-02 | 整版 T 掩膜经 `layersink` 同批交出，供装配使用 | MW3-01 | ⬜ |
+| MW3-01 | `SceneInstanceRasterLayer` 加可选 `transfermask`；合成器在唯一的 `WriteOwnedPixel` 调用点顺带写整版 T 掩膜（见 ANALYSIS-04 §6d） | MW3-00 | ✅ **完成**：字节基线 738 产物仍逐字节一致 |
+| MW3-02 | 整版 T 掩膜经 `transfermasksink` 与六通道层同批交出 | MW3-01 | ✅ **完成**：2 条用例经双向故障注入证伪 |
 | MW3-03 | **反例验证**跨实例 T×T / T×V 触发既有 `InstanceOverlap` / `MaterialConflict`（**无需新写拒绝逻辑**，已核查，见 ANALYSIS-04 §6c） | MW3-02 | ⬜ |
-| MW3-04 | 整版七通道层装配：把整版六通道层 + 两张整版掩膜交给**现有** `ComposeRgbwsvtLayer` | MW3-02 | ⬜ |
+| MW3-04 | 整版七通道层装配：把整版六通道层 + 两张整版掩膜交给**现有** `ComposeRgbwsvtLayer` | MW3-02 | ✅ **完成**：端到端用例经故障注入证伪 |
 | MW3-05 | `RunTransferProductionEntry` 改道为 `RunMultiModelProductionService` | MW3-04 | ⬜ |
 | MW3-06 | 放开两道 fail-closed 护栏（**须先出授权文档**） | MW3-05 | ⬜ |
 | MW3-07 | 包写入器 / 报告 / 契约 schema 跟随七通道 | MW3-05 | ⬜ |
