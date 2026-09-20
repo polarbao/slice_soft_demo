@@ -151,6 +151,44 @@ T 通道需要明确：
 | 内存 | 整版 N 实例七通道比单实例六通道占用更大 | `layersink`/`layerprovider` 逐层出入口已存在，沿用即可 |
 | 契约 | 报告与 schema 的通道枚举要跟随 | 同版本放宽的做法见 [DECISION-01](DECISION-01-开工门四问的裁定与依据.md) |
 
+## 6b. 设计修正：**模板化合成器**，不动共享六通道类型
+
+§4.3 列出「绑死在 6」的清单后，第一反应是把 `kSceneChannelCount` 与那几个
+`std::array<..., 6>` 泛化掉。**实测影响面后否掉了这个方向**：
+
+| 符号 | 使用文件数 |
+| --- | --- |
+| `RgbwsvProtocol` | 17 |
+| `RgbwsvProductionLayer` | 27 |
+| `channelOrder` | 60 |
+| 直接硬写 `std::array<std::string, 6>` / `<std::uint64_t, 6>` | 24 处 |
+
+把共享类型的数组改成变长，等于在**六通道生产路径**上动刀，而六通道正是
+11 例字节级基线守着的东西——为了加 T 去动它，风险与收益完全不成比例。
+
+**改为：把合成器模板化，按「通道数 + 协议类型 + 层类型」实例化两份。**
+
+- 六通道实例化继续用 `RgbwsvProtocol` / `RgbwsvProductionLayer`（`array<,6>` 原样不动），
+  编译期常量不变 ⇒ **生成的代码与现在等价，字节级基线最有把握不被碰**；
+- 七通道实例化直接用**已经存在**的 `RgbwsvtProtocol` / `RgbwsvtProductionLayer`（`array<,7>`）；
+- 改动面收敛到合成器自身 + 新增的七通道调用路径，共享类型**零改动**。
+
+实测合成器里真正用到 `kChannelCount` 的只有 **5 个函数**
+（`ComputeLayerSizes` / `ValidateInstance` / `ValidateLayer` /
+`ComposeSceneLayersWithInstances` / `WriteOwnedPixel`），
+外加 `SameChannelOrder` 的 `array<std::string, 6>` 签名要跟着模板化。
+1467 行里需要动的是这几处，不是全文。
+
+### T 的归属规则不需要写任何代码
+
+通道下标是 S=4、V=5、T=6（`kTransferChannelOffset{6U}`）。
+`WriteOwnedPixel` 在 `Model` 归属下的逻辑是「除支撑外逐通道照抄，光油还要再查
+`modelvarnishownership`」——通道 6 既不是 `kSupportChannel` 也不是 `kVarnishChannel`，
+**天然落进通用分支，即「跟随 Model 归属」**，正是本专项裁定的甲选语义。
+
+也就是说甲选不仅是语义上更贴切的选择，**实现代价恰好为零**；
+乙选才需要新开归属类并改这个函数。MW3-03 因此缩小为「补重叠计数」一项。
+
 ## 7. 工作量评估
 
 | 档 | 内容 | 估计 |

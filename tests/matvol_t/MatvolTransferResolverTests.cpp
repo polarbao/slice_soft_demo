@@ -221,6 +221,37 @@ bool NewCraftProcessCopiesUseSevenChannelProtocol()
     return passed;
 }
 
+bool WholeModelResolvesWithoutConsultingMaterialTable()
+{
+    slicer_core::TransferChannelPolicyConfig policy;
+    policy.enabled = true;
+    policy.match_source = "whole_model";
+
+    // 无 mtl 的纯几何资产：材质表本就是空的，整模必须照样命中。
+    const slicer_core::TransferMaterialMatch empty =
+        slicer_core::ResolveTransferMaterial(policy, {});
+    // 有材质表时结果必须一致——整模不看表，这是「整模」二字的全部含义。
+    std::vector<slicer_core::MaterialInfo> infos;
+    infos.push_back(slicer_core::MaterialInfo{"01", {63U, 190U, 126U}, true});
+    infos.push_back(slicer_core::MaterialInfo{"02", {255U, 220U, 198U}, true});
+    const slicer_core::TransferMaterialMatch populated =
+        slicer_core::ResolveTransferMaterial(policy, infos);
+
+    bool passed = ExpectTrue(
+        empty.present && empty.wholeModel,
+        "whole_model resolves on an empty material table");
+    passed = ExpectTrue(
+                 empty.materialName
+                     == slicer_core::kWholeModelTransferMaterialName,
+                 "whole_model reports the synthetic material name")
+        && passed;
+    return ExpectTrue(
+               populated.present && populated.wholeModel
+                   && populated.materialName == empty.materialName,
+               "whole_model ignores a populated material table")
+        && passed;
+}
+
 }  // namespace
 
 // 三个真实资产的缩裹色必须都在【实际发布的工艺文件】里，而不是用例手搭的策略里。
@@ -295,11 +326,13 @@ int main()
     run(OldProcessConfigurationKeepsSixChannelProtocol(), "old_protocol_config");
     run(NewCraftProcessCopiesUseSevenChannelProtocol(), "new_craft_process_copies");
     run(ShippedProfileCoversEveryRealityTransferColour(), "shipped_profile_covers_reality_colours");
+    run(WholeModelResolvesWithoutConsultingMaterialTable(),
+        "whole_model_ignores_material_table");
     if (failures != 0)
     {
         std::cerr << "FAIL MatvolTransferResolverTests " << failures << " case(s)\n";
         return 1;
     }
-    std::cout << "PASS MatvolTransferResolverTests 10/10\n";
+    std::cout << "PASS MatvolTransferResolverTests 11/11\n";
     return 0;
 }

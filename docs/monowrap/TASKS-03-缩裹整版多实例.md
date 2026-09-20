@@ -35,9 +35,9 @@
 | 编号 | 任务 | 依赖 | 状态 |
 | --- | --- | --- | --- |
 | MW3-00 | 落基准：当前单实例缩裹产出的字节级快照，作为「行为不变」的判据 | — | ⬜ |
-| MW3-01 | `kSceneChannelCount` 与三处 `std::array<,6>` 泛化为随协议走 | MW3-00 | ⬜ |
-| MW3-02 | 合成器请求 / `layersink` / 统计结构改为容纳七通道 | MW3-01 | ⬜ |
-| MW3-03 | T 的跨实例归属语义落地（`WriteOwnedPixel` + 取消路径 + 重叠计数） | 裁定 | ⬜ |
+| MW3-01 | 合成器模板化，按通道数 / 协议 / 层类型实例化两份（**不动共享六通道类型**，见 ANALYSIS-04 §6b） | MW3-00 | ⬜ |
+| MW3-02 | 合成器请求 / `layersink` / 统计结构跟随模板参数 | MW3-01 | ⬜ |
+| MW3-03 | T 重叠计数（**归属规则本身无需改**：T 在下标 6，天然走 `Model` 通用分支） | MW3-01 | ⬜ |
 | MW3-04 | `MultiModelProductionService` 逐实例产七通道栅格 | MW3-02 | ⬜ |
 | MW3-05 | `RunTransferProductionEntry` 改道为 `RunMultiModelProductionService` | MW3-04 | ⬜ |
 | MW3-06 | 放开两道 fail-closed 护栏（**须先出授权文档**） | MW3-05 | ⬜ |

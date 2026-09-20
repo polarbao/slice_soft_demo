@@ -57,7 +57,7 @@
 | MONOWRAP-07 | 契约：`const`→`enum`，`minItems` 改为按 `matchSource` 条件约束 | 02 | ✅ **完成**，五种形态证伪全部符合预期 |
 | MONOWRAP-08 | 新建 CLI 工艺 `samples/configs/matvol_t/monowrap_whole_model_rgbwsvt.json` | 03,06 | ✅ **完成**（放在 `process_profiles/` **之外**，理由见 ANALYSIS-01 §4.5） |
 | MONOWRAP-09 | 目标目录 10 个 obj 实跑 | 08 | ✅ **完成，10/10 通过**，每件 `transferPrintPixels` 精确等于 `modelPixels` |
-| MONOWRAP-10 | 单测与契约门禁：整模模式的正例 + **反例** | 05,07 | ⬜ 未开始 |
+| MONOWRAP-10 | 单测与契约门禁：整模模式的正例 + **反例** | 05,07 | ✅ **完成**，4 条用例经故障注入证伪，见 §3.8 |
 | MONOWRAP-11 | 全量回归 + 字节级基线，失败集合与基线比对 | 09,10 | ⬜ 未开始 |
 
 **后续任务（UI 预设、配置整合、标签栏交互）见 [TASKS-02](TASKS-02-后续任务.md)。**
@@ -117,6 +117,45 @@ if (config.material_policy.varnish.enabled) {
 
 **教训**：看到「A 能做而 B 不能」时，先比两者的实现路径，而不是先调 B 的参数。
 **参数是症状，路径才是原因。**
+
+---
+
+## 3.8 MONOWRAP-10 的落地与证伪（2026-09-20）
+
+整模路径此前**没有任何单测**——`matvol_transfer_resolver_unit_tests` 与
+`matvol_transfer_volume_plan_tests` 两个早就存在的 ctest 目标里，
+`whole` 的命中数都是 0。唯一护栏是 `HostTransferProfileTests.cpp:381`，
+而它守的是**预设形状**（RGB/白墨/光油必须全关），不是算法。
+
+### 新增 4 条用例
+
+| 文件 | 用例 | 守什么 |
+| --- | --- | --- |
+| `TransferMaterialVolumePlanTests.cpp` | `whole_model_verbatim_mask` | 整模掩膜**逐像素等于**模型掩膜；且 `wholeModel` 已置位、`volume` 为空 |
+| 同上 | `whole_model_covers_colour_miss` | 同网格同掩膜下，颜色匹配落空而整模全覆盖——证明该分支**确实改变结果** |
+| 同上 | `whole_model_colours_fail_closed` | 整模配了颜色 = 配置矛盾，必须 `ConfigInvalid` |
+| `MatvolTransferResolverTests.cpp` | `whole_model_ignores_material_table` | 空材质表与有材质表结果一致，即「整模不看表」 |
+
+**两处刻意设计**：
+
+1. 正例用的是**混合掩膜 `{1,0,1,1}`**。若用全 1 掩膜，「逐像素照搬」与
+   「无脑全写 1」两种实现无法区分，测试会变成空转。
+2. 每条正例都**先断言 `plan.material.wholeModel` 与 `!plan.volume.has_value()`**，
+   即先钉死被测分支真的触发，再比对结果。
+
+### 证伪实测
+
+把 `MaterializeTransferLayerMask` 的整模分支改成无脑全写 1 后重编：
+
+```
+FAIL whole-model mask copies the model mask pixel for pixel
+CASE FAILED whole_model_verbatim_mask
+FAIL whole_model covers exactly what colour matching misses
+CASE FAILED whole_model_covers_colour_miss
+```
+
+3 条里 2 条变红、文案精确指向真因；还原后两个目标 2/2 全绿，
+源码 `git diff` 为空（确认还原彻底，没留注入痕迹）。
 
 ---
 

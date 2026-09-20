@@ -181,6 +181,129 @@ bool OpenMatchedRegionFailsClosed()
     return ExpectTrue(false, "matched open transfer must fail closed");
 }
 
+slicer_core::TransferChannelPolicyConfig WholeModelPolicy()
+{
+    slicer_core::TransferChannelPolicyConfig policy;
+    policy.enabled = true;
+    policy.match_source = "whole_model";
+    policy.topology.self_intersection_policy = "tolerate_closed_self_intersection";
+    policy.topology.max_self_intersection_pairs = 64;
+    return policy;
+}
+
+slicer_core::AdaptedTriangleMesh GreenMaterialMesh()
+{
+    slicer_core::AdaptedTriangleMesh mesh;
+    mesh.material_infos.push_back(
+        slicer_core::MaterialInfo{"01", {63U, 190U, 126U}, true});
+    return mesh;
+}
+
+slicer_core::MaterialVolumeGrid TwoByTwoGrid()
+{
+    slicer_core::MaterialVolumeGrid grid;
+    grid.widthPx = 2;
+    grid.heightPx = 2;
+    grid.layerCount = 1;
+    grid.pixelSizeXMm = 1.0;
+    grid.pixelSizeYMm = 1.0;
+    grid.layerThicknessMm = 1.0;
+    return grid;
+}
+
+bool WholeModelTakesModelMaskVerbatim()
+{
+    const slicer_core::TransferMaterialVolumePlan plan =
+        slicer_core::BuildTransferMaterialVolumePlan(
+            WholeModelPolicy(), GreenMaterialMesh(), TwoByTwoGrid());
+
+    // 先钉住被测分支确实触发：不然下面的逐像素比对可能整条空转。
+    bool passed = ExpectTrue(
+        plan.material.wholeModel, "whole_model policy resolves a whole-model match");
+    passed = ExpectTrue(
+                 plan.material.materialName
+                     == slicer_core::kWholeModelTransferMaterialName,
+                 "whole-model match reports the synthetic material name")
+        && passed;
+    // 整模的全部收益就在这一条：不建 volume，故不受流形与自交要求约束。
+    passed = ExpectTrue(
+                 !plan.volume.has_value(),
+                 "whole-model plan skips volume solving entirely")
+        && passed;
+    passed = ExpectTrue(plan.HasRegion(), "whole-model plan still reports a region")
+        && passed;
+
+    // 故意用非全 1 的掩膜：全 1 时「逐像素照搬」与「无脑全写 1」无法区分。
+    const std::vector<std::uint8_t> modelMask{1U, 0U, 1U, 1U};
+    std::vector<std::uint32_t> owner(4U, 7U);
+    std::vector<std::uint8_t> mask(4U, 9U);
+    slicer_core::MaterializeTransferLayerMask(plan, 0, modelMask, owner, mask);
+    passed = ExpectTrue(
+                 mask == modelMask,
+                 "whole-model mask copies the model mask pixel for pixel")
+        && passed;
+    return ExpectTrue(
+               std::all_of(owner.begin(), owner.end(), [](const std::uint32_t value)
+               {
+                   return value == slicer_core::kNoMaterialOwner;
+               }),
+               "whole-model mask claims no material owner")
+        && passed;
+}
+
+bool WholeModelCoversWhatColourMatchingMisses()
+{
+    // 同一网格、同一掩膜，只换 matchSource：颜色匹配落空，整模必须全覆盖。
+    // 这一条证明整模分支确实改变了结果，而不是碰巧与既有行为一致。
+    const slicer_core::AdaptedTriangleMesh mesh = GreenMaterialMesh();
+    const slicer_core::MaterialVolumeGrid grid = TwoByTwoGrid();
+    const std::vector<std::uint8_t> modelMask{1U, 0U, 1U, 1U};
+    std::vector<std::uint32_t> owner(4U);
+
+    const slicer_core::TransferMaterialVolumePlan colourPlan =
+        slicer_core::BuildTransferMaterialVolumePlan(
+            PolicyFor({255U, 220U, 198U}), mesh, grid);
+    std::vector<std::uint8_t> colourMask(4U, 9U);
+    slicer_core::MaterializeTransferLayerMask(
+        colourPlan, 0, modelMask, owner, colourMask);
+
+    const slicer_core::TransferMaterialVolumePlan wholePlan =
+        slicer_core::BuildTransferMaterialVolumePlan(
+            WholeModelPolicy(), mesh, grid);
+    std::vector<std::uint8_t> wholeMask(4U, 9U);
+    slicer_core::MaterializeTransferLayerMask(
+        wholePlan, 0, modelMask, owner, wholeMask);
+
+    return ExpectTrue(
+               !colourPlan.HasRegion()
+                   && std::all_of(
+                       colourMask.begin(), colourMask.end(),
+                       [](const std::uint8_t value) { return value == 0U; }),
+               "unmatched colour policy yields an empty transfer mask")
+        && ExpectTrue(
+            wholeMask == modelMask && wholeMask != colourMask,
+            "whole_model covers exactly what colour matching misses");
+}
+
+bool WholeModelWithColoursFailsClosed()
+{
+    // 整模不看材质表，配了颜色就是配置矛盾，必须在建 plan 时就拦掉。
+    slicer_core::TransferChannelPolicyConfig policy = WholeModelPolicy();
+    policy.material_diffuse_rgb_values.push_back({10U, 20U, 30U});
+    try
+    {
+        (void)slicer_core::BuildTransferMaterialVolumePlan(
+            policy, GreenMaterialMesh(), TwoByTwoGrid());
+    }
+    catch (const slicer_core::TransferChannelError& error)
+    {
+        return ExpectTrue(
+            error.Code() == slicer_core::TransferChannelErrorCode::ConfigInvalid,
+            "whole_model with configured colours fails closed");
+    }
+    return ExpectTrue(false, "whole_model with configured colours must fail closed");
+}
+
 }  // namespace
 
 int main()
@@ -197,11 +320,15 @@ int main()
     run(Reality03BuildsMaterial02OnlyPlan(), "reality_03_transfer_plan");
     run(MissingOptionalRegionMaterializesEmptyMask(), "missing_optional_empty_mask");
     run(OpenMatchedRegionFailsClosed(), "open_region_fail_closed");
+    run(WholeModelTakesModelMaskVerbatim(), "whole_model_verbatim_mask");
+    run(WholeModelCoversWhatColourMatchingMisses(),
+        "whole_model_covers_colour_miss");
+    run(WholeModelWithColoursFailsClosed(), "whole_model_colours_fail_closed");
     if (failures != 0)
     {
         std::cerr << "FAIL TransferMaterialVolumePlanTests " << failures << " case(s)\n";
         return 1;
     }
-    std::cout << "PASS TransferMaterialVolumePlanTests 3/3\n";
+    std::cout << "PASS TransferMaterialVolumePlanTests 6/6\n";
     return 0;
 }
