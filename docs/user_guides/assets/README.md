@@ -27,7 +27,7 @@ gubao05-dingwei.obj 场景；图 23..27 来自当前构建宿主 `--hostux-ui-se
 ## RIP 更新配图（2026-09-09）
 
 以下均为本机 `runtime/slicesoft/Release/slicer_ui_host_sim.exe` 的真实界面截图，
-RIP 模块 1.2.0，来源 RIPDLL_20260909；直接采集宿主右侧区域，没有重绘或更改控件内容。
+图中 RIP 控件采集于模块 1.2.0 / RIPDLL_20260909；模块 1.3.0 / RIPDLL_20260920 未改变这些 UI 选项，因此继续复用原始截图，不将旧截图冒充新版本二进制证据。
 
 | 文件（packaged_slicer 下） | 内容 | 像素 |
 |---|---|---|

@@ -797,9 +797,9 @@ pixel=… values=255,255,255,255,255,255 ownership=1,0,0,0
 
 ### 11.8 RIP 升级后选项或模块不匹配
 
-确认打开的是本次部署的程序，并检查应用旁 `modules/rip/rip_module.json` 的模块版本为 `1.2.0`。
-本次源目录是 `rip_project/RIPDLL_20260909`，后续日期版须由维护人员显式选定并重新打包，放入一个新日期文件夹不会自动切换。
-不要只覆盖 EXE/DLL：本次 ICC 和线性化表也更新，必须整套同步；私有 `tiff.dll` 不能覆盖宿主根目录的 TIFF 库。
+确认打开的是本次部署的程序，并检查应用旁 `modules/rip/rip_module.json` 的模块版本为 `1.3.0`。
+本次二进制来源是 `rip_project/RIPDLL_20260920`，资源来源是 `rip_project/RIPDLL_20260909/CmykFiles`；0917、0918 是中间版本，不进入部署选择。两个来源均由维护人员显式固定，放入一个新日期文件夹不会自动切换。
+不要手工拼装或只覆盖 EXE/DLL：应由打包脚本生成完整模块并核对双来源 provenance；私有 `tiff.dll` 不能覆盖宿主根目录的 TIFF 库。20260920 默认过滤 RIP DEBUG 日志，正常使用不应附加 `--verbose`。
 配置/结果 schema 已升级 v3，旧版程序不能据此认定兼容。
 
 ### 11.9 切片成功但 RIP 失败，或只生成 rip_diagnostic

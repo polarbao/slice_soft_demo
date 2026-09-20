@@ -2,7 +2,7 @@
 
 > 适用状态：`SLICER_SIDE_COMPLETE / EXTERNAL_VALIDATION_DEFERRED`
 > 当前模块：本地工程候选，不代表目标打印软件或实物打印已验收
-> 更新日期：2026-09-14；适用 RIP 模块 1.2.0 / RIPDLL_20260909；设置与结果合同 v3
+> 更新日期：2026-09-20；适用 RIP 模块 1.3.0 / RIPDLL_20260920；设置与结果合同 v3
 
 ## 1. 目录
 
@@ -126,10 +126,11 @@ W/S/V 超过设备灰阶上限（2bit 为 W6/S9/V9）都会整单失败且不留
 
 ## 3. 迁移
 
-本次固定来源为 `rip_project/RIPDLL_20260909`，由仓库的 `rip_module/source.json` 选择。
-旧版留在 `rip_project/RIPDLL`；后续 `RIPDLL_日期` 只作为候选，须经维护人员检查并显式更新来源，
-不会自动取日期最新的文件夹。20260909 版本除 EXE/DLL 外，CMYK.icc 与 linear.csv 也变化，
-因此必须更新整套资源，不能仅替换二进制。
+本次由仓库的 `rip_module/source.json` 分别固定二进制和资源来源：EXE/DLL/私有 TIFF 取
+`rip_project/RIPDLL_20260920`，完整 `CmykFiles` 取最近一次已验收的
+`rip_project/RIPDLL_20260909/CmykFiles`。`RIPDLL_20260917`、`RIPDLL_20260918` 是中间版本，
+不进入部署选择。后续 `RIPDLL_日期` 只作为候选，须经维护人员检查并显式更新来源，不会自动取日期最新目录。
+不要向供应方目录手工复制资源；生成模块会在 provenance 中分别记录二进制和资源来源。
 
 迁移到打印软件时复制整个 `modules/rip` 目录，不挑选 DLL：
 
@@ -153,10 +154,14 @@ LibTIFF 4.7.1。模块清单中的 11 个运行文件会逐个校验大小和 SH
 
 ```powershell
 powershell -NoProfile -ExecutionPolicy Bypass -File scripts/PackageRipModule.ps1 `
-  -SourceRoot rip_project/RIPDLL_20260909 -Destination output/ripflow/modules/rip
+  -Destination output/ripflow/modules/rip
 powershell -NoProfile -ExecutionPolicy Bypass -File scripts/TestRipModulePackage.ps1 `
   -ModuleDirectory output/ripflow/modules/rip
 ```
+
+需要显式工程对照时，同时提供 `-SourceRoot rip_project/RIPDLL_20260920` 与
+`-ResourceSourceRoot rip_project/RIPDLL_20260909/CmykFiles`。只传 `-SourceRoot` 仍按旧式完整目录处理，
+会在其下查找 `CmykFiles`。
 
 本机隔离目录迁移验证可使用 `scripts/TestRipModuleMigration.ps1`。它会在新目录部署 Qt、复制整个
 模块并执行真实 RIP；外部交付前仍需在目标打印软件的干净机环境重新验收。
