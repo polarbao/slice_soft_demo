@@ -1,10 +1,13 @@
-# TASKS MONOWRAP 单材料缩裹专项任务清单
+# TASKS-01 单材料缩裹专项任务清单
 
-> 状态：**方案阶段，未开工**（状态以下方任务表为准）
-> 日期：2026-09-20 ｜ 专项：**MONOWRAP**
-> 分支：`feature/claude-monowrap-single-material-transfer`（分叉自 `develop/packaged-slicer`）
-> 上下文：`docs/slice/DOC/DOC_ANALYSIS_MONOWRAP_单材料缩裹现状与改动面.md`
-> 四问比较：`docs/slice/DOC/DOC_DESIGN_MONOWRAP_开工门四问的优劣比较与建议.md`（2026-09-20 追加）
+> 目录：`docs/monowrap/` ｜ 日期：2026-09-20 ｜ 专项：**MONOWRAP**
+> 状态：**已裁定，开发中**（逐项状态以下方任务表为准）
+> 索引：[README](README.md)
+> 开发分支：`feature/claude-monowrap-whole-model-transfer`（分叉自 `develop/packaged-slicer`）
+> 方案阶段分支（已合并并删除）：`feature/claude-monowrap-single-material-transfer`、
+> `feature/claude-monowrap-gate-answers`
+> 上下文：[ANALYSIS-01](ANALYSIS-01-现状与改动面.md)
+> 四问比较：`DECISION-01-开工门四问的裁定与依据.md`（2026-09-20 追加）
 > 授权：用户 2026-09-20 提出本专项并要求
 > 「可先创建相关任务清单、任务方案，补齐上下文文档数据，后续进行开发时可按照相关方案及任务进行处理」。
 > **本次只交方案与上下文，未写任何生产代码。**
