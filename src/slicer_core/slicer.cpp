@@ -1106,7 +1106,15 @@ SliceRunResult run_slicer(const std::filesystem::path& config_path, const SliceR
             materialClosureExactLayers.push_back(std::move(closureOutcome.result));
         }
         std::optional<RgbwsvtProductionLayer> transferLayer;
-        if (transferSession.has_value())
+        if (transferSession.has_value() && options.transfer_plate_compute_only)
+        {
+            // 整版路径：只算掩膜。七通道层由整版合成器在整版坐标上装配，
+            // 逐实例再建一份（还要跟着补白搬一次）没有任何消费者——
+            // 这条路上 write_tiff_layers 恒为 false。
+            MaterializeLegacyTransferChannelMask(
+                transferSession.value(), layer_index, current_model_mask);
+        }
+        else if (transferSession.has_value())
         {
             transferLayer = ComposeLegacyTransferChannelLayer(
                 transferSession.value(),

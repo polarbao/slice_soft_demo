@@ -16,11 +16,16 @@
  * 网格刻意取粗（低 DPI、厚层）：本条不变量说的是**通道落点**，与分辨率无关，
  * 粗网格一样能证，且秒级跑完。产线分辨率的验证由字节级基线负责。
  */
+#include "../support/MonowrapPlateScene.h"
 #include "slicer_core/TiffReadApi.h"
 #include "slicer_core/config.h"
 #include "slicer_core/json_value.h"
 #include "slicer_core/model.h"
+#include "slicer_core/output/rgbwsvt/RgbwsvtProtocol.h"
 #include "slicer_core/output/rgbwsvt/RgbwsvtTiffIo.h"
+#include "slicer_core/api/Cancellation.h"
+#include "slicer_core/api/SliceFacade.h"
+#include "slicer_core/engine/ProductionSliceFacadeFactory.h"
 #include "slicer_core/pipeline/MultiModelProductionService.h"
 #include "slicer_core/scene/MultiModelScene.h"
 #include "slicer_core/scene/SceneEffectiveConfig.h"
@@ -29,6 +34,7 @@
 #include "slicer_core/system/Sha256.h"
 
 #include <algorithm>
+#include <chrono>
 #include <cstdint>
 #include <filesystem>
 #include <fstream>
@@ -42,167 +48,40 @@ namespace
 
 /// 与 CMake 的 SKIP_RETURN_CODE 对应，改动时必须两处同步。
 constexpr int kSkipReturnCode{111};
-constexpr int kInstanceCount{12};
-constexpr int kDpi{150};
-constexpr double kLayerHeightMm{0.2};
+using monowrap_test::kDpi;
+using monowrap_test::kInstanceCount;
+using monowrap_test::kLayerHeightMm;
+using monowrap_test::kOriginOffsetMm;
+using monowrap_test::BuildPlateScene;
+using monowrap_test::SourceRoot;
+using monowrap_test::WriteProfileVariant;
 constexpr std::size_t kRgbwsvChannels{6U};
 constexpr std::size_t kRgbwsvtChannels{7U};
 constexpr std::size_t kVarnishChannel{5U};
 constexpr std::size_t kTransferChannel{6U};
 constexpr std::uint8_t kEmptyValue{255U};
 
-std::filesystem::path SourceRoot()
-{
-#ifdef SLICESOFT_SOURCE_DIR
-    return std::filesystem::path{SLICESOFT_SOURCE_DIR};
-#else
-    return std::filesystem::current_path();
-#endif
-}
-
-std::string ReadFile(const std::filesystem::path& path)
-{
-    std::ifstream input{path, std::ios::binary};
-    if (!input)
-    {
-        throw std::runtime_error("failed to read " + path.generic_string());
-    }
-    std::ostringstream buffer;
-    buffer << input.rdbuf();
-    return buffer.str();
-}
-
-/// 复制基准工艺并只改叶子键：模型路径、DPI、层厚。
-/// 整块替换 input / output 会把该工艺其余设置一并抹掉，本仓踩过这个坑。
-std::filesystem::path WriteProfileVariant(
-    const std::filesystem::path& basePath,
-    const std::filesystem::path& destination,
-    const std::filesystem::path& modelPath)
-{
-    std::ifstream source{basePath, std::ios::binary};
-    if (!source)
-    {
-        throw std::runtime_error(
-            "failed to read base profile " + basePath.generic_string());
-    }
-    slicer_core::Json::Object root = slicer_core::Json::parse(source).as_object();
-    slicer_core::Json::Object input = root.at("input").as_object();
-    input["modelPath"] =
-        std::filesystem::absolute(modelPath).lexically_normal().generic_string();
-    root["input"] = slicer_core::Json{std::move(input)};
-    slicer_core::Json::Object output = root.at("output").as_object();
-    // 场景准入要求有效配置与显式工艺的 DPI / 层厚一致，否则 SCENE_PROFILE_MISMATCH。
-    output["dpiX"] = static_cast<double>(kDpi);
-    output["dpiY"] = static_cast<double>(kDpi);
-    output["layerThicknessMm"] = kLayerHeightMm;
-    root["output"] = slicer_core::Json{std::move(output)};
-    std::filesystem::create_directories(destination.parent_path());
-    std::ofstream out{destination, std::ios::binary};
-    out << slicer_core::Json{std::move(root)}.dump();
-    return destination;
-}
-
-slicer_core::MultiModelScene BuildPlateScene(
-    const std::vector<std::filesystem::path>& profileConfigPaths)
-{
-    std::vector<slicer_core::SceneModel> models;
-    std::vector<std::filesystem::path> modelPaths;
-    slicer_core::SliceConfig firstProfile;
-    for (std::size_t index{0U}; index < profileConfigPaths.size(); ++index)
-    {
-        slicer_core::SliceConfig profile =
-            slicer_core::load_slice_config(profileConfigPaths.at(index));
-        slicer_core::SceneModel model = slicer_core::load_model_report(
-            profile, profileConfigPaths.at(index).parent_path());
-        modelPaths.push_back(
-            std::filesystem::absolute(model.model_path).lexically_normal());
-        if (index == 0U)
-        {
-            firstProfile = profile;
-        }
-        models.push_back(std::move(model));
-    }
-
-    slicer_core::MultiModelScene scene;
-    scene.sceneid = "scene-monowrap-plate";
-    scene.scenerevision = 1U;
-    scene.resolvedprofileid = firstProfile.material_process_profile.name;
-
-    double modelWidth{0.0};
-    double modelHeight{0.0};
-    for (const slicer_core::SceneModel& item : models)
-    {
-        modelWidth = std::max(modelWidth, item.bbox_mm.max.x - item.bbox_mm.min.x);
-        modelHeight = std::max(modelHeight, item.bbox_mm.max.y - item.bbox_mm.min.y);
-    }
-    constexpr double marginMm{2.0};
-    constexpr double gapMm{2.0};
-    // 生产准入要求构建体积来自设备档案且非 fixture，否则
-    // BuildVolumeFixtureNotProduction。本测试要的正是生产口径的包。
-    scene.buildvolume.source = slicer_core::BuildVolumeSource::DeviceProfile;
-    scene.buildvolume.widthmm = marginMm * 2.0 + modelWidth * kInstanceCount
-        + gapMm * (kInstanceCount - 1);
-    scene.buildvolume.heightmm = marginMm * 2.0 + modelHeight;
-    scene.buildvolume.origin = slicer_core::BuildVolumeOrigin::LowerLeft;
-    scene.buildvolume.xdirection = slicer_core::BuildVolumeAxisDirection::Positive;
-    scene.buildvolume.ydirection = slicer_core::BuildVolumeAxisDirection::Positive;
-    scene.buildvolume.isfixture = false;
-
-    for (std::size_t index{0U}; index < modelPaths.size(); ++index)
-    {
-        slicer_core::ResourceScope scope;
-        scope.resourcescopeid = "scope-plate-" + std::to_string(index);
-        scope.kind = slicer_core::ResourceScopeKind::ObjDirectory;
-        scope.rootpath = modelPaths.at(index).parent_path();
-        scene.resourcescopes.push_back(scope);
-
-        slicer_core::ModelSource source;
-        source.modelid = "model-plate-" + std::to_string(index);
-        source.sourcepath = modelPaths.at(index);
-        source.format = "obj";
-        source.resourcescopeid = scope.resourcescopeid;
-        source.sourcehash =
-            slicer_core::ComputeSha256(ReadFile(modelPaths.at(index)));
-        source.resourcehash =
-            slicer_core::ComputeSceneResourceHash(models.at(index));
-        source.displayname = "plate-" + std::to_string(index);
-        scene.models.push_back(std::move(source));
-    }
-
-    for (int index{0}; index < kInstanceCount; ++index)
-    {
-        // 实例数多于模型数时轮转取用——用户那一版正是 12 件、目录里 10 个模型。
-        const std::size_t modelIndex =
-            static_cast<std::size_t>(index) % scene.models.size();
-        const slicer_core::SceneModel& bound = models.at(modelIndex);
-        slicer_core::SceneModelInstance item;
-        item.instance.instanceid = "instance-" + std::to_string(index + 1);
-        item.instance.modelid = scene.models.at(modelIndex).modelid;
-        item.instance.sourcetransformidentity =
-            modelPaths.at(modelIndex).generic_string();
-        item.instance.sourcebboxmm = bound.bbox_mm;
-        item.instance.transform.translatexmm = marginMm - bound.bbox_mm.min.x
-            + static_cast<double>(index) * (modelWidth + gapMm);
-        item.instance.transform.translateymm = marginMm - bound.bbox_mm.min.y;
-        item.instance.effectivebboxmm = bound.bbox_mm;
-        item.instance.effectivebboxmm.min.x += item.instance.transform.translatexmm;
-        item.instance.effectivebboxmm.max.x += item.instance.transform.translatexmm;
-        item.instance.effectivebboxmm.min.y += item.instance.transform.translateymm;
-        item.instance.effectivebboxmm.max.y += item.instance.transform.translateymm;
-        item.requestedtransform = item.instance.transform;
-        item.effectivetransform = item.instance.transform;
-        item.admissionstatus = slicer_core::SceneInstanceAdmissionStatus::Admitted;
-        item.resolvedprofileid = scene.resolvedprofileid;
-        scene.instances.push_back(std::move(item));
-    }
-    return scene;
-}
 
 struct PlateRun
 {
     bool valid{false};
     std::string error;
     std::filesystem::path packageDir;
+    /// Worker 证据检查要的两个维度。见下方 RunPlate 里的说明。
+    int gridWidthPx{0};
+    int gridHeightPx{0};
+    int layerCount{0};
+    std::filesystem::path manifestPath;
+};
+
+/// 不取消的取消源：本测试不验取消路径。
+class NeverCancelled final : public slicer_core::api::ICancelToken
+{
+public:
+    [[nodiscard]] bool IsCancelRequested() const noexcept override
+    {
+        return false;
+    }
 };
 
 PlateRun RunPlate(
@@ -252,21 +131,76 @@ PlateRun RunPlate(
         return run;
     }
 
-    slicer_core::MultiModelProductionRequest request;
-    request.effectiveconfigpath = effectiveRequest.generatedconfigpath;
-    request.transferchannel = transferChannel;
-    const slicer_core::MultiModelProductionResult produced =
-        slicer_core::RunMultiModelProductionService(request);
-    if (!produced.packagewritten || produced.error.has_value())
+    // 走【生产门面】而不是直接调多模型服务——那是 Worker 实际用的边界。
+    //
+    // 本测试最初直接调 RunMultiModelProductionService，包写得对，
+    // 但返回给调用方的 SliceResult 少填了 grid_px，于是实机以
+    // PM-SLICER-CONTRACT-0060「incomplete package evidence」失败，
+    // 而测试全绿。在比真实调用方低一层的地方验证，就是这个后果。
+    const std::unique_ptr<slicer_core::api::SliceFacade> facade =
+        slicer_core::engine::CreateProductionSliceFacade();
+    slicer_core::api::SliceRequest sliceRequest;
+    sliceRequest.job_id = "monowrap-plate";
+    sliceRequest.correlation_id = "monowrap-plate-corr";
+    sliceRequest.scene_config_path = effectiveRequest.generatedconfigpath;
+    // 门面要求三项身份齐全（job / correlation / sceneHash），缺一即
+    // PM-SLICER-PROFILE-0030。sceneHash 取场景本身的哈希，与 Worker 一致。
+    // 有效配置里存的是【不带 sha256: 前缀】的裸哈希，与 Worker 那侧的
+    // externalSceneHash（带前缀）不是同一种写法，别混用。
+    sliceRequest.scene_hash =
+        slicer_core::ComputeMultiModelSceneHash(effectiveRequest.scene);
+    sliceRequest.package_dir = effectiveRequest.outputpackagedir;
+    sliceRequest.output_contract = transferChannel
+        ? std::string{slicer_core::CurrentRgbwsvtProtocol().schema}
+        : std::string{"p0.rgbwsv.2"};
+
+    const NeverCancelled cancelToken;
+    const slicer_core::api::ApiResult<slicer_core::api::SliceResult> produced =
+        facade->Run(sliceRequest, cancelToken, {});
+    if (!produced.IsOk() || produced.Value() == nullptr)
     {
-        run.error = produced.error.has_value()
-            ? produced.error->message
-            : "package not written";
+        run.error = produced.Error() != nullptr
+            ? (produced.Error()->code + ": " + produced.Error()->message)
+            : "slice facade returned no result";
         return run;
     }
+    const slicer_core::api::SliceResult& result = *produced.Value();
     run.valid = true;
-    run.packageDir = produced.packagedir;
+    run.packageDir = result.package_dir;
+    run.manifestPath = result.manifest_path;
+    run.layerCount = result.layer_count;
+    run.gridWidthPx = result.grid_px[0];
+    run.gridHeightPx = result.grid_px[1];
     return run;
+}
+
+/// 原样抄 Worker 的产出证据判据（WorkerSliceExecutor.cpp:443-450）。
+/// 抄而不是引用，是因为那是 Worker 侧的私有逻辑；抄过来的代价是要跟着它改，
+/// 收益是本测试能在核心侧就挡住「摘要少填字段」这一类错误。
+bool HasCompletePackageEvidence(const PlateRun& run, std::string& reason)
+{
+    if (run.packageDir.empty())
+    {
+        reason = "package_dir 为空";
+        return false;
+    }
+    if (run.manifestPath != run.packageDir / "manifest.json"
+        || !std::filesystem::is_regular_file(run.manifestPath))
+    {
+        reason = "manifest_path 不指向已发布的清单";
+        return false;
+    }
+    if (run.layerCount <= 0)
+    {
+        reason = "layer_count <= 0";
+        return false;
+    }
+    if (run.gridWidthPx <= 0 || run.gridHeightPx <= 0)
+    {
+        reason = "grid_px 有维度 <= 0（实机报 CONTRACT-0060 的正是这一条）";
+        return false;
+    }
+    return true;
 }
 
 std::vector<std::filesystem::path> LayerPaths(const std::filesystem::path& packageDir)
@@ -347,20 +281,45 @@ int main()
         // 正是「仿照单材料光油」这句话在仓库里的字面对应物。
         //（varnish_only_all_model 虽也是单材料光油，但它没有
         //  materialProcessProfile，resolvedprofileid 为空会被场景校验拒绝。）
+        const auto varnishStart = std::chrono::steady_clock::now();
         const PlateRun varnish = RunPlate(
             samples / "material_process" / "nail_varnish_only.json",
             modelPaths, root / "varnish", false);
+        const double varnishMs = std::chrono::duration<double, std::milli>(
+            std::chrono::steady_clock::now() - varnishStart).count();
         if (!varnish.valid)
         {
             std::cerr << "FAILED: 单材料光油整版切片失败：" << varnish.error << '\n';
             return 1;
         }
+        const auto wrapStart = std::chrono::steady_clock::now();
         const PlateRun wrap = RunPlate(
             samples / "matvol_t" / "monowrap_whole_model_rgbwsvt.json",
             modelPaths, root / "wrap", true);
+        const double wrapMs = std::chrono::duration<double, std::milli>(
+            std::chrono::steady_clock::now() - wrapStart).count();
+        // 耗时只作【报告】不作断言：本机单次波动可达 47%，
+        // 把它写成门禁等于把噪声变成红灯。要比就多次取最小值，另行基准。
+        std::cout << "TIMING varnishMs=" << static_cast<long long>(varnishMs)
+                  << " wrapMs=" << static_cast<long long>(wrapMs)
+                  << " ratio=" << (wrapMs / std::max(1.0, varnishMs))
+                  << '\n';
         if (!wrap.valid)
         {
             std::cerr << "FAILED: 整模缩裹整版切片失败：" << wrap.error << '\n';
+            return 1;
+        }
+        // 两版都要满足 Worker 的证据判据，否则实机会以 CONTRACT-0060 失败
+        // 而本测试仍然全绿——这正是本条断言存在的理由。
+        std::string reason;
+        if (!HasCompletePackageEvidence(varnish, reason))
+        {
+            std::cerr << "FAILED: 光油整版产出证据不完整：" << reason << '\n';
+            return 1;
+        }
+        if (!HasCompletePackageEvidence(wrap, reason))
+        {
+            std::cerr << "FAILED: 缩裹整版产出证据不完整：" << reason << '\n';
             return 1;
         }
 
@@ -424,6 +383,10 @@ int main()
             }
         }
 
+        std::cout << "GRID varnish=" << varnish.gridWidthPx << "x"
+                  << varnish.gridHeightPx << " wrap=" << wrap.gridWidthPx
+                  << "x" << wrap.gridHeightPx
+                  << " (补白已开)\n";
         std::cout << "PASS: plate_transfer_matches_varnish_geometry 实例 "
                   << kInstanceCount << " 件、层 " << varnishLayers.size()
                   << "、打印像素 " << printedPixels

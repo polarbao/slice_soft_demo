@@ -41,13 +41,12 @@ LegacyTransferChannelSession BuildLegacyTransferChannelSession(
     return session;
 }
 
-RgbwsvtProductionLayer ComposeLegacyTransferChannelLayer(
+void MaterializeLegacyTransferChannelMask(
     LegacyTransferChannelSession& session,
-    const RgbwsvProductionLayer& rgbwsvLayer,
+    const int layerIndex,
     const std::span<const std::uint8_t> modelMask)
 {
-    if (rgbwsvLayer.layerIndex < 0
-        || rgbwsvLayer.layerIndex >= session.plan.layerCount)
+    if (layerIndex < 0 || layerIndex >= session.plan.layerCount)
     {
         throw TransferChannelError(
             TransferChannelErrorCode::ProtocolInvalid,
@@ -55,10 +54,19 @@ RgbwsvtProductionLayer ComposeLegacyTransferChannelLayer(
     }
     MaterializeTransferLayerMask(
         session.plan,
-        rgbwsvLayer.layerIndex,
+        layerIndex,
         modelMask,
         session.ownerScratch,
         session.transferMask);
+}
+
+RgbwsvtProductionLayer ComposeLegacyTransferChannelLayer(
+    LegacyTransferChannelSession& session,
+    const RgbwsvProductionLayer& rgbwsvLayer,
+    const std::span<const std::uint8_t> modelMask)
+{
+    MaterializeLegacyTransferChannelMask(
+        session, rgbwsvLayer.layerIndex, modelMask);
     return ComposeRgbwsvtLayer(
         rgbwsvLayer,
         modelMask,

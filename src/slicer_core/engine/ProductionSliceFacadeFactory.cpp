@@ -243,13 +243,8 @@ api::ApiResult<api::SliceResult> RunExistingProductionEntry(
     }
 }
 
-/**
- * @brief MW3-05：整版多实例 RGBWSVT 生产。
- *
- * 形状与六通道的 `RunExistingProductionEntry` 一致——构造
- * `MultiModelProductionRequest` 后交给多模型生产服务，唯一差别是
- * `transferchannel` 置位，服务据此挂整版掩膜出口并做七通道装配。
- */
+/// MW3-05：整版多实例 RGBWSVT 生产。形状与六通道的
+/// `RunExistingProductionEntry` 一致，唯一差别是 `transferchannel` 置位。
 api::ApiResult<api::SliceResult> RunTransferPlateProductionEntry(
     const api::SliceRequest& sliceRequest,
     const api::ICancelToken& cancelToken,
@@ -288,6 +283,31 @@ api::ApiResult<api::SliceResult> RunTransferPlateProductionEntry(
     result.package_dir = produced.packagedir;
     result.manifest_path = produced.packagedir / "manifest.json";
     result.layer_count = produced.layercount;
+    // grid_px 必须从已发布的清单读回：Worker 的产出证据检查要求它两维都 > 0，
+    // 缺了就是 PM-SLICER-CONTRACT-0060，而那条文案指不到「少填了字段」。
+    // 本函数初版漏了这一段，见 docs/monowrap/DECISION-03 §6c。
+    try
+    {
+        std::ifstream manifestInput(
+            result.manifest_path, std::ios::binary);
+        if (!manifestInput)
+        {
+            throw std::runtime_error("published manifest is not readable");
+        }
+        const Json manifest = Json::parse(manifestInput);
+        const Json& grid = manifest.at("grid");
+        result.grid_px = {
+            grid.at("widthPx").as_int(),
+            grid.at("heightPx").as_int()};
+    }
+    catch (const std::exception& exception)
+    {
+        return api::ApiResult<api::SliceResult>::Failure(
+            MakeError(
+                "PM-SLICER-CONTRACT-0060",
+                "published RGBWSVT plate package summary is invalid",
+                exception.what()));
+    }
     result.engine_version = "rgbwsvt-plate-v1";
     result.elapsed_ms = static_cast<std::uint64_t>(
         std::llround(std::max(0.0, produced.profile.total_ms)));
@@ -353,12 +373,8 @@ api::ApiResult<api::SliceResult> RunTransferProductionEntry(
         if (visibleCount > 1U)
         {
             // MW3-05：整版多实例走多模型生产服务，与六通道同一条管线。
-            //
-            // **单实例【不】走这里**，这是硬约束而非省事：DECISION-03 §4 把
-            // 「单实例产出对 MW3-00 快照逐字节一致」列为放开护栏的前置条件，
-            // 而改道必然改变它的字节（换合成器、换写包器、画幅从模型包围盒
-            // 变成整版画布）。若单实例也改道，就只能回头放宽那条前置条件，
-            // 而它本来就是用来兜住「改道动了不该动的东西」的。
+            // 单实例【不】走这里：改道必然改变它的字节，而「单实例逐字节
+            // 不变」是放开护栏的前置条件。理由见 DECISION-03 §4b。
             return RunTransferPlateProductionEntry(
                 sliceRequest, cancelToken, progressSink);
         }

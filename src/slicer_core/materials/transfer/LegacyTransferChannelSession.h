@@ -39,6 +39,18 @@ void ValidateLegacyTransferChannelRunBoundary(
 /**
  * @brief Materialize T for one layer and apply the frozen exclusive composer.
  */
+/**
+ * @brief 只把本层缩裹掩膜算进 `session.transferMask`，**不构建七通道层**。
+ *
+ * 整版路径只需要这张掩膜——七通道层由整版合成器在整版坐标上统一装配。
+ * 逐实例再建一份整层七通道（还要跟着补白搬一次）纯属白做功：
+ * 那条路上 `write_tiff_layers` 为 false，没有任何消费者。
+ */
+void MaterializeLegacyTransferChannelMask(
+    LegacyTransferChannelSession& session,
+    int layerIndex,
+    std::span<const std::uint8_t> modelMask);
+
 [[nodiscard]] RgbwsvtProductionLayer ComposeLegacyTransferChannelLayer(
     LegacyTransferChannelSession& session,
     const RgbwsvProductionLayer& rgbwsvLayer,
