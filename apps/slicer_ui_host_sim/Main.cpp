@@ -432,6 +432,77 @@ int RunHostFlowWorkspaceUiSmoke(const QString& modulePath)
     return 0;
 }
 
+// 面板归属护栏。
+//
+// 本仓 UI 侧此前【没有任何测试断言某控件属于哪个标签页】，
+// 于是「把某个开关搬到别的页」这类改动完全没有护栏：
+// 搬错、漏搬、或将来有人再搬回去，都不会有任何报错。
+//
+// 这条自测把归属钉死。刻意搬迁时它会变红——那正是它的用途：
+// 让搬迁成为「显式改断言」，而不是悄悄改了没人知道。
+//
+// 之所以比对标签【文案】而不是下标：下标会随插入顺序悄悄变，
+// 而文案变了说明是有意改的，两者都该被看见，但只有文案能指出改成了什么。
+int RunHostFlowPanelOwnershipSelfTest(const QString& modulePath)
+{
+    struct PanelOwnership
+    {
+        const char* widget;
+        const char* tabs;
+        const char* label;
+    };
+    // 这张表就是「谁该在哪一页」的唯一事实来源。
+    static const PanelOwnership kExpected[] = {
+        {"hostImportModelButton", "hostSceneInspectorTabs", "模型"},
+        {"hostImportAutoOrientCheck", "hostSceneInspectorTabs", "变换与排版"},
+        {"hostLayoutAutoApplyCheck", "hostSceneInspectorTabs", "变换与排版"},
+        {"hostRipAutoAfterSliceCheck", "hostSceneInspectorTabs", "RIP 设置"},
+        {"defaultViewModeCombo", "hostWorkspaceTabs", "显示"},
+    };
+
+    HostMainWindow window(modulePath);
+    int checked = 0;
+    for (const PanelOwnership& expect : kExpected)
+    {
+        const QString widgetName = QString::fromUtf8(expect.widget);
+        const QString tabsName = QString::fromUtf8(expect.tabs);
+        const QString wanted = QString::fromUtf8(expect.label);
+        const auto* widget = window.findChild<QWidget*>(widgetName);
+        const auto* tabs = window.findChild<QTabWidget*>(tabsName);
+        if (widget == nullptr || tabs == nullptr)
+        {
+            QTextStream(stderr)
+                << "HOSTFLOW_PANEL_OWNERSHIP_FAILED: 找不到 "
+                << (widget == nullptr ? widgetName : tabsName) << Qt::endl;
+            return 21;
+        }
+        QString actual;
+        for (const QWidget* page = widget; page != nullptr;
+             page = page->parentWidget())
+        {
+            const int index = tabs->indexOf(const_cast<QWidget*>(page));
+            if (index >= 0)
+            {
+                actual = tabs->tabText(index);
+                break;
+            }
+        }
+        if (actual != wanted)
+        {
+            QTextStream(stderr)
+                << "HOSTFLOW_PANEL_OWNERSHIP_FAILED: " << widgetName
+                << " 应在「" << wanted << "」，实为「"
+                << (actual.isEmpty() ? QStringLiteral("不属于该标签组") : actual)
+                << "」。若这是有意搬迁，请同步更新本表。" << Qt::endl;
+            return 21;
+        }
+        ++checked;
+    }
+    QTextStream(stdout)
+        << "HOSTFLOW_PANEL_OWNERSHIP_PASS checked=" << checked << Qt::endl;
+    return 0;
+}
+
 int RunRipModuleSelfTest(const QString& moduleDirectory)
 {
     HostRipJobController controller;
@@ -789,6 +860,7 @@ int main(int argc, char* argv[])
             << "--hostflow-job-ui-self-test | "
             << "--hostflow-result-ui-self-test | "
             << "--hostflow-workspace-ui-self-test | "
+            << "--hostflow-panel-ownership-self-test | "
             << "--rip-module-self-test [--rip-module <path>] | "
             << "--rip-ui-self-test | "
             << "--rip-job-self-test --package <path> "
@@ -851,6 +923,12 @@ int main(int argc, char* argv[])
             QStringLiteral("--hostflow-workspace-ui-self-test")))
     {
         return RunHostFlowWorkspaceUiSmoke(modulePath);
+    }
+    if (HasArgument(
+            arguments,
+            QStringLiteral("--hostflow-panel-ownership-self-test")))
+    {
+        return RunHostFlowPanelOwnershipSelfTest(modulePath);
     }
     if (HasArgument(arguments, QStringLiteral("--rip-module-self-test")))
     {

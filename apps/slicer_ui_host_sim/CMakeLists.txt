@@ -1492,6 +1492,15 @@ add_test(
         --module $<TARGET_FILE:slicer_module>
 )
 
+# 面板归属护栏：钉死「哪个控件在哪一页」。
+# 刻意搬迁面板时它会变红，用意是让搬迁必须显式改断言。
+add_test(
+    NAME hostflow_panel_ownership
+    COMMAND slicer_ui_host_sim
+        --hostflow-panel-ownership-self-test
+        --module $<TARGET_FILE:slicer_module>
+)
+
 add_executable(stage14e03_interaction_tests
     ModuleClient.cpp
     ModuleClient.h
