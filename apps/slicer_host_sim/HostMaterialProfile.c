@@ -255,6 +255,17 @@ int HostBuildMaterialProfileFragments(
         materialChannel = "V";
         varnishValue = 0;
         break;
+    case HOST_MATERIAL_TRANSFER_SOLID:
+        /* 三个材质通道全关：模型内容由 transferChannelPolicy 的整模模式承载，
+           产出为 R/G/B/W/V 全 0、T 等于模型像素数。
+           materialChannel 仍取 RGB 并把 rgb 置 0 —— 与已实测可用的
+           samples/configs/matvol_t/monowrap_whole_model_rgbwsvt.json 保持一致。 */
+        rgbEnabled = 0;
+        whiteEnabled = 0;
+        varnishEnabled = 0;
+        materialChannel = "RGB";
+        red = green = blue = 0;
+        break;
     default:
         return 0;
     }

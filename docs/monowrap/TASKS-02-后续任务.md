@@ -48,11 +48,20 @@ enum hostmaterialstrategy
 
 | 编号 | 任务 | 状态 |
 |---|---|---|
-| UI-01a | 读通 `materialstrategy` → 发射 Profile 的完整映射链，写明要改哪几处 | ⬜ |
-| UI-01b | 追加 `HOST_MATERIAL_TRANSFER_SOLID = 6` 及其宿主侧映射 | ⬜ |
-| UI-01c | 新增预设「单材料缩裹｜整模 T 实体｜下表面支撑」，**自带** `whole_model` 策略，不依赖部署目录 | ⬜ |
-| UI-01d | 验证：UI 里能选到它，切出的包 R/G/B/W/V 全 0、T = 模型像素数 | ⬜ |
-| UI-01e | **反例**：确认既有 13 条预设的行为与产物逐字节不变 | ⬜ |
+| UI-01a | 读通映射链 | ✅ 完成：`HostMaterialProfile.c:225-262` 的 switch 决定 rgb/white/varnish 三个开关与 `materialChannel` |
+| UI-01b | 追加 `HOST_MATERIAL_TRANSFER_SOLID = 6` 及映射 | ✅ 完成，**6 处登记**：C 枚举、C 侧映射、C++ 枚举、`ToHostMaterialStrategy`、`MaterialStrategyId`、`singleMaterialRelief` |
+| UI-01c | 新增自带策略的预设 | ✅ 完成，id `single_material_transfer_wrap` |
+| UI-01d | 验证产出只写 T | ✅ 完成，内容断言已加进 `HostTransferProfileTests.cpp` 并**经故障注入证伪** |
+| UI-01e | 既有预设行为不变 | 🟡 快集档已过；字节级基线待全量档 |
+
+> **过程中发现的第 5 处硬编码**：`HostTransferProfileBridge.cpp:16-30` 的
+> `IsValidTransferSettings` 同样写死 `matchsource == material_diffuse_rgb` 与颜色列表非空。
+> 加上核心配置校验、核心解析器、报告 schema、宿主工艺加载器，
+> **同一个假设在本仓共 5 处独立硬编码**。这本身是一条值得记的架构债。
+>
+> **清点断言的处理方式**：原断言是「T 工艺数 == eligible 基线数」，
+> 自带策略的预设按设计不满足它。没有简单把数字加一，而是**拆成两类**——
+> 派生变体仍须等于 eligible 基线（保住对漏派生的检出），自带策略另计一条。
 
 **不要做的**：不要为了让新工艺出现在 UI 而往 `configs/material_process/` 里放
 `whole_model` 工艺——那会破坏「部署工艺策略必须一致」的不变量，
@@ -80,10 +89,11 @@ enum hostmaterialstrategy
 
 | 编号 | 任务 | 状态 |
 |---|---|---|
-| CFG-01a | 逐份比对 10 个部署 T 工艺，量出「宿主实际读取的字段」与「文件里其余字段」的比例 | ⬜ |
-| CFG-01b | 盘点 13 条 UI 预设的实际差异维度，找出可合并为「一条工艺 + 几个开关」的组 | ⬜ |
-| CFG-01c | 盘点 `samples/configs/` 21 个目录，区分「生产工艺」「测试夹具」「历史残留」 | ⬜ |
-| CFG-01d | 出整合方案，**逐条给收益与风险**，交用户裁定后再动 | ⬜ |
+| CFG-01a~d | 调研与整合方案 | ✅ **完成**，见 [ANALYSIS-02](ANALYSIS-02-配置与工艺冗余度实测.md) |
+
+**最刺眼的一个数**：10 份部署工艺共 955 个叶子字段，宿主只读 **11 个**，
+且只读排序第一的那一份——**利用率 1.2%**。
+五条整合候选已逐条给收益与风险，**待你裁定，本专项未执行任何删并**。
 
 **纪律**：整合会改变用户可见的工艺列表，属产品决策。
 **本专项只出方案与量化依据，不擅自删并**。
@@ -98,10 +108,12 @@ enum hostmaterialstrategy
 
 | 编号 | 任务 | 状态 |
 |---|---|---|
-| UX-01a | 列出宿主标签栏的实际顺序（`HostMainWindow` 及各 Panel 的装配顺序） | ⬜ |
-| UX-01b | 列出切片流水线的实际阶段顺序（`SLICE_PROGRESS` 的 phase 序列：`config_load` → `model_load` → `grid_setup` → …） | ⬜ |
-| UX-01c | 两者逐项对照，**指出不一致的地方并说明哪一侧是对的** | ⬜ |
-| UX-01d | 出交互改进方案，交用户裁定后再动 | ⬜ |
+| UX-01a~d | 调研与改进方案 | ✅ **完成**，见 [ANALYSIS-03](ANALYSIS-03-标签栏与切片流程一致性实测.md) |
+
+**结论**：标签栏是**两层** QTabWidget，核心 phase 与 UI 文案一一对应、无漂移。
+判出 **4 条真实不一致**（最严重的是「导入落位设置在 tab 4，而导入动作在 tab 0」，
+用户按标签顺序操作会发现勾选无效），另有 6 条看似不一致但实际合理、不应动。
+五条改进建议已按代价排序，**待你裁定，本专项未执行任何 UI 改动**。
 
 **判据**：标签栏顺序应当反映用户的**操作顺序**，而流水线顺序反映**数据依赖**。
 两者不一定要一一对应——**先确认哪些不一致是设计使然、哪些是历史遗留**，

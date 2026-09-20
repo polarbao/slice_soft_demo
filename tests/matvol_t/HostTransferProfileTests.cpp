@@ -313,6 +313,11 @@ int main(int argc, char* argv[])
         return 2;
     }
 
+    // T 工艺分两类：派生变体（id 带 _rgbwsvt）与自带策略（如整模缩裹）。
+    // 下方「派生数 == eligible 基线数」只对前者成立——它防的是漏派生，
+    // 把后者算进去会让该不变式恒假、失去检出能力。
+    int derivedTransferPresetCount = 0;
+    int selfContainedTransferPresetCount = 0;
     int transferPresetCount = 0;
     int eligibleBasePresetCount = 0;
     for (const hostprocesspreset& preset : HostProcessPresetCatalog::Presets())
@@ -326,6 +331,8 @@ int main(int argc, char* argv[])
             continue;
         }
         ++transferPresetCount;
+        ++(preset.id.endsWith(QStringLiteral("_rgbwsvt"))
+            ? derivedTransferPresetCount : selfContainedTransferPresetCount);
         hostslicesettings settings = MakeSettings(
             modelPath, QDir(outputRoot.path()).filePath(preset.id));
         settings.materialstrategy = preset.materialstrategy;
@@ -368,6 +375,28 @@ int main(int argc, char* argv[])
                 errors))
         {
             return 4;
+        }
+
+        // 整模缩裹的全部意义就是「只写 T」。RGB/白墨/光油任一被打开，
+        // 产出就不再是单缩裹材料，而这在切片跑完前看不出来，故在此钉死。
+        if (transfer.value(QStringLiteral("matchSource")).toString()
+            == QStringLiteral("whole_model"))
+        {
+            const QJsonObject mp = effective.profile.value(
+                QStringLiteral("materialPolicy")).toObject();
+            const auto off = [&mp](const char* k) {
+                return !mp.value(QString::fromLatin1(k)).toObject()
+                    .value(QStringLiteral("enabled")).toBool(false);
+            };
+            if (!Check(off("rgb") && off("white") && off("varnish")
+                        && transfer.value(QStringLiteral(
+                            "materialDiffuseRgbValues")).toArray().isEmpty(),
+                    QStringLiteral("整模缩裹预设 %1 必须 RGB/白墨/光油全关"
+                        "且颜色列表为空，否则产出不是单缩裹材料。").arg(preset.id),
+                    errors))
+            {
+                return 4;
+            }
         }
 
         // 拓扑字段必须【逐项】从工艺文件透传到发射出的 Profile。
@@ -416,17 +445,25 @@ int main(int argc, char* argv[])
         HostEffectiveProfileBuilder::Build(legacy, &legacyEffective, &error);
     const QString actualLegacyHash = NormalizedLegacyHash(legacyEffective.profile);
     const bool allLegacyChecks =
-        Check(transferPresetCount == 4,
-              QStringLiteral("新版 Host 传输预设数应为 4，实为 %1").arg(transferPresetCount),
+        // 2026-09-20 由 4 增至 5：MONOWRAP 新增 single_material_transfer_wrap
+        // （自带策略、非派生）。清点断言，增删预设都应在此同步。
+        Check(transferPresetCount == 5,
+              QStringLiteral("新版 Host 传输预设数应为 5，实为 %1").arg(transferPresetCount),
               errors)
         // 上一条钉住 UI 上的 T 工艺条数不变；这一条钉住它们确实【逐条派生自】
         // 标记为 transfereligible 的基线工艺。缺了它，漏派生一条就只表现为
         // 上一条断言的数字对不上，而看不出漏的是哪一环 —— MO-11 就是这样漏掉的。
-        && Check(transferPresetCount == eligibleBasePresetCount,
+        // 只比派生变体：自带策略的不经派生，算进来会废掉对漏派生的检出。
+        && Check(derivedTransferPresetCount == eligibleBasePresetCount,
                  QStringLiteral(
-                     "T 工艺条数(%1)与标记 transfereligible 的基线工艺条数(%2)不符，"
+                     "派生 T 变体数(%1)与标记 transfereligible 的基线工艺条数(%2)不符，"
                      "存在漏派生或多派生。")
-                     .arg(transferPresetCount).arg(eligibleBasePresetCount),
+                     .arg(derivedTransferPresetCount).arg(eligibleBasePresetCount),
+                 errors)
+        // 自带策略的也要清点：绕过「要么派生、要么显式自带」这条二分应被拦下。
+        && Check(selfContainedTransferPresetCount == 1,
+                 QStringLiteral("自带策略的 T 工艺应为 1 条(整模缩裹)，实为 %1")
+                     .arg(selfContainedTransferPresetCount),
                  errors)
         && Check(builtLegacy,
                  QStringLiteral("旧 Profile 构建失败：%1").arg(error),

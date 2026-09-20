@@ -15,9 +15,19 @@ namespace
 {
 bool IsValidTransferSettings(const hosttransferchannelsettings& transfer)
 {
+    // MONOWRAP：matchSource 有两种取值，对颜色列表的要求**相反**。
+    //   material_diffuse_rgb —— 按漫反射 RGB 精确匹配，必须给非空颜色列表；
+    //   whole_model          —— 整模即缩裹材料，不做颜色匹配，列表必须为空。
+    // 这两条与核心侧 TransferChannelConfig 的校验一一对应。
+    const bool wholeModel =
+        transfer.matchsource == QStringLiteral("whole_model");
+    const bool coloursValid = wholeModel
+        ? transfer.materialdiffusergbvalues.isEmpty()
+        : !transfer.materialdiffusergbvalues.isEmpty();
     if (!transfer.enabled
-        || transfer.matchsource != QStringLiteral("material_diffuse_rgb")
-        || transfer.materialdiffusergbvalues.isEmpty()
+        || (!wholeModel
+            && transfer.matchsource != QStringLiteral("material_diffuse_rgb"))
+        || !coloursValid
         || (transfer.missingregion != QStringLiteral("allow_empty")
             && transfer.missingregion != QStringLiteral("fail_closed"))
         || transfer.multiplematches != QStringLiteral("fail_closed")

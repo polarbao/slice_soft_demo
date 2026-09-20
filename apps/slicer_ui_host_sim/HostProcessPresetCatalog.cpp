@@ -63,8 +63,8 @@ QString HostProcessPresetCatalog::DefaultPresetId()
 QVector<hostprocesspreset> HostProcessPresetCatalog::Presets()
 {
     QVector<hostprocesspreset> presets;
-    // 9 条基线工艺 + 其中 4 条派生的缩裹 T 变体。
-    presets.reserve(13);
+    // 9 条基线工艺 + 其中 4 条派生的缩裹 T 变体 + 1 条自带策略的整模缩裹。
+    presets.reserve(14);
     hostprocesspreset rgbOnly = MakeTexturedPreset(
         QStringLiteral("textured_nail_rgb_only_lower_support"),
         QStringLiteral(
@@ -156,6 +156,34 @@ QVector<hostprocesspreset> HostProcessPresetCatalog::Presets()
         HostMaterialStrategy::VarnishSolid);
     varnishOnly.transfereligible = true;
     presets.push_back(varnishOnly);
+
+    // MONOWRAP 整模缩裹。它与上面两条「单材料浮雕」同类，区别是内容走 T 通道。
+    //
+    // **它自带 T 策略，不从部署目录派生**，这一点与下方那批 transfereligible
+    // 派生出来的 T 变体不同。理由：部署目录只提供全局唯一一条 T 策略
+    //（LoadDeployedPolicy 取第一个能加载的），且 matvol_t_host_profile 有断言
+    // 要求那 10 份工艺的 transferChannelPolicy 完全一致。whole_model 与它们
+    // 根本不同，放进那个目录会破坏该不变量而不会多出一个选项。
+    //
+    // 整模模式不做颜色匹配，故 materialdiffusergbvalues 必须留空；
+    // 也不经体积求解（见 TransferMaterialVolumePlan），故拓扑字段对它无意义。
+    hostprocesspreset transferWrap = MakeSingleMaterialPreset(
+        QStringLiteral("single_material_transfer_wrap"),
+        QStringLiteral("单材料缩裹｜整模 T 实体｜下表面支撑"),
+        QStringLiteral(
+            "不采样彩色纹理，整个模型都识别为缩裹材料并只写 T 通道，"
+            "R/G/B/W/V 全为 0，并保留下表面支撑。"
+            "供无 mtl 的纯几何资产使用，不要求模型流形或无自交。"),
+        HostMaterialStrategy::TransferSolid);
+    transferWrap.transfereligible = false;
+    transferWrap.packageprotocol = HostPackageProtocol::Rgbwsvt;
+    transferWrap.transferchannel.enabled = true;
+    transferWrap.transferchannel.matchsource = QStringLiteral("whole_model");
+    transferWrap.transferchannel.materialdiffusergbvalues.clear();
+    transferWrap.transferchannel.missingregion = QStringLiteral("allow_empty");
+    transferWrap.transferchannel.multiplematches = QStringLiteral("fail_closed");
+    transferWrap.transferchannel.value = 0;
+    presets.push_back(transferWrap);
     hostprocesspreset volumetricRgb = MakeTexturedPreset(
         QStringLiteral("volumetric_nail_rgb_white_ondemand_lower_support"),
         QStringLiteral("多材质纵深｜逐层材质 RGB + 按需补白墨｜下表面支撑（候选）"),

@@ -13,7 +13,11 @@ enum hostmaterialstrategy
     HOST_MATERIAL_RGB_VARNISH = 2,
     HOST_MATERIAL_RGB_WHITE_VARNISH = 3,
     HOST_MATERIAL_WHITE_SOLID = 4,
-    HOST_MATERIAL_VARNISH_SOLID = 5
+    HOST_MATERIAL_VARNISH_SOLID = 5,
+    /* 整模缩裹：RGB/W/V 三个材质通道全关，模型内容全部由 T 通道承载。
+       供无 mtl 的纯几何资产使用（MONOWRAP）。
+       **追加取值是向后兼容的**：既有调用方永远不会收到 6。 */
+    HOST_MATERIAL_TRANSFER_SOLID = 6
 };
 
 /** @brief 由宿主持有的输入材料映射默认角色。 */

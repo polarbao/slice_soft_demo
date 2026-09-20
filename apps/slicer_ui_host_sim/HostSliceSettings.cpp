@@ -62,6 +62,8 @@ enum hostmaterialstrategy ToHostMaterialStrategy(
         return HOST_MATERIAL_WHITE_SOLID;
     case HostMaterialStrategy::VarnishSolid:
         return HOST_MATERIAL_VARNISH_SOLID;
+    case HostMaterialStrategy::TransferSolid:
+        return HOST_MATERIAL_TRANSFER_SOLID;
     }
     return static_cast<enum hostmaterialstrategy>(-1);
 }
@@ -379,9 +381,11 @@ bool HostEffectiveProfileBuilder::Validate(
             }
         }
     }
+    // 整模缩裹同样是「不采样纹理的单材料浮雕」，几何采样策略的校验与 W/V 实体同档。
     const bool singleMaterialRelief =
         settings.materialstrategy == HostMaterialStrategy::WhiteSolid
-        || settings.materialstrategy == HostMaterialStrategy::VarnishSolid;
+        || settings.materialstrategy == HostMaterialStrategy::VarnishSolid
+        || settings.materialstrategy == HostMaterialStrategy::TransferSolid;
     if (GeometrySamplingStrategyId(settings.geometrysamplingstrategy)
             == QStringLiteral("unknown")
         || TiffCompressionId(settings.tiffcompression)
@@ -547,6 +551,8 @@ QString HostEffectiveProfileBuilder::MaterialStrategyId(
         return QStringLiteral("white_solid");
     case HostMaterialStrategy::VarnishSolid:
         return QStringLiteral("varnish_solid");
+    case HostMaterialStrategy::TransferSolid:
+        return QStringLiteral("transfer_solid");
     }
     return QStringLiteral("unknown");
 }

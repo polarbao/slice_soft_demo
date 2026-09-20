@@ -12,7 +12,9 @@ enum class HostMaterialStrategy
     RgbVarnish,
     RgbWhiteVarnish,
     WhiteSolid,
-    VarnishSolid
+    VarnishSolid,
+    /// 整模缩裹：RGB/W/V 全关，内容由 T 通道承载（MONOWRAP）。
+    TransferSolid
 };
 
 /** @brief 解析 OBJ/3MF 输入材料时使用的材料角色。 */
