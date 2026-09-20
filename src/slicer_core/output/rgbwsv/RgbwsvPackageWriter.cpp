@@ -3,6 +3,8 @@
 #include "slicer_core/api/artifacts/PackageArtifactSafety.h"
 #include "slicer_core/json_value.h"
 #include "slicer_core/output/rgbwsv/RgbwsvCapabilitySummary.h"
+#include "slicer_core/output/rgbwsvt/RgbwsvtLegacyPackageMetadata.h"
+#include "slicer_core/output/rgbwsvt/RgbwsvtPackageReader.h"
 #include "slicer_core/reports/ReportWriter.h"
 #include "slicer_core/rip_reader.h"
 #include "slicer_core/tiff_io.h"
@@ -783,6 +785,83 @@ Json MakeTiffJson(
     return Json{std::move(result)};
 }
 
+/// MW3-07：七通道的逐通道计数。通道序取自 rgbwsvt 协议，含 T。
+Json TransferChannelCountsToJson(
+    const RgbwsvtChannelStatistics& statistics,
+    const bool printPixels)
+{
+    const RgbwsvtProtocol protocol = CurrentRgbwsvtProtocol();
+    Json::Object result;
+    for (std::size_t index{0U}; index < kRgbwsvtChannelCount; ++index)
+    {
+        result[protocol.channelOrder.at(index)] = printPixels
+            ? statistics.at(index).print_pixels
+            : statistics.at(index).empty_pixels;
+    }
+    return Json{std::move(result)};
+}
+
+/// MW3-07：七通道层条目。字段与六通道版一一对应，只是多一个 T。
+Json MakeTransferLayerEntry(
+    const RgbwsvtProductionLayer& layer,
+    const RgbwsvtChannelStatistics& statistics,
+    const std::string& relativePath)
+{
+    return Json::object({
+        {"index", layer.layerIndex},
+        {"zMm", layer.zMm},
+        {"path", relativePath},
+        {"widthPx", layer.widthPx},
+        {"heightPx", layer.heightPx},
+        {"printPixels", TransferChannelCountsToJson(statistics, true)},
+        {"emptyPixels", TransferChannelCountsToJson(statistics, false)},
+    });
+}
+
+/// MW3-07：七通道 tiff 段。与 MakeTiffJson 逐字段对齐，仅协议与通道数不同。
+Json MakeTransferTiffJson(
+    const RgbwsvtProtocol& protocol,
+    const RgbwsvProductionStorageSpec& storage,
+    const Json::Array& layers,
+    const RgbwsvtChannelStatistics& channelStats)
+{
+    Json::Array channelOrder;
+    channelOrder.reserve(protocol.channelOrder.size());
+    for (const std::string& value : protocol.channelOrder)
+    {
+        channelOrder.push_back(Json{value});
+    }
+    Json::Object result;
+    result["channelOrder"] = Json{std::move(channelOrder)};
+    result["channelCount"] = static_cast<int>(kRgbwsvtChannelCount);
+    result["bitDepth"] = protocol.bitDepth;
+    result["sampleFormat"] = "uint";
+    result["planarConfig"] = "contiguous";
+    result["tiled"] = storage.storageMode == "tiled";
+    result["storage"] = storage.storageMode;
+    result["storageMode"] = storage.storageMode;
+    result["compression"] = storage.compression;
+    result["rowOrder"] = "max_y_first";
+    result["polarity"] = protocol.polarity;
+    result["printValue"] = static_cast<int>(protocol.printValue);
+    result["emptyValue"] = static_cast<int>(protocol.emptyValue);
+    result["layers"] = Json{layers};
+    // 七通道包的回读自检会把这组数字与【实际写出的 TIFF 字节】逐通道对账，
+    // 对不上即 E_LAYER_STATISTICS_MISMATCH。这不是装饰，是字节级自检的锚。
+    result["channelStats"] =
+        ChannelStatisticsToJson(channelStats, protocol.channelOrder);
+    if (storage.storageMode == "tiled")
+    {
+        result["tileSize"] = Json::array(
+            {storage.tileWidth, storage.tileHeight});
+    }
+    else
+    {
+        result["rowsPerStrip"] = storage.rowsPerStrip;
+    }
+    return Json{std::move(result)};
+}
+
 Json MakeGridJson(const RgbwsvProductionGridSpec& grid)
 {
     return Json::object({
@@ -898,6 +977,31 @@ ValidatedStagingPackageEvidence MakeValidatedStagingPackageEvidence(
     {
         throw std::runtime_error(
             "strict RGBWSV validation did not bind the owned staging directory");
+    }
+    return ValidatedStagingPackageEvidence{
+        validatedDirectory,
+        ReadPersistedJson(validatedDirectory / "manifest.json").dump(0),
+        CollectPackageFileIdentity(validatedDirectory)};
+}
+
+/**
+ * @brief MW3-07：七通道暂存自检的证据构造。
+ *
+ * 证据本体（清单投影 + 文件哈希）与协议无关，故与六通道版逐字段相同；
+ * 唯一要保留的是那道绑定断言——**校验器必须确实看的是我这个 staging 目录**，
+ * 而不是别处某个碰巧合法的包。
+ */
+ValidatedStagingPackageEvidence MakeValidatedStagingPackageEvidence(
+    const api::artifacts::PackageArtifactIdentity& identity,
+    const RgbwsvtPackageValidation& validation)
+{
+    const std::filesystem::path validatedDirectory =
+        std::filesystem::absolute(validation.packageDirectory)
+            .lexically_normal();
+    if (validatedDirectory != identity.staging_directory)
+    {
+        throw std::runtime_error(
+            "strict RGBWSVT validation did not bind the owned staging directory");
     }
     return ValidatedStagingPackageEvidence{
         validatedDirectory,
@@ -1105,6 +1209,12 @@ struct RgbwsvProductionPackageSession::State
     /// 两者在整栈模式下相等，故现有行为不变。
     int expectedLayerCount{0};
     bool finished{false};
+    /// MW3-07：七通道模式。只由七通道 AppendLayer 置位；
+    /// 为 false 时下方三个累加器恒空，六通道路径一个分支都不多走。
+    bool sevenChannel{false};
+    RgbwsvtChannelStatistics totalTransferChannelStats{};
+    RgbwsvtMaterialStatistics totalTransferMaterialStats{};
+    std::vector<RgbwsvtLegacyLayerStatistics> transferLayerStats;
 };
 
 RgbwsvProductionPackageSession::RgbwsvProductionPackageSession(
@@ -1299,6 +1409,93 @@ void RgbwsvProductionPackageSession::AppendLayer(
             }
 }
 
+void RgbwsvProductionPackageSession::AppendLayer(
+    const RgbwsvtProductionLayer& layer,
+    const RgbwsvProductionLayer& rgbwsvSource)
+{
+    State& s = *m_state;
+    if (s.writtenLayerCount == 0)
+    {
+        s.streamWidthPx = layer.widthPx;
+        s.streamHeightPx = layer.heightPx;
+    }
+    // 七通道层与它的六通道来源必须同层同幅面，否则预览会配错层。
+    if (layer.layerIndex != rgbwsvSource.layerIndex
+        || layer.widthPx != rgbwsvSource.widthPx
+        || layer.heightPx != rgbwsvSource.heightPx)
+    {
+        throw std::invalid_argument(
+            "RGBWSVT layer and its RGBWSV source must describe the same layer");
+    }
+    if (layer.widthPx != s.streamWidthPx
+        || layer.heightPx != s.streamHeightPx)
+    {
+        throw std::invalid_argument(
+            "RGBWSVT production package layer extent is not stable");
+    }
+    const std::size_t pixelCount =
+        static_cast<std::size_t>(layer.widthPx)
+        * static_cast<std::size_t>(layer.heightPx);
+    if (layer.channels.size() != pixelCount * kRgbwsvtChannelCount)
+    {
+        throw std::invalid_argument(
+            "RGBWSVT production layer byte count does not match its extent");
+    }
+    s.sevenChannel = true;
+
+    const RgbwsvProductionPackageWriteRequest& request = s.request;
+    RgbwsvProductionPackageWriteProfile& profile = s.profile;
+    const std::filesystem::path& stagingDir =
+        s.artifactIdentity.staging_directory;
+
+    ThrowIfCancellationRequested(request.canceltoken, "before_layer_tiff");
+    const std::string relativePath =
+        "layers/layer_" + LayerNumber(layer.layerIndex) + ".tiff";
+    const WriterClock::time_point tiffStart = WriterClock::now();
+    const RgbwsvtLegacyLayerWriteResult writeResult =
+        WriteRgbwsvtLegacyProductionLayerTiff(
+            stagingDir / relativePath, request.storage, layer);
+    profile.tiffwritems += ElapsedMilliseconds(tiffStart);
+    ThrowIfCancellationRequested(request.canceltoken, "after_layer_tiff");
+
+    const WriterClock::time_point layerReportStart = WriterClock::now();
+    MergeRgbwsvtChannelStatistics(
+        s.totalTransferChannelStats, writeResult.channelStatistics);
+    MergeRgbwsvtMaterialStatistics(
+        s.totalTransferMaterialStats, writeResult.materialStatistics);
+    s.transferLayerStats.push_back(RgbwsvtLegacyLayerStatistics{
+        layer.layerIndex,
+        writeResult.channelStatistics,
+        writeResult.materialStatistics});
+    // 六通道总计同步累加前六个通道：清单里那两组计数描述的是【实际写出的
+    // 字节】，不能沿用装配前那一层——缩裹像素在装配时已被清成空值。
+    for (std::size_t channel{0U}; channel < kChannelCount; ++channel)
+    {
+        s.totalPrintPixels.at(channel) +=
+            writeResult.channelStatistics.at(channel).print_pixels;
+        s.totalEmptyPixels.at(channel) +=
+            writeResult.channelStatistics.at(channel).empty_pixels;
+    }
+    const Json entry = MakeTransferLayerEntry(
+        layer, writeResult.channelStatistics, relativePath);
+    s.layers.push_back(entry);
+    s.layerStats.push_back(entry);
+    profile.reportbuildms += ElapsedMilliseconds(layerReportStart);
+
+    // 预览是 RGB/W/S/V 的显示用图，本就不含 T，故用六通道来源生成。
+    const WriterClock::time_point previewStart = WriterClock::now();
+    WriteLayerPreviews(
+        stagingDir, request, rgbwsvSource, s.generatedPreviews);
+    ThrowIfCancellationRequested(request.canceltoken, "after_layer_preview");
+    profile.previewwritems += ElapsedMilliseconds(previewStart);
+    ++s.writtenLayerCount;
+    if (request.layerwritecallback)
+    {
+        request.layerwritecallback(
+            s.writtenLayerCount, static_cast<int>(s.expectedLayerCount));
+    }
+}
+
 RgbwsvProductionPackageWriteResult RgbwsvProductionPackageSession::Finish()
 {
     State& s = *m_state;
@@ -1384,7 +1581,24 @@ RgbwsvProductionPackageWriteResult RgbwsvProductionPackageSession::Finish()
                 sliceReportFields["productionSettings"] =
                     *request.productionSettings;
             }
-            const Json sliceReport{std::move(sliceReportFields)};
+            // MW3-07：七通道时把六通道报告交给 rgbwsvt 增补器，
+            // 与 ComposeRgbwsvtLayer 同一条「后置增补」路子。
+            //
+            // 增补器读的是 `layers`（单模型切片报告的形状），而本会话用的是
+            // `layerStats`。两者在会话里【内容完全相同】——AppendLayer 往
+            // 两个数组 push 的是同一个 entry。故七通道时补一份同名键，
+            // 让增补后的报告与单模型那边形状一致，下游不必分两种情况读。
+            if (s.sevenChannel)
+            {
+                sliceReportFields["layers"] = Json{layerStats};
+            }
+            const Json sliceReport = s.sevenChannel
+                ? BuildRgbwsvtSliceReport(
+                      Json{std::move(sliceReportFields)},
+                      s.transferLayerStats,
+                      s.totalTransferChannelStats,
+                      s.totalTransferMaterialStats)
+                : Json{std::move(sliceReportFields)};
             Json::Object reportLinks{
                 {"slice", "reports/slice_report.json"},
                 {"preview", "reports/preview_report.json"},
@@ -1423,6 +1637,20 @@ RgbwsvProductionPackageWriteResult RgbwsvProductionPackageSession::Finish()
                      {"files", Json{generatedPreviews}},
                 })},
             };
+            if (s.sevenChannel)
+            {
+                // 七通道包必须自述为 p0.rgbwsvt.1：下游按 schema 决定
+                // 用几个通道去读 TIFF，写错这一项会让整包读不出来。
+                const RgbwsvtProtocol transferProtocol =
+                    CurrentRgbwsvtProtocol();
+                manifestObject["schema"] = transferProtocol.schema;
+                manifestObject["schemaVersion"] = transferProtocol.schema;
+                manifestObject["tiff"] = MakeTransferTiffJson(
+                    transferProtocol,
+                    request.storage,
+                    layers,
+                    s.totalTransferChannelStats);
+            }
             if (whiteSemantics.has_value())
             {
                 manifestObject["whiteSemantics"] = *whiteSemantics;
@@ -1463,12 +1691,21 @@ RgbwsvProductionPackageWriteResult RgbwsvProductionPackageSession::Finish()
                 request.canceltoken,
                 "package_validation");
             ValidatePersistedSceneExtension(stagingDir, request);
-            const RipValidationResult stagingValidation =
-                internal::ValidateSlicePackageArtifact(stagingDir);
+            // MW3-07：按协议分派暂存自检。七通道包若交给六通道校验器，
+            // 会在 manifest.schema 上以 E_SCHEMA_UNSUPPORTED 挡下；
+            // 而专用校验器【已经存在】（ValidateRgbwsvtPackage），
+            // 不必把 rip_reader 扩成七通道。
+            //
+            // 按 s.sevenChannel 分派而非读回 schema：若我们以为写了七通道
+            // 而 schema 写错，专用校验器会自己拒绝——这个组合比读回来再判更严。
             const ValidatedStagingPackageEvidence stagingEvidence =
-                MakeValidatedStagingPackageEvidence(
-                    artifactIdentity,
-                    stagingValidation);
+                s.sevenChannel
+                    ? MakeValidatedStagingPackageEvidence(
+                          artifactIdentity,
+                          ValidateRgbwsvtPackage(stagingDir))
+                    : MakeValidatedStagingPackageEvidence(
+                          artifactIdentity,
+                          internal::ValidateSlicePackageArtifact(stagingDir));
             ThrowIfCancellationRequested(
                 request.canceltoken,
                 "before_package_publish");

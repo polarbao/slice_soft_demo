@@ -1,6 +1,7 @@
 #include "slicer_core/api/artifacts/PackageArtifactSafety.h"
 #include "slicer_core/json_value.h"
 #include "slicer_core/output/rgbwsv/RgbwsvPackageWriter.h"
+#include "slicer_core/output/rgbwsvt/RgbwsvtProtocol.h"
 #include "slicer_core/pipeline/GlobalSurfaceShellProductionPackage.h"
 #include "slicer_core/rip_reader.h"
 #include "slicer_core/tiff_io.h"
@@ -177,6 +178,120 @@ slicer_core::RgbwsvProductionPackageWriteRequest MakeRequest(
         request.layers.push_back(MakeLayer(layerIndex));
     }
     return request;
+}
+
+/**
+ * @brief MW3-07：整版七通道包必须自述为 `p0.rgbwsvt.1`，且逐层带 T 计数。
+ *
+ * 下游是按 `manifest.schema` 决定用几个通道去读 TIFF 的。若字节写成七通道
+ * 而 schema 仍是 `p0.rgbwsv.2`，读出来是错位的花屏，且**不会有任何报错**。
+ * 这类静默错误正是本用例要挡的。
+ *
+ * 同时钉住 staging / 租约 / 原子发布这些与六通道共用的部分照常工作——
+ * 七通道只该改「写哪个 TIFF、层条目带几个通道、报告是否增补」三处。
+ */
+bool TransferSessionPublishesSevenChannelPackage()
+{
+    try
+    {
+    const std::filesystem::path root{
+        MakeTestDirectory("session-rgbwsvt")};
+    const std::filesystem::path packageDir{root / "package"};
+    slicer_core::RgbwsvProductionPackageWriteRequest request{
+        MakeRequest(packageDir)};
+    // 与既有会话用例同理：逐层路径下 layers 由 AppendLayer 交付，不预置整栈。
+    const std::vector<slicer_core::RgbwsvProductionLayer> sources{
+        std::move(request.layers)};
+    request.layers.clear();
+
+    const std::size_t pixelCount =
+        static_cast<std::size_t>(kWidth) * static_cast<std::size_t>(kHeight);
+    // 全幅都算模型，只有 (1,1) 是缩裹：缩裹掩膜必须是模型掩膜的子集，
+    // 否则 ComposeRgbwsvtLayer 会以 MaskOutsideModel 拒绝。
+    const std::vector<std::uint8_t> modelMask(pixelCount, 1U);
+    std::vector<std::uint8_t> transferMask(pixelCount, 0U);
+    transferMask.at(
+        static_cast<std::size_t>(1) * static_cast<std::size_t>(kWidth)
+        + static_cast<std::size_t>(1)) = 1U;
+
+    slicer_core::RgbwsvProductionPackageWriteResult writeResult;
+    {
+        slicer_core::RgbwsvProductionPackageSession session{request};
+        session.SetExpectedLayerCount(kLayerCount);
+        for (const slicer_core::RgbwsvProductionLayer& source : sources)
+        {
+            const slicer_core::RgbwsvtProductionLayer plate =
+                slicer_core::ComposeRgbwsvtLayer(
+                    source,
+                    modelMask,
+                    transferMask,
+                    slicer_core::CurrentRgbwsvtProtocol().printValue);
+            session.AppendLayer(plate, source);
+        }
+        writeResult = session.Finish();
+    }
+
+    bool passed = ExpectTrue(
+        std::filesystem::exists(packageDir / "manifest.json"),
+        "seven-channel session publishes a manifest");
+    if (!passed)
+    {
+        return false;
+    }
+    const slicer_core::Json manifest = ReadJson(packageDir / "manifest.json");
+    passed = ExpectTrue(
+                 manifest.at("schema").as_string() == "p0.rgbwsvt.1",
+                 "seven-channel package declares the rgbwsvt schema")
+        && passed;
+    const slicer_core::Json::Object tiff = manifest.at("tiff").as_object();
+    passed = ExpectTrue(
+                 tiff.at("channelCount").as_int() == 7,
+                 "manifest tiff section reports seven channels")
+        && passed;
+    const slicer_core::Json::Array order =
+        tiff.at("channelOrder").as_array();
+    passed = ExpectTrue(
+                 order.size() == 7U && order.back().as_string() == "T",
+                 "manifest channel order ends with the transfer channel")
+        && passed;
+
+    // 每层恰有一个缩裹像素，故逐层 T 打印计数必须是 1。
+    const slicer_core::Json::Array layers = manifest.at("layers").as_array();
+    passed = ExpectTrue(
+                 layers.size() == static_cast<std::size_t>(kLayerCount),
+                 "every appended layer reaches the manifest")
+        && passed;
+    if (!layers.empty())
+    {
+        const slicer_core::Json::Object printPixels =
+            layers.front().at("printPixels").as_object();
+        passed = ExpectTrue(
+                     printPixels.count("T") == 1U
+                         && printPixels.at("T").as_int() == 1,
+                     "layer entry counts the single transfer pixel under T")
+            && passed;
+    }
+
+    const slicer_core::Json sliceReport =
+        ReadJson(packageDir / "reports" / "slice_report.json");
+    passed = ExpectTrue(
+                 sliceReport.at("packageProtocol").as_string()
+                     == "p0.rgbwsvt.1",
+                 "slice report was augmented by the rgbwsvt builder")
+        && passed;
+    return ExpectTrue(
+               writeResult.packageDir == packageDir,
+               "seven-channel session publishes to the requested directory")
+        && passed;
+    }
+    catch (const std::exception& error)
+    {
+        // 未捕获异常会让整个测试二进制 abort，把【其余所有用例的结果一起带走】，
+        // 且缓冲区未刷新时连 stdout 都看不到。本仓踩过这个坑，故就地捕获成失败。
+        return ExpectTrue(
+            false,
+            std::string{"seven-channel session threw: "} + error.what());
+    }
 }
 
 /**
@@ -981,6 +1096,7 @@ int main()
         {"broken_layer_sequence_writes_nothing", BrokenLayerSequenceWritesNothing},
         {"existing_package_is_atomically_replaced", ExistingPackageIsAtomicallyReplaced},
         {"concurrent_package_target_is_rejected_before_writing", ConcurrentPackageTargetIsRejectedBeforeWriting},
+        {"transfer_session_publishes_seven_channel_package", TransferSessionPublishesSevenChannelPackage},
     };
 
     bool passed{true};

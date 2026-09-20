@@ -6,6 +6,9 @@
 #include "slicer_core/materials/varnish_geometry/OuterVarnishDiscretization.h"
 #include "slicer_core/output/rgbwsv/RgbwsvPackage.h"
 #include "slicer_core/output/rgbwsv/RgbwsvSceneExtension.h"
+// 只取 RgbwsvtProductionLayer。不可改用 RgbwsvtLegacyPackageMetadata.h——
+// 那个头【反过来包含本文件】取 RgbwsvProductionStorageSpec，会成环。
+#include "slicer_core/output/rgbwsvt/RgbwsvtProtocol.h"
 
 #include <cstdint>
 #include <filesystem>
@@ -203,6 +206,25 @@ public:
 
     /// 写一层 TIFF 并累积 manifest 条目与通道统计。
     void AppendLayer(const RgbwsvProductionLayer& layer);
+
+    /**
+     * @brief MW3-07：写一层**整版七通道** TIFF（`p0.rgbwsvt.1`）。
+     *
+     * staging、租约、原子发布、预览、进度回调与六通道路径**完全共用**，
+     * 只有「写哪个 TIFF、层条目带几个通道、报告是否增补」三处按协议分叉。
+     *
+     * 一经调用，本会话即进入七通道模式：`Finish()` 会把清单的 schema
+     * 换成 `p0.rgbwsvt.1`、`tiff` 换成七通道描述，并用
+     * `BuildRgbwsvtSliceReport` 增补切片报告。
+     * **同一会话不得混用两个重载**——那会产出通道数不一致的层。
+     *
+     * @param layer        已装配的整版七通道层（见 `ComposeRgbwsvtLayer`）
+     * @param rgbwsvSource 装配它所用的整版六通道层。仅用于预览与几何校验：
+     *                     预览是 RGB/W/S/V 四通道的显示用图，本就不含 T。
+     */
+    void AppendLayer(
+        const RgbwsvtProductionLayer& layer,
+        const RgbwsvProductionLayer& rgbwsvSource);
 
     /**
      * @brief 显式告知期望层数（进度回调的分母）。
