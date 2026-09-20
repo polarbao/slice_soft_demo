@@ -5,8 +5,12 @@
 #include <QStringList>
 #include <QWidget>
 
+class QCheckBox;
+class QDoubleSpinBox;
 class QLabel;
 class QListWidget;
+class QPushButton;
+class QSpinBox;
 class QToolButton;
 
 /** @brief 带本地多选命令的宿主侧模型实例列表。 */
@@ -49,6 +53,18 @@ public:
     [[nodiscard]] int ModelCount() const;
 
     /**
+     * @brief 返回当前显示给操作员的网格值。
+     * @return 自动和手动布局使用的由宿主持有的布局请求。
+     */
+    [[nodiscard]] hostgridlayoutrequest LayoutRequest() const;
+
+    /** @brief 返回操作员是否启用了导入后的自动规则排版。 */
+    [[nodiscard]] bool AutoLayoutEnabled() const;
+
+    /** @brief 返回下一批模型的自动定向与 XY 原点偏移。 */
+    [[nodiscard]] hostmodelimportoptions ImportOptions() const;
+
+    /**
      * @brief 选择从宿主本地画布拾取的实例。
      * @param instanceId 稳定场景实例标识。
      * @return 实例存在于展示列表时返回 true。
@@ -65,10 +81,18 @@ signals:
     /** @brief 发布用于视图高亮的宿主本地选择。 */
     void SigSelectionChanged(const QStringList& instanceIds);
 
+    /** @brief 请求一次权威的 applyGridLayout 提交。 */
+    void SigLayoutRequested(
+        int maxColumns,
+        int maxRows,
+        double columnGapMm,
+        double rowGapMm);
+
 private slots:
     void OnSelectAllRequested();
     void OnRemoveRequested();
     void OnSelectionChanged();
+    void OnApplyLayout();
 
 private:
     void UpdateControls();
@@ -78,5 +102,17 @@ private:
     QToolButton* m_addButton{nullptr};
     QToolButton* m_selectAllButton{nullptr};
     QToolButton* m_removeButton{nullptr};
+    // 「导入落位与规则排版」——这组开关在导入执行的那一刻被读，
+    // 故与「添加模型」按钮同属一个面板；曾经它们分居两个标签页，
+    // 用户按标签顺序操作时导入完才发现开关，勾选无任何效果。
+    QSpinBox* m_columnsSpin{nullptr};
+    QSpinBox* m_rowsSpin{nullptr};
+    QDoubleSpinBox* m_columnGapSpin{nullptr};
+    QDoubleSpinBox* m_rowGapSpin{nullptr};
+    QCheckBox* m_autoOrientCheck{nullptr};
+    QCheckBox* m_autoLayoutCheck{nullptr};
+    QDoubleSpinBox* m_importOriginXSpin{nullptr};
+    QDoubleSpinBox* m_importOriginYSpin{nullptr};
+    QPushButton* m_applyLayoutButton{nullptr};
     bool m_commandsEnabled{false};
 };

@@ -170,15 +170,22 @@ void HostMainWindow::BuildInterface()
     m_inspectorTabs->addTab(m_sliceJobPanel, QStringLiteral("切片作业"));
 
     m_transformLayoutPanel = new HostTransformLayoutPanel(m_inspectorTabs);
-    m_inspectorTabs->addTab(
-        m_transformLayoutPanel, QStringLiteral("变换与排版"));
+    // 「导入与排版」已迁往「模型」页，这一页只剩实例变换，标题随之收窄。
+    m_inspectorTabs->addTab(m_transformLayoutPanel, QStringLiteral("变换"));
 
     m_ripSettingsPanel = new HostRipSettingsPanel(m_inspectorTabs);
     m_ripSettingsPanel->setObjectName(QStringLiteral("hostRipSettingsPanel"));
     m_ripSettingsPanel->SetModuleDirectory(m_ripModuleDirectory);
     m_inspectorTabs->addTab(m_ripSettingsPanel, QStringLiteral("RIP 设置"));
     ConfigureHostForms(m_inspectorTabs);
-    GroupHostInspectorSections(m_transformLayoutPanel,{QStringLiteral("变换"),QStringLiteral("导入与排版")});
+    // 变换面板只剩 1 个 group，但仍走 GroupHostInspectorSections：
+    // 实测去掉它之后本页会超出 hostux 的零滚动判据 14px——
+    // sections 这个 QTabWidget 的最小尺寸比它包住的 QGroupBox 小，
+    // 去掉包装等于把 group 的最小高度直接暴露给滚动区。
+    //
+    // ⚠ 标题数必须与直接子 QGroupBox 数【相等】，否则该函数静默 return，
+    //   连它顺带做的 WrapLongRows 也一并跳过，而这不会有任何报错。
+    GroupHostInspectorSections(m_transformLayoutPanel,{QStringLiteral("变换")});
     GroupHostInspectorSections(m_ripSettingsPanel,{QStringLiteral("参数"),QStringLiteral("路径"),QStringLiteral("手动 RIP")});
     ConfigureHostInspectorPages(m_inspectorTabs);
     importLayout->addWidget(m_inspectorTabs, 1);
@@ -393,8 +400,8 @@ void HostMainWindow::BuildInterface()
         this,
         &HostMainWindow::OnLandOnBuildPlateRequested);
     connect(
-        m_transformLayoutPanel,
-        &HostTransformLayoutPanel::SigLayoutRequested,
+        m_modelListPanel,
+        &HostModelListPanel::SigLayoutRequested,
         this,
         &HostMainWindow::OnLayoutRequested);
     RefreshRipRuntimeStatus();

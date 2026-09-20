@@ -53,7 +53,7 @@ void HostMainWindow::ImportModelPaths(const QStringList& modelPaths)
     QList<hostmodelimportresult> results;
     QString error;
     const hostmodelimportoptions importOptions =
-        m_transformLayoutPanel->ImportOptions();
+        m_modelListPanel->ImportOptions();
     const bool imported = m_importWorkflow->ImportModels(
         modelPaths, &results, &error, importOptions);
     if (!imported)
@@ -67,7 +67,7 @@ void HostMainWindow::ImportModelPaths(const QStringList& modelPaths)
     QString autoLayoutError;
     hostsceneeditresult autoLayoutResult;
     const bool autoLayoutEnabled =
-        m_transformLayoutPanel->AutoLayoutEnabled();
+        m_modelListPanel->AutoLayoutEnabled();
     const bool autoLayoutRequired =
         HostImportPlacementPolicy::RequiresGridLayout(
             m_importWorkflow->InstanceCount(),
@@ -75,7 +75,7 @@ void HostMainWindow::ImportModelPaths(const QStringList& modelPaths)
     if (autoLayoutRequired)
     {
         autoLayoutApplied = m_importWorkflow->ApplyGridLayout(
-            m_transformLayoutPanel->LayoutRequest(),
+            m_modelListPanel->LayoutRequest(),
             &autoLayoutResult,
             &autoLayoutError);
     }
@@ -136,7 +136,7 @@ void HostMainWindow::ImportModelPaths(const QStringList& modelPaths)
             this,
             QStringLiteral("模型已导入，但自动排版失败"),
             QStringLiteral(
-                "%1\n\n已导入的模型仍保留，可在“变换与排版”页调整参数后手动排版。")
+                "%1\n\n已导入的模型仍保留，可在“模型”页调整参数后手动排版。")
                 .arg(layoutSummary));
     }
     RefreshSceneViews();

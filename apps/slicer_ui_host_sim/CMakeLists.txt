@@ -858,6 +858,10 @@ add_executable(hostflow_hb03_transform_layout_tests
     HostModelImportWorkflow.cpp
     HostModelImportWorkflow.h
     HostModelImportWorkflowScene.cpp
+    # 「导入落位与规则排版」已迁往模型列表面板，本用例的排版断言随之
+    # 改由它提供控件，故要一并编入。
+    HostModelListPanel.cpp
+    HostModelListPanel.h
     HostTransformLayoutPanel.cpp
     HostTransformLayoutPanel.h
     ModuleClient.cpp
@@ -1514,6 +1518,15 @@ add_test(
     NAME hostflow_hb08_workspace_ui_smoke
     COMMAND slicer_ui_host_sim
         --hostflow-workspace-ui-self-test
+        --module $<TARGET_FILE:slicer_module>
+)
+
+# 面板归属护栏：钉死「哪个控件在哪一页」。
+# 刻意搬迁面板时它会变红，用意是让搬迁必须显式改断言。
+add_test(
+    NAME hostflow_panel_ownership
+    COMMAND slicer_ui_host_sim
+        --hostflow-panel-ownership-self-test
         --module $<TARGET_FILE:slicer_module>
 )
 
