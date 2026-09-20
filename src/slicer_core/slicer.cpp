@@ -1267,6 +1267,14 @@ SliceRunResult run_slicer(const std::filesystem::path& config_path, const SliceR
             ownedLayer.output.heightPx = grid.height_px;
             ownedLayer.output.channels = std::move(layer);
             ownedLayer.semantic = std::move(materialClosureInput);
+            // MW3-05：启用 T 时把本层缩裹占位一并交出。
+            // transferMask 是会话里逐层复用的暂存缓冲，此处必须【复制】，
+            // 下一层会把它覆盖掉。
+            if (transferSession.has_value())
+            {
+                ownedLayer.transfermask =
+                    transferSession.value().transferMask;
+            }
             const SliceRunLayerConsumeResult consumeResult =
                 options.ownedlayercallback(std::move(ownedLayer));
             switch (consumeResult.status)

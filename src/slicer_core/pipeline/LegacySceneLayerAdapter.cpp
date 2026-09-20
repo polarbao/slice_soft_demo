@@ -230,6 +230,7 @@ SceneRasterAdapterResult AdaptLegacySceneLayers(
                     produced.semantic.outerVarnishShellMask);
             layer.supportownership =
                 std::move(produced.semantic.supportFillMask);
+            layer.transfermask = std::move(produced.transfermask);
             layer.output = std::move(produced.output);
             if (request.layersink)
             {

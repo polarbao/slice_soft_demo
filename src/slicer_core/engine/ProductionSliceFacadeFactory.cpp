@@ -243,6 +243,58 @@ api::ApiResult<api::SliceResult> RunExistingProductionEntry(
     }
 }
 
+/**
+ * @brief MW3-05：整版多实例 RGBWSVT 生产。
+ *
+ * 形状与六通道的 `RunExistingProductionEntry` 一致——构造
+ * `MultiModelProductionRequest` 后交给多模型生产服务，唯一差别是
+ * `transferchannel` 置位，服务据此挂整版掩膜出口并做七通道装配。
+ */
+api::ApiResult<api::SliceResult> RunTransferPlateProductionEntry(
+    const api::SliceRequest& sliceRequest,
+    const api::ICancelToken& cancelToken,
+    const api::ProgressSink& progressSink)
+{
+    MultiModelProductionRequest request;
+    request.effectiveconfigpath = sliceRequest.scene_config_path;
+    request.jobid = sliceRequest.job_id;
+    request.attemptid =
+        api::artifacts::MakePackageAttemptId(sliceRequest.correlation_id);
+    request.canceltoken = &cancelToken;
+    request.transferchannel = true;
+    request.progresscallback =
+        [&progressSink](const SliceRunProgress& progress)
+        {
+            if (!progressSink)
+            {
+                return;
+            }
+            api::ProgressEvent event;
+            event.stage = progress.phase;
+            event.percent = progress.percent;
+            event.layers_done = progress.current;
+            event.layers_total = progress.total;
+            progressSink(event);
+        };
+
+    const MultiModelProductionResult produced =
+        RunMultiModelProductionService(request);
+    if (!produced.packagewritten || produced.error.has_value())
+    {
+        return api::ApiResult<api::SliceResult>::Failure(
+            MapProductionError(produced));
+    }
+    api::SliceResult result;
+    result.package_dir = produced.packagedir;
+    result.manifest_path = produced.packagedir / "manifest.json";
+    result.layer_count = produced.layercount;
+    result.engine_version = "rgbwsvt-plate-v1";
+    result.elapsed_ms = static_cast<std::uint64_t>(
+        std::llround(std::max(0.0, produced.profile.total_ms)));
+    result.profile = produced.profile;
+    return api::ApiResult<api::SliceResult>::Success(std::move(result));
+}
+
 api::ApiResult<api::SliceResult> RunTransferProductionEntry(
     const api::SliceRequest& sliceRequest,
     const api::ICancelToken& cancelToken,
@@ -276,27 +328,39 @@ api::ApiResult<api::SliceResult> RunTransferProductionEntry(
             throw std::runtime_error("effective scene cannot be decoded");
         }
         const SceneModelInstance* visibleInstance{nullptr};
+        std::size_t visibleCount{0U};
         for (const SceneModelInstance& instance : decoded.scene.instances)
         {
             if (!instance.instance.visible)
             {
                 continue;
             }
-            if (visibleInstance != nullptr)
+            ++visibleCount;
+            if (visibleInstance == nullptr)
             {
-                return api::ApiResult<api::SliceResult>::Failure(
-                    MakeError(
-                        "PM-SLICER-LAYOUT-0023",
-                        "RGBWSVT scene production requires exactly one visible instance"));
+                visibleInstance = &instance;
             }
-            visibleInstance = &instance;
         }
-        if (visibleInstance == nullptr)
+        if (visibleCount == 0U)
         {
+            // 零可见实例仍然拒绝：整版切片至少要有一件。
+            // 见 DECISION-03 §5「明确不放开的」。
             return api::ApiResult<api::SliceResult>::Failure(
                 MakeError(
                     "PM-SLICER-LAYOUT-0023",
-                    "RGBWSVT scene production requires exactly one visible instance"));
+                    "RGBWSVT scene production requires at least one visible instance"));
+        }
+        if (visibleCount > 1U)
+        {
+            // MW3-05：整版多实例走多模型生产服务，与六通道同一条管线。
+            //
+            // **单实例【不】走这里**，这是硬约束而非省事：DECISION-03 §4 把
+            // 「单实例产出对 MW3-00 快照逐字节一致」列为放开护栏的前置条件，
+            // 而改道必然改变它的字节（换合成器、换写包器、画幅从模型包围盒
+            // 变成整版画布）。若单实例也改道，就只能回头放宽那条前置条件，
+            // 而它本来就是用来兜住「改道动了不该动的东西」的。
+            return RunTransferPlateProductionEntry(
+                sliceRequest, cancelToken, progressSink);
         }
 
         const auto model = std::find_if(

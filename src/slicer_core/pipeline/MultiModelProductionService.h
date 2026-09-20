@@ -61,6 +61,19 @@ struct MultiModelProductionRequest
      * The caller must keep the token alive until the service returns.
      */
     const api::ICancelToken* canceltoken{nullptr};
+
+    /**
+     * @brief MW3-05：本次运行产出整版七通道包（`p0.rgbwsvt.1`）。
+     *
+     * 由 `RunTransferProductionEntry` 显式置位——**它本来就知道自己是
+     * 缩裹入口**，比让服务去重解析 profile 里的 packageProtocol 更直接，
+     * 也让「入口说七通道、实际却没有一个实例带缩裹」这种不一致可被察觉。
+     *
+     * 置位后服务会给合成请求挂上 `platemasksink`、把整版六通道层按整版
+     * 掩膜装配成七通道层，再交给包会话的七通道 `AppendLayer`。
+     * **为 false 时整条路径零分配、零分支**，六通道行为逐字节不变。
+     */
+    bool transferchannel{false};
 };
 
 /**

@@ -90,6 +90,11 @@ struct SliceRunOwnedLayer
 {
     RgbwsvProductionLayer output;
     MaterialClosureSemanticLayerInput semantic;
+
+    /// MW3-05：本层缩裹（T）占位，供场景侧合成整版掩膜；六通道运行恒为空。
+    /// `output` 装的是【叠 T 之前】的六通道层——整版要先合成再叠 T，
+    /// 故必须交出「六通道层 + 掩膜」而非叠好的七通道层。
+    std::vector<std::uint8_t> transfermask;
 };
 
 /** @brief Stable acknowledgement returned before the producer advances. */

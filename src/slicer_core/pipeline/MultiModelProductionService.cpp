@@ -7,6 +7,7 @@
 #include "slicer_core/model.h"
 #include "slicer_core/pipeline/LegacySceneLayerAdapter.h"
 #include "slicer_core/pipeline/MultiModelScenePackageWriter.h"
+#include "slicer_core/output/rgbwsvt/RgbwsvtProtocol.h"
 #include "slicer_core/pipeline/MultiModelSliceOrchestrator.h"
 #include "slicer_core/scene/SceneEffectiveConfig.h"
 #include "slicer_core/scene/SceneResourceIdentity.h"
@@ -1361,6 +1362,18 @@ MultiModelProductionResult RunMultiModelProductionServiceImpl(
     // RAII 回滚清 staging -> 包从未发布）。修法是下方的 SetExpectedLayerCount
     // 与 78% 锚点上移；完整链条见 REPORT §9.5.6 与任务卡 9.5.6。
     constexpr bool kStreamingPackageWriteEnabled = true;
+    // MW3-05：整版七通道目前只走流式逐层发布。非流式是整栈写，
+    // 那条路上没有逐层装配点，硬接会把六通道层原样写成「七通道包」。
+    // 与其悄悄产出错包，不如显式拒绝——这正是本专项在放开的那两道
+    // 护栏当初存在的理由，不该一边放开一边再造一个同类问题。
+    if (request.transferchannel && !streamingInstances)
+    {
+        return Block(
+            request,
+            MultiModelProductionErrorCode::PipelineModeNotAdmitted,
+            "sliceContract.outputPackageProtocol",
+            "RGBWSVT plate production requires the streaming package path");
+    }
     // 全局层数：对齐判定已保证各 offsetz 为 0，故取各实例 localgrid 的最大层数。
     // 会话在合成前建立，grid.layerCount 此刻还是 0，进度分母必须由此处补上。
     int streamingLayerCount{0};
@@ -1383,13 +1396,58 @@ MultiModelProductionResult RunMultiModelProductionServiceImpl(
             78);
         packageSession.emplace(writeRequest);
         packageSession->SetExpectedLayerCount(streamingLayerCount);
+        // MW3-05：整版两张掩膜先于同层的 layersink 交出（合成器保证次序），
+        // 故此处存下本层的即可，不必自己配对层号。
+        std::vector<std::uint8_t> plateModelMask;
+        std::vector<std::uint8_t> plateTransferMask;
+        int plateMaskLayerIndex{-1};
+        if (request.transferchannel)
+        {
+            composeRequest.platemasksink =
+                [&plateModelMask, &plateTransferMask, &plateMaskLayerIndex](
+                    const int globalLayerIndex,
+                    const std::span<const std::uint8_t> modelMask,
+                    const std::span<const std::uint8_t> transferMask)
+                {
+                    plateMaskLayerIndex = globalLayerIndex;
+                    plateModelMask.assign(modelMask.begin(), modelMask.end());
+                    plateTransferMask.assign(
+                        transferMask.begin(), transferMask.end());
+                };
+        }
         composeRequest.layersink =
-            [&packageSession, &barrier](
+            [&packageSession,
+             &barrier,
+             &request,
+             &plateModelMask,
+             &plateTransferMask,
+             &plateMaskLayerIndex](
                 const int globalLayerIndex,
                 RgbwsvProductionLayer&& layer,
                 const RgbwsvProductionLayerStatistics&)
             {
-                packageSession->AppendLayer(layer);
+                if (request.transferchannel)
+                {
+                    // 掩膜必须来自【同一层】。合成器是先掩膜后层地交出的，
+                    // 层号对不上说明次序被改动过，此时宁可炸也不能错配——
+                    // 错配的后果是缩裹落在别的层上，产出看着正常但是错的。
+                    if (plateMaskLayerIndex != globalLayerIndex)
+                    {
+                        throw std::runtime_error(
+                            "RGBWSVT plate masks do not belong to the composed layer");
+                    }
+                    const RgbwsvtProductionLayer plate =
+                        ComposeRgbwsvtLayer(
+                            layer,
+                            plateModelMask,
+                            plateTransferMask,
+                            CurrentRgbwsvtProtocol().printValue);
+                    packageSession->AppendLayer(plate, layer);
+                }
+                else
+                {
+                    packageSession->AppendLayer(layer);
+                }
                 // provider 也会在进入下一层前放行上一层；两处都调是幂等的
                 // （ReleaseLayer 只清 pendingLayer 恰等于该层的实例）。
                 barrier.ReleaseLayer(globalLayerIndex);

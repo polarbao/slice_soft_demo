@@ -36,6 +36,18 @@ struct MultiModelLayerComposeRequest
     std::function<void(int, RgbwsvProductionLayer&&, const RgbwsvProductionLayerStatistics&)>
         layersink;
 
+    /**
+     * @brief MW3-05：整版两张掩膜的出口，原样透传给 SceneLayerComposeRequest。
+     *
+     * 设置它即表示本次合成要产整版缩裹；语义见 `SceneRasterTypes.h` 中
+     * 同名字段的注释。不设置时合成器零分配、行为逐字节不变。
+     */
+    std::function<void(
+        int,
+        std::span<const std::uint8_t>,
+        std::span<const std::uint8_t>)>
+        platemasksink;
+
     /** @brief Synchronous, non-owning cancellation source for composition. */
     const api::ICancelToken* canceltoken{nullptr};
 };
