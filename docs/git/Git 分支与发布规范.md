@@ -15,7 +15,12 @@
 > 触发这次修订的实测依据有两条：`main` 与 `product/packaged-slicer` 已停在**同一个提交**
 > （第二次修订把 main 快进过去之后两者职责重合），且引用该分支名的 36 个文件**全是 `.md`、
 > 零个脚本硬编码**，改名无功能性风险。迁移步骤与回退见同目录
-> 《分支模型迁移方案_product 退场与 dev 集成线.md》。
+> 《分支模型迁移记录_product 退场与集成线改名.md》。（该文件已改名，此处顺带更正旧链接。）
+>
+> **2026-09-20 第四次修订**：用户指出工作分支**不应直接合进集成线**，
+> 中间要有一条**功能主干**，那条线测过了再进集成线。
+> 据此新增 `feature/main`，分支层级由三层变四层。
+> 命名只能带前缀：裸 `feature` 与 `feature/xxx` 互斥（已实测，同 `dev`/`develop` 那条约束）。
 
 ---
 
@@ -27,8 +32,9 @@
 | 分支 | 作用 | 实际状态（2026-09-18 第三次修订后） |
 |---|---|---|
 | `main` | **发布线**，同时是 `origin/HEAD` 指向的入口 | 只被快进，**永不直接提交**；承接原 `product/packaged-slicer` 的全部职责 |
-| `develop/packaged-slicer` | **集成线**：功能分支合回此处，累积到里程碑再进发布线 | 由原 `develop` 改名 |
-| `feature/<agent>-<专项slug>-<描述>` | agent 工作分支 | 用完合入集成线后删除 |
+| `develop/packaged-slicer` | **集成线**：只接收**已测过的批次**，累积到里程碑再进发布线 | 由原 `develop` 改名 |
+| `feature/main` | **功能主干**：工作分支先汇到这里，整批测过再进集成线 | 2026-09-20 第四次修订新增 |
+| `feature/<agent>-<专项slug>-<描述>` | agent 工作分支 | 用完合入**功能主干**后删除 |
 | `product/legacy-slicer` | 并行 legacy 线，手工运行时 | 领先 origin 2 条；**有独立工作树**，本次迁移不动它 |
 | `archive/<原因>-<日期>` | 归档快照 | origin 上 2 条 + 同名标签 |
 
@@ -74,13 +80,23 @@
 ```
 feature/<agent>-*        ── 核心档 12~18 秒 ──┐  自测
                                               ↓
-develop/packaged-slicer  ── 快集档 约 3 分钟 ─┐  集成线
+feature/main             ── 快集档 约 3 分钟 ─┐  功能主干（批次在此蹚平）
+                                              ↓
+develop/packaged-slicer  ── 快集档 约 3 分钟 ─┐  集成线（只收绿的批次）
                                               ↓
 main                     ── 全量档 约 16 分钟 ┘  发布线（+ 字节级基线）
 ```
 
-**集成线的收益是可量化的**：几个功能可以在它上面累积、每次只付 3 分钟的快集闸门，
-不必每合一个就付 16 分钟的里程碑闸门。这是省时间，不是走流程。
+**为什么功能主干与集成线跑同一档而不是白多一层**：两者的差别不在闸门档位，
+在**谁承担未知**。功能主干是几条在制品互相碰撞的地方——A 改了面板、B 改了工艺，
+单独各自都绿，合到一起才暴露冲突；集成线则只接收已经蹚平的批次，
+它上面出现红色就说明**批次之间**出了问题，而不是某条在制品自身的问题。
+
+把这两件事分开的收益是**定位范围**：集成线红了，怀疑面是批次间的交互；
+功能主干红了，怀疑面是刚合进来的那一条。合在一层时这两种红无从区分。
+
+**集成线的收益仍然是可量化的**：几个批次可以在它上面累积、每次只付 3 分钟的闸门，
+不必每合一批就付 16 分钟的里程碑闸门。这是省时间，不是走流程。
 
 **第三次修订没有改变级数与判据**，只是把终点从 `product/packaged-slicer` 换成了 `main`——
 两级闸门、各自的判据与豁免范围全部原样保留。**换名字不是放宽门禁。**
@@ -109,12 +125,15 @@ feature/<agent>-<专项slug>-<短描述>    # agent 取 claude 或 codex
 
 ### 2.2 从哪里拉
 
-**功能分支从集成线拉**，不是从 `main`（它是发布线，只被快进）：
+**功能分支从功能主干拉**，不是从集成线、更不是从 `main`：
 
 ```bash
 git fetch origin
-git checkout -b feature/codex-p0fix-xxx origin/develop/packaged-slicer
+git checkout -b feature/codex-p0fix-xxx origin/feature/main
 ```
+
+从功能主干拉的理由：它上面有同批次其它在制品的改动，**冲突在这里暴露比在集成线暴露便宜**。
+从集成线拉会拿到一份"干净但过时"的起点，等合回时才撞上同批次的别人。
 
 **热修复例外**：从 `main` 拉，修完合回 `main` 与 `develop/packaged-slicer` **两侧**——
 否则下一次集成线进 `main` 会把修复覆盖掉。
@@ -144,19 +163,29 @@ type(专项slug): 【功能分类】中文摘要
 **能快进就快进，不要制造无意义的合并提交。** 分两步走：
 
 ```bash
-# ① 功能分支 → 集成线（跑快集档）
-git merge --no-ff develop/packaged-slicer   # 先把集成线合进来，解冲突、跑验证
-ctest --preset slicesoft-debug-fast         # 闸门
-git checkout develop/packaged-slicer && git merge --ff-only feature/claude-xxx
+# ① 功能分支 → 功能主干（跑核心档；纯 .md 改动同档）
+git merge --no-ff feature/main              # 先把主干合进来，解冲突
+ctest --preset slicesoft-debug-core         # 闸门
+git checkout feature/main && git merge --ff-only feature/claude-xxx
+git branch -d feature/claude-xxx
+git push origin feature/main
+
+# ② 功能主干 → 集成线（整批跑快集档）
+ctest --preset slicesoft-debug-fast         # 闸门：这一步才是「批次测过了」
+git checkout develop/packaged-slicer && git merge --ff-only feature/main
 git push origin develop/packaged-slicer
 
-# ② 集成线 → main（里程碑，跑全量 + 基线）
+# ③ 集成线 → main（里程碑，跑全量 + 基线）
 cmake --build <构建目录> --config Debug          # 全量重建，不加 --target
 python scripts/CaptureSliceOutputBaseline.py --verify
 ctest --preset slicesoft-debug-full
 git checkout main && git merge --ff-only develop/packaged-slicer
 git push origin main
 ```
+
+> **不要跳层**。工作分支直接合进集成线会让「集成线只收绿批次」这条保证失效——
+> 它一旦红了，就分不清是批次间冲突还是刚合进来那条自身的问题。
+> （2026-09-20 修订前本文即如此，实际操作也是直接合集成线，属已修正的做法。）
 
 > 为什么反向先合：验证要在**产出过基线的那个构建目录**里做（本仓有多个构建目录，个别已坏）。
 > 反向合完再让 `main` 快进，`main` 侧零冲突、零额外验证。
@@ -211,6 +240,7 @@ git push origin main
    |---|---|---|
    | `module_logging_integration_tests` | `-j8` 下耗时膨胀约 3.5 倍（隔离 4.3~7.4 秒），撞上 `SliceSoftDiagnostics.cmake` 给它设的 `TIMEOUT 60`。2026-09-18、09-20 各红过一次，隔离与复跑均全绿 | 隔离重跑确认后放行 |
    | `hostflow_he06_texture_white_preflight` | **测试自身设计里的竞态**：`HostTextureWhitePreflightTests.cpp:112-124` 连发两次 `RequestScan`，并断言 `discardedCount >= 1` 与 `decodecount == 1`——两者都假设第一次扫描在第二次到达时仍在飞行中；机器快时第一次先完成，断言即不成立。实测隔离 13 次挂 1 次（约 8%），`-j4` 下更易触发 | 隔离重跑确认后放行；**真修应让测试自己控制时序**，而不是依赖调度巧合 |
+   | `stage14c06_spi_conformance` | 对机器负载敏感：隔离 8 通过 / 1 失败（约 11%），耗时 8.1~12.4 秒。2026-09-20 两次变红时 CPU 均被第三方进程（verysync、msedgewebview2、Code）占到 82~100% | 隔离重跑确认后放行；**判读前先看 CPU 负载** |
 
    **已移出本表**：`slicer_stage14d07_r2_engine_conformance_test`、
    `slicer_stage14e04b_capability_coverage_test`、`hostflow_ha03_qt_end_to_end`
@@ -227,6 +257,8 @@ git push origin main
    「归因」有门槛，三样都要有：**① 隔离重跑**（无并发，至少 3 次，给出分布）；
    **② 指出具体判据**（哪一行、差多少，而不是「看起来是环境问题」）；
    **③ 说明为何与本次改动无关**（列出改动面，证明它碰不到失败路径）。
+
+   **一种更强的 ③**：改动若**完全不含编译文件**（纯 `.md`），被测二进制与上一次闸门用的是**同一批**。核对二进制时间戳即可——同一批二进制此前绿过，本次红就只能是环境。这比「抓到失败消息」更硬，且在抓不到消息时仍然成立。
    三样缺一，就按未归因处理——**照字面再跑一遍 22 分钟只是赌抖动项这次落在阈值下方，那是仪式不是验证**；
    但没有门槛的「有理由就放行」会变成随意开口子。门槛就是两者之间的那条线。
 
