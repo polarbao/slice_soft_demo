@@ -390,6 +390,18 @@ WorkerSliceMaterialization WorkerSliceRequestMaterializer::Materialize(
         ValidateSceneResourcePaths(decoded.scene);
         if (transferSlice)
         {
+            // MW3-06（2026-09-20）：由「恰好一个可见实例」放宽为「至少一个」。
+            //
+            // 原护栏挡的是「声称支持整版、实际只切了一件」这种静默错误——
+            // 那时 RGBWSVT 确实没有多实例合成器，它是那一期能力边界的诚实声明
+            //（matvol-t 的 T-06B 验收条件即写着「多实例 fail closed」）。
+            //
+            // 该前提已被 MW3-01/02/04/05/07 消除：整版缩裹掩膜在合成器内顺带
+            // 合成、复用其摆放与跨实例裁决，再交给现有 ComposeRgbwsvtLayer 装配，
+            // 由包会话按 p0.rgbwsvt.1 写出并通过专用回读自检。
+            // 授权与五条前置条件见 docs/monowrap/DECISION-03。
+            //
+            // **零可见实例仍然拒绝**：整版切片至少要有一件。
             const std::size_t visibleCount = static_cast<std::size_t>(
                 std::count_if(
                     decoded.scene.instances.begin(),
@@ -398,11 +410,11 @@ WorkerSliceMaterialization WorkerSliceRequestMaterializer::Materialize(
                     {
                         return item.instance.visible;
                     }));
-            if (visibleCount != 1U)
+            if (visibleCount == 0U)
             {
                 Fail(
                     kLayoutCode,
-                    "slice.rgbwsvt requires exactly one visible scene instance");
+                    "slice.rgbwsvt requires at least one visible scene instance");
             }
         }
 

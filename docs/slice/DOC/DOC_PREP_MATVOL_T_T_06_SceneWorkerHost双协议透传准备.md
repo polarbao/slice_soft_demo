@@ -82,7 +82,14 @@ Host 根据所选工艺的 `output.packageProtocol` 选择 `slice.rgbwsv` 或 `s
 | 子卡 | 内容 | 完成定义 |
 |---|---|---|
 | T-06A | file_contract minor=1、新 capability、Module/Worker discovery 与路由 | 旧 minor=0 请求不变；新请求缺任一能力时写前拒绝 |
-| T-06B | singleton Scene RGBWSVT Runner、Facade/Worker materialization 与取消清理 | 03 单实例成功；多实例/08/09/取消均 fail closed 且无残包 |
+| T-06B | singleton Scene RGBWSVT Runner、Facade/Worker materialization 与取消清理 | 03 单实例成功；~~多实例~~/08/09/取消均 fail closed 且无残包 |
+
+> **2026-09-20 更正**：上表「多实例 fail closed」一项**已被 MONOWRAP 专项取代**。
+> 该条件当初成立是因为 RGBWSVT 没有多实例合成器，它是那一期能力边界的诚实声明；
+> 现已具备整版能力（整版缩裹掩膜在合成器内顺带合成，装配走现有 `ComposeRgbwsvtLayer`，
+> 包按 `p0.rgbwsvt.1` 写出并过专用回读自检）。放开的授权、五条前置条件与实测证据见
+> `docs/monowrap/DECISION-03-放开单实例护栏的授权.md`。
+> **零可见实例仍然拒绝**，08/09/取消三项一字未改。
 | T-06C | Package Query 双协议 Reader、动态 DTO、T layer descriptor/preview/report | 六/七通道 summary/verify/descriptor/preview 均由 manifest 驱动 |
 | T-06D | 参考 Host 能力选择、提交和 Package Review/Preview 动态通道 | 新工艺选新能力；旧工艺仍发旧能力；无静默回退 |
 | T-06E | 合同/schema/Module/Worker/Host 回归与文档收口 | 定向矩阵全 PASS，任务卡和状态报告同步更新 |
