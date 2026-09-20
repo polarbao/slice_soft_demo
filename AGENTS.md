@@ -85,6 +85,14 @@ P0FIX     ▶【P0层完成，已与产品线合并】分支 codex/feature-p0fix
           分析 analysis/README.md｜analysis/04_问题清单与改动空间.md（F-01..F-52）
              ｜analysis/06_改进路线图与验证方案.md（R-01..R-13 分级与验证 Gate）
 
+MONOWRAP  ▶【方案阶段】单材料缩裹：无 mtl 的纯几何模型整模走 T 通道
+          卡 docs/codex_task/current/TASKS_MONOWRAP_单材料缩裹专项任务清单.md
+          现状 docs/slice/DOC/DOC_ANALYSIS_MONOWRAP_单材料缩裹现状与改动面.md
+          缘起 model/obj/alg_suoguo/20260908-HuangChenC 下 10 个 obj 【零材质引用】，
+               而 T 通道只能按漫反射 RGB 匹配，无 mtl 时必然解析为空区域
+          ⚠ 仅完成方案与上下文，未开工；改动面含 contracts/ 下的报告 schema，
+            该 schema 被字节级基线引用，动它须先评估基线影响
+
 GITOPS    ▶【进行中】分支模型与发布规范治理
           规范 docs/git/Git 分支与发布规范.md（2026-09-18 按实测修订初版）
           初版 docs/git/Git 版本发布流程 + 测试分支规划.md（2026-08-05，保留供对照）
