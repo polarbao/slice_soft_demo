@@ -52,7 +52,7 @@ enum hostmaterialstrategy
 | UI-01b | 追加 `HOST_MATERIAL_TRANSFER_SOLID = 6` 及映射 | ✅ 完成，**6 处登记**：C 枚举、C 侧映射、C++ 枚举、`ToHostMaterialStrategy`、`MaterialStrategyId`、`singleMaterialRelief` |
 | UI-01c | 新增自带策略的预设 | ✅ 完成，id `single_material_transfer_wrap` |
 | UI-01d | 验证产出只写 T | ✅ 完成，内容断言已加进 `HostTransferProfileTests.cpp` 并**经故障注入证伪** |
-| UI-01e | 既有预设行为不变 | 🟡 快集档已过；字节级基线待全量档 |
+| UI-01e | 既有预设行为不变 | ✅ **完成**：738 产物逐字节一致，见 [TASKS-01](TASKS-01-任务清单.md) §3.9 |
 
 > **过程中发现的第 5 处硬编码**：`HostTransferProfileBridge.cpp:16-30` 的
 > `IsValidTransferSettings` 同样写死 `matchsource == material_diffuse_rgb` 与颜色列表非空。

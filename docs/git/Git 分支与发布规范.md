@@ -71,9 +71,9 @@
 
 | 档 | 项数 | 实测 |
 |---|---|---|
-| `slicesoft-debug-core` | 155 | **12~18 秒** |
-| `slicesoft-debug-fast` | 262 | 约 3 分钟 |
-| `slicesoft-debug-full` | 270 | 约 16 分钟（另加全量重建与字节级基线） |
+| `slicesoft-debug-core` | 157 | **12~18 秒** |
+| `slicesoft-debug-fast` | 266 | 约 3 分钟 |
+| `slicesoft-debug-full` | 274 | 约 16 分钟（另加全量重建与字节级基线） |
 
 **于是三层分支对应三档闸门**：
 
@@ -218,9 +218,9 @@ git push origin main
 
 | 档 | preset | 项数 | 实测 | 什么时候用 |
 |---|---|---|---|---|
-| 核心 | `slicesoft-debug-core` | 155 | **12–18 秒** | 改完想立刻看一眼 |
-| 快集 | `slicesoft-debug-fast` | 262 | 约 3 分钟 | 提交前 |
-| 全量 | `slicesoft-debug-full` | 270 | 约 16 分钟 | **合入产品线（本节闸门）** |
+| 核心 | `slicesoft-debug-core` | 157 | **12–18 秒** | 改完想立刻看一眼 |
+| 快集 | `slicesoft-debug-fast` | 266 | 约 3 分钟 | 提交前 |
+| 全量 | `slicesoft-debug-full` | 274 | 约 16 分钟 | **合入产品线（本节闸门）** |
 
 **合入 product 必须满足三条**：
 

@@ -1,16 +1,17 @@
 # TASKS-01 单材料缩裹专项任务清单
 
 > 目录：`docs/monowrap/` ｜ 日期：2026-09-20 ｜ 专项：**MONOWRAP**
-> 状态：**已裁定，开发中**（逐项状态以下方任务表为准）
+> 状态：**TASKS-01 全部完成**（2026-09-20）；后续见 [TASKS-02](TASKS-02-后续任务.md) 与 [TASKS-03](TASKS-03-缩裹整版多实例.md)
 > 索引：[README](README.md)
-> 开发分支：`feature/claude-monowrap-whole-model-transfer`（分叉自 `develop/packaged-slicer`）
+> 开发分支：`feature/claude-monowrap-whole-model-transfer`（已合并删除）、
+> `feature/claude-monowrap-multiinstance`（分叉自 `feature/main`，MONOWRAP-10/11 在此收口）
 > 方案阶段分支（已合并并删除）：`feature/claude-monowrap-single-material-transfer`、
 > `feature/claude-monowrap-gate-answers`
 > 上下文：[ANALYSIS-01](ANALYSIS-01-现状与改动面.md)
 > 四问比较：`DECISION-01-开工门四问的裁定与依据.md`（2026-09-20 追加）
 > 授权：用户 2026-09-20 提出本专项并要求
 > 「可先创建相关任务清单、任务方案，补齐上下文文档数据，后续进行开发时可按照相关方案及任务进行处理」。
-> **本次只交方案与上下文，未写任何生产代码。**
+> ~~本次只交方案与上下文，未写任何生产代码。~~（该行为立项当日状态，其后已实现并验证。）
 
 ---
 
@@ -50,7 +51,7 @@
 | MONOWRAP-01 | 回答 G-1：读通链路并给方案 | 00 | ✅ **完成**（2026-09-20，建议方案 B） |
 | MONOWRAP-01b | 实测 `--scene-config` 入口是否接通 T 通道 | 01 | ✅ **完成**：接通。`p0.rgbwsvt.1` 的生产路径 `RunTransferProductionEntry` **本身就读场景有效配置**，场景制是设计正路 |
 | MONOWRAP-02 | 回答 G-2：schema 两方案的改动清单与风险 | 00 | ✅ **完成**（建议同版本放宽，已裁定采纳） |
-| MONOWRAP-03 | 实测基线影响：既有工艺报告形状不变、738 产物不受影响 | 00 | 🟡 **待全量档验证**（快集档已过，字节级基线在 MONOWRAP-11） |
+| MONOWRAP-03 | 实测基线影响：既有工艺报告形状不变、738 产物不受影响 | 00 | ✅ **完成**：738 产物逐字节一致，见 §3.9 |
 | MONOWRAP-04 | 配置层：放行 `whole_model`，该值下**要求**颜色列表为空 | 01,02 | ✅ **完成** |
 | MONOWRAP-05 | 解析层：`whole_model` 跳过颜色匹配，返回合成名命中 | 04 | ✅ **完成**（**重新设计**，见 §3.5） |
 | MONOWRAP-06 | 报告层：整模模式下的字段取值 | 02,05 | ✅ **完成**，实产报告已通过放宽后的 schema |
@@ -58,7 +59,7 @@
 | MONOWRAP-08 | 新建 CLI 工艺 `samples/configs/matvol_t/monowrap_whole_model_rgbwsvt.json` | 03,06 | ✅ **完成**（放在 `process_profiles/` **之外**，理由见 ANALYSIS-01 §4.5） |
 | MONOWRAP-09 | 目标目录 10 个 obj 实跑 | 08 | ✅ **完成，10/10 通过**，每件 `transferPrintPixels` 精确等于 `modelPixels` |
 | MONOWRAP-10 | 单测与契约门禁：整模模式的正例 + **反例** | 05,07 | ✅ **完成**，4 条用例经故障注入证伪，见 §3.8 |
-| MONOWRAP-11 | 全量回归 + 字节级基线，失败集合与基线比对 | 09,10 | ⬜ 未开始 |
+| MONOWRAP-11 | 全量回归 + 字节级基线，失败集合与基线比对 | 09,10 | ✅ **完成**（2026-09-20），见 §3.9 |
 
 **后续任务（UI 预设、配置整合、标签栏交互）见 [TASKS-02](TASKS-02-后续任务.md)。**
 
@@ -156,6 +157,56 @@ CASE FAILED whole_model_covers_colour_miss
 
 3 条里 2 条变红、文案精确指向真因；还原后两个目标 2/2 全绿，
 源码 `git diff` 为空（确认还原彻底，没留注入痕迹）。
+
+---
+
+## 3.9 MONOWRAP-11 的两半证据（2026-09-20）
+
+分支 `feature/claude-monowrap-multiinstance`，起点是并入 codex ripflow 之后的
+`feature/main`（`89672f5e`）。按 AGENTS.md 8b **先全量重建**（9 分 52 秒，0 错误），
+再跑全量档，最后跑字节级基线。
+
+### 前一半：全量档失败集合
+
+```text
+99% tests passed, 4 tests failed out of 274
+Total Test time (real) = 1201.41 sec
+	 73 - stage14f03_single_model_s1_gate
+	143 - stage16c06_bounded_support_shape_unit_tests
+	188 - scene_layer_adapters_unit_tests
+	232 - slicer_stage14e02_qt_host_boundary_test
+```
+
+**失败集合 == 基线 4 项，无未归因新失败**，三项已登记抖动项本次一项都没触发。
+
+两条附带确认：
+
+- **F-53 修复在全量档站得住**。`slicer_stage14d07_r2_engine_conformance_test`、
+  `slicer_stage14e04b_capability_coverage_test`、`hostflow_ha03_qt_end_to_end`
+  三项全绿——它们上次全量档还是红的，已从抖动项表移出，再红即属未归因。
+- `stage14f05_local_closure_gate` 的 Skipped **是设计行为**：
+  该门禁只验 Release 分发包，Debug 下以 `SKIP_RETURN_CODE 111` 退出。
+
+### 后一半：字节级基线
+
+```text
+字节级比对：PASS（11 个用例 / 738 个产物逐字节一致）
+```
+
+这一半才是整模缩裹真正要过的关。MONOWRAP 动过
+`TransferMaterialVolumePlan.cpp` 这种**产出路径上的文件**，
+快集档绿只说明没有测试变红，**逐字节一致才说明既有 11 例产出一个字节都没变**。
+MONOWRAP-03 与 [TASKS-02](TASKS-02-后续任务.md) 的 UI-01e 一直挂着 🟡 等的就是这个。
+
+### 顺带修正：三档闸门的项数全部陈旧
+
+规范与 `AGENTS.md` 记的是 core 155 / fast 262 / full 270，实测为
+**157 / 266 / 274**，已一并订正。差额里 `ripflow_module_source_pin_test`
+一项是 codex 本批加的，其余是本仓早先几个专项加完没回写。
+
+> 这不是格式问题：本仓的回归判据是**失败集合比对**，
+> 而集合比对的前提是知道总数对不对——**总数写错会让「少跑了一批」
+> 看起来和「全跑了」一模一样**。
 
 ---
 
