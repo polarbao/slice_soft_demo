@@ -1,4 +1,5 @@
 {
-  "schema": "slicesoft.rip.source.1",
-  "sourceDirectory": "rip_project/RIPDLL_20260909"
+  "schema": "slicesoft.rip.source.2",
+  "binaryDirectory": "rip_project/RIPDLL_20260920",
+  "resourceDirectory": "rip_project/RIPDLL_20260909/CmykFiles"
 }

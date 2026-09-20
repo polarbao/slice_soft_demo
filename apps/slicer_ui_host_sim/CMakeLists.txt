@@ -321,18 +321,35 @@ if(WIN32)
     )
     file(READ "${slicesoftRipSourcePin}" slicesoftRipSourceJson)
     string(JSON slicesoftRipSourceSchema GET "${slicesoftRipSourceJson}" schema)
-    string(JSON slicesoftRipSourceRelative GET "${slicesoftRipSourceJson}" sourceDirectory)
-    if(NOT slicesoftRipSourceSchema STREQUAL "slicesoft.rip.source.1"
-        OR NOT slicesoftRipSourceRelative MATCHES
-            "^rip_project/RIPDLL_[0-9][0-9][0-9][0-9][0-9][0-9][0-9][0-9]$")
+    if(slicesoftRipSourceSchema STREQUAL "slicesoft.rip.source.1")
+        string(JSON slicesoftRipBinarySourceRelative
+            GET "${slicesoftRipSourceJson}" sourceDirectory)
+        set(slicesoftRipResourceSourceRelative
+            "${slicesoftRipBinarySourceRelative}/CmykFiles")
+    elseif(slicesoftRipSourceSchema STREQUAL "slicesoft.rip.source.2")
+        string(JSON slicesoftRipBinarySourceRelative
+            GET "${slicesoftRipSourceJson}" binaryDirectory)
+        string(JSON slicesoftRipResourceSourceRelative
+            GET "${slicesoftRipSourceJson}" resourceDirectory)
+    else()
         message(FATAL_ERROR "Invalid pinned RIP SDK source: ${slicesoftRipSourcePin}")
     endif()
-    set(slicesoftRipSourceRoot "${CMAKE_SOURCE_DIR}/${slicesoftRipSourceRelative}")
-    if(EXISTS "${slicesoftRipSourceRoot}/rip_cli.exe")
+    if(NOT slicesoftRipBinarySourceRelative MATCHES
+            "^rip_project/RIPDLL_[0-9][0-9][0-9][0-9][0-9][0-9][0-9][0-9]$"
+        OR NOT slicesoftRipResourceSourceRelative MATCHES
+            "^rip_project/RIPDLL_[0-9][0-9][0-9][0-9][0-9][0-9][0-9][0-9]/CmykFiles$")
+        message(FATAL_ERROR "Invalid pinned RIP SDK source: ${slicesoftRipSourcePin}")
+    endif()
+    set(slicesoftRipSourceRoot
+        "${CMAKE_SOURCE_DIR}/${slicesoftRipBinarySourceRelative}")
+    set(slicesoftRipResourceSourceRoot
+        "${CMAKE_SOURCE_DIR}/${slicesoftRipResourceSourceRelative}")
+    if(EXISTS "${slicesoftRipSourceRoot}/rip_cli.exe"
+        AND EXISTS "${slicesoftRipResourceSourceRoot}/CMYK.icc")
         set(slicesoftRipSdkAvailable TRUE)
     elseif(IS_DIRECTORY "${CMAKE_SOURCE_DIR}/rip_project")
         message(FATAL_ERROR
-            "Pinned RIP SDK is missing its CLI: ${slicesoftRipSourceRoot}"
+            "Pinned RIP SDK is incomplete: binary=${slicesoftRipSourceRoot}; resources=${slicesoftRipResourceSourceRoot}"
         )
     endif()
 endif()
@@ -345,6 +362,7 @@ if(slicesoftRipSdkAvailable)
             -ExecutionPolicy Bypass
             -File "${CMAKE_SOURCE_DIR}/scripts/PackageRipModule.ps1"
             -SourceRoot "${slicesoftRipSourceRoot}"
+            -ResourceSourceRoot "${slicesoftRipResourceSourceRoot}"
             -Destination "$<TARGET_FILE_DIR:slicer_ui_host_sim>/modules/rip"
             -ReplaceOwnedDestination
         VERBATIM
@@ -525,6 +543,13 @@ if(MSVC)
 endif()
 
 if(slicesoftRipSdkAvailable)
+    add_test(
+        NAME ripflow_module_source_pin_test
+        COMMAND ${slicesoftPowerShellExecutable}
+            -NoProfile
+            -ExecutionPolicy Bypass
+            -File "${CMAKE_SOURCE_DIR}/scripts/TestRipModuleSourcePin.ps1"
+    )
     add_test(
         NAME ripflow_module_package_test
         COMMAND ${slicesoftPowerShellExecutable}

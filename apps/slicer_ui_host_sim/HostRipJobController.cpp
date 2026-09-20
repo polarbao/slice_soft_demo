@@ -239,7 +239,7 @@ bool HostRipJobController::InspectRuntime(
         || manifest.value(QStringLiteral("moduleId")).toString()
             != QStringLiteral("slicesoft.external_rip")
         || manifest.value(QStringLiteral("version")).toString()
-            != QStringLiteral("1.2.0")
+            != QStringLiteral("1.3.0")
         || manifest.value(QStringLiteral("status")).toString()
             != QStringLiteral("LOCAL_ENGINEERING_ONLY")
         || manifest.value(QStringLiteral("externalValidation")).toString()

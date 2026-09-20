@@ -1263,18 +1263,29 @@ try
             -RepoRoot $repoRoot `
             -StagingDir $stagingDir
 
-        $ripSourceRoot = & (Join-Path $repoRoot "scripts/ResolveRipModuleSource.ps1")
+        $ripSourceRoot = & (Join-Path $repoRoot "scripts/ResolveRipModuleSource.ps1") `
+            -Component Binary
+        $ripResourceRoot = & (Join-Path $repoRoot "scripts/ResolveRipModuleSource.ps1") `
+            -Component Resource
         $ripModuleRelativePath = "modules/rip"
         $ripModuleDestination = Join-Path $stagingDir $ripModuleRelativePath
         $ripModuleAvailable = Test-Path `
             -LiteralPath (Join-Path $ripSourceRoot "rip_cli.exe") `
+            -PathType Leaf
+        $ripResourcesAvailable = Test-Path `
+            -LiteralPath (Join-Path $ripResourceRoot "CMYK.icc") `
             -PathType Leaf
         if (-not $ripModuleAvailable -and
             (Test-Path -LiteralPath (Join-Path $repoRoot "rip_project") -PathType Container))
         {
             throw "Pinned RIP SDK is missing its CLI; refusing to silently omit the module: $ripSourceRoot"
         }
-        if ($ripModuleAvailable)
+        if (-not $ripResourcesAvailable -and
+            (Test-Path -LiteralPath (Join-Path $repoRoot "rip_project") -PathType Container))
+        {
+            throw "Pinned RIP SDK is missing its resources; refusing to silently omit the module: $ripResourceRoot"
+        }
+        if ($ripModuleAvailable -and $ripResourcesAvailable)
         {
             & (Join-Path $repoRoot "scripts/PackageRipModule.ps1") `
                 -Destination $ripModuleDestination
