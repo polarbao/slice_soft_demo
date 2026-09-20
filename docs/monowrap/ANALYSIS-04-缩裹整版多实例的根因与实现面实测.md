@@ -179,6 +179,119 @@ T 通道需要明确：
 外加 `SameChannelOrder` 的 `array<std::string, 6>` 签名要跟着模板化。
 1467 行里需要动的是这几处，不是全文。
 
+### 为什么不能只把通道数改成运行时变量
+
+一个看着更省事的想法是：给请求加一个 `channelCount` 字段，
+把那 5 个函数里的 `kChannelCount` 换成它，共享类型一动不动。
+**这条路走不通，卡在输出类型上。**
+
+实测 `SceneInstanceRasterLayer::output` 的类型是 `RgbwsvProductionLayer`，其中：
+
+| 成员 | 类型 | 能否容纳七通道 |
+| --- | --- | --- |
+| `channels` | `std::vector<std::uint8_t>` | ✅ **本来就是变长的**，装 7×像素 字节没问题 |
+| `channelOrder` | `std::array<std::string, 6>` | ❌ 装不下第七个通道名 |
+
+也就是说**像素字节早就与通道数无关了**，卡住的只有描述性元数据
+（`channelOrder`，以及统计结构里的 `std::array<std::uint64_t, 6>`）。
+运行时 `channelCount` 能让合成循环跑对，但产出的层**无法自述它是七通道的**，
+包写入器拿到手也不知道第七个平面叫什么。
+
+把这几个数组改成变长 ⇒ 回到 §6b 开头那张表的 27 文件 / 24 处硬写。
+而七通道的对应类型 `RgbwsvtProductionLayer`（`array<, 7>`，通道名含 `"T"`）
+**已经存在**。所以正确解法是让合成器按层类型模板化、两份实例化各用各的类型，
+而不是把一个类型拉宽去同时伺候两种协议。
+
+## 6c. 再次修正（最终方案）：**T 作为后置一遍叠加，六通道合成器一行不动**
+
+继续往下读 `run_slicer` 时发现：**单模型路径产七通道层的方式，本身就是「后置叠加」**，
+不是把合成逻辑做成七通道的。`slicer.cpp:1103-1114`：
+
+```cpp
+std::optional<RgbwsvtProductionLayer> transferLayer;
+if (transferSession.has_value())
+{
+    transferLayer = ComposeLegacyTransferChannelLayer(
+        transferSession.value(),
+        RgbwsvProductionLayer{ ... .channels = layer },   // ← 先出完整六通道层
+        current_model_mask);
+    transferCanvas.Apply(transferLayer.value());
+}
+```
+
+而 `ComposeRgbwsvtLayer`（`output/rgbwsvt/RgbwsvtProtocol.cpp:42`）的签名是：
+
+```cpp
+RgbwsvtProductionLayer ComposeRgbwsvtLayer(
+    const RgbwsvProductionLayer& rgbwsvLayer,   // 六通道层
+    std::span<const std::uint8_t> modelMask,
+    std::span<const std::uint8_t> transferMask,
+    std::uint8_t transferValue);
+```
+
+语义是：缩裹像素**丢弃全部六通道只写 T**，非缩裹像素六通道原样透传、T 留空。
+
+### 于是场景级的做法可以完全照搬，升一层而已
+
+| 步 | 做什么 | 代价 |
+| --- | --- | --- |
+| 1 | 让**现有六通道合成器原样**跑完 N 个实例 → 整版 RGBWSV 层 + 整版模型掩膜 | **零改动** |
+| 2 | 把各实例的**缩裹掩膜**按各自偏移合成到整版掩膜 | 新增，但用的是合成器已有的摆放数学 |
+| 3 | 把 1 和 2 交给**现有的 `ComposeRgbwsvtLayer`** → 整版七通道层 | **零改动** |
+
+**六通道合成器不动、`ComposeRgbwsvtLayer` 不动**，新代码只有第 2 步的掩膜合成。
+这不是新发明的机制，而是本仓在单模型层面**已经在用**的模式，只是搬到整版上。
+
+### 三版方案的演进（每一版都是被实测推翻的）
+
+| 版本 | 想法 | 被什么推翻 |
+| --- | --- | --- |
+| v1 | 把通道数与几个 `array<,6>` 泛化 | 影响 27 文件 / 24 处硬写，直接威胁字节基线 |
+| v2 | 把合成器按层类型模板化，实例化两份 | 可行但要动 ~20 个函数，仍在六通道热路径上动刀 |
+| **v3** | **T 后置叠加，六通道合成器零改动** | — `run_slicer` 本来就这么做的 |
+
+> 教训与 §3.5 同一条：**先读既有实现怎么做，再设计**。
+> v1 和 v2 都是在没读 `slicer.cpp` 的 T 叠加之前拍的。
+
+### 这一版仍需解决的两件事
+
+1. **步 2 的掩膜合成要复用合成器的归属裁决**，不能自己再算一遍摆放与重叠，
+   否则两处逻辑会漂移。合成器内部已有 `ownership` / `ownerindices` 两个逐像素数组，
+   需要把它们（或等价的整版模型掩膜）作为输出暴露出来。
+2. ~~**V/T 重叠**：整版下多了一种新重叠——**跨实例**的 V/T 相撞，需确认走的是同一条拒绝路径。~~
+   **已核查，不是问题——现有合成器已经挡住了。** 见下。
+
+### 跨实例重叠：甲选让 T 白捡了既有的全部保护
+
+`ResolveCrossInstancePixel`（`SceneLayerComposer.cpp:760-788`）对跨实例相撞的处理：
+
+| 相撞形态 | 现有行为 |
+| --- | --- |
+| `Model` × `Model` | **拒绝**：`InstanceOverlap`，"different instances claim the same model pixel" |
+| `Model` × 其它材质归属 | **拒绝**：`MaterialConflict`，"model ownership conflicts with another instance material" |
+
+T 跟随 `Model` 归属（甲选），于是：
+
+- **跨实例 T × T** ＝ Model × Model ⇒ 已经是 `InstanceOverlap`，fail-closed；
+- **跨实例 T × V** ＝ Model × OuterVarnish ⇒ 已经是 `MaterialConflict`，fail-closed。
+
+两种新重叠**都已经被现有代码挡住**，无需新写拒绝逻辑，也无需把
+`slicer.cpp:1124` 的 `E_MATOPQ_VARNISH_TRANSFER_OVERLAP`（那条是**模型内**
+V/T 相撞，K3 表决未实施）搬到场景层。
+
+> 这是甲选的第三项白捡收益：归属规则零代码、跨实例保护零代码。
+> 乙选（新开 `TransferWrap` 归属）反而要把上面两条规则**逐条重写一遍**，
+> 且每条都得重新论证——因为新归属类不在现有的 `Model` 判断里。
+
+**对 MW3-03 的影响**：原定的「T 重叠计数」失去意义——合成器根本不允许
+两个实例的模型像素重叠，重叠即整单拒绝，不存在"悄悄重叠"的情形。
+MW3-03 因此改为**验证**这两条拒绝确实在整版缩裹下触发（反例用例），
+而不是新增计数。
+
+> 对用户版面的实际约束：12 件甲片在同一层的 XY 投影**不得相交**。
+> 截图上各件之间留有明显间隙，满足。但这条约束要写进使用说明——
+> 它不是缩裹独有的，六通道整版一直如此。
+
 ### T 的归属规则不需要写任何代码
 
 通道下标是 S=4、V=5、T=6（`kTransferChannelOffset{6U}`）。
@@ -191,14 +304,22 @@ T 通道需要明确：
 
 ## 7. 工作量评估
 
+> 下表已按 §6c 的 v3 方案更新；v1/v2 的估计见该节的演进表。
+
 | 档 | 内容 | 估计 |
 | --- | --- | --- |
-| 通道数泛化 | `kSceneChannelCount` 与三处 `array<,6>` 改为随协议走 | 中 |
-| T 归属语义 | `WriteOwnedPixel` + 取消路径补 T 分支 | 小 |
+| 六通道合成器 | **零改动**（只增加「把整版模型掩膜与归属暴露出来」的出口） | 小 |
+| 整版 T 掩膜合成 | 各实例 T 掩膜按偏移并入整版，复用合成器的归属裁决 | 中 |
+| 七通道装配 | 调**现有** `ComposeRgbwsvtLayer`，零改动 | 极小 |
+| V/T 跨实例重叠 | 确认走既有 fail-closed 路径 + 补计数 | 小 |
 | 生产入口改道 | `RunTransferProductionEntry` 仿 `RunExistingProductionEntry` | 中 |
 | 护栏放开 | 两处 fail-closed 改为允许多实例 | 小（但按门禁规则须留授权痕迹） |
-| 包写入 / 报告 / 契约 | 跟随七通道 | 中 |
+| 包写入 / 报告 / 契约 | 七通道整版包 | 中 |
 | 验证 | 单实例字节级不变 + 整版新用例 + 全量档 | 大 |
 
-**整体量级：与 MONOWRAP 主体相当或略大，显著小于「重写合成器」。**
-关键是 §4.2 的实测结论——合成算法不必重新设计，只需泛化与接线。
+**整体量级：明显小于 MONOWRAP 主体。** 真正的新代码只有「整版 T 掩膜合成」一件，
+其余是接线与验证。关键是 §6c 的实测结论——**本仓在单模型层面已经在用后置叠加**，
+整版只是把同一模式升一层，六通道热路径与字节基线因此不被触碰。
+
+**验证仍是最大的一档**，且不可压缩：`ComposeRgbwsvtLayer` 虽零改动，
+但它这次收到的是整版层而非单模型层，边界条件（跨实例掩膜越界、V/T 相撞）全是新的。

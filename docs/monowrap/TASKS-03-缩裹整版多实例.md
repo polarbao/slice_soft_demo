@@ -35,10 +35,10 @@
 | 编号 | 任务 | 依赖 | 状态 |
 | --- | --- | --- | --- |
 | MW3-00 | 落基准：当前单实例缩裹产出的字节级快照，作为「行为不变」的判据 | — | ⬜ |
-| MW3-01 | 合成器模板化，按通道数 / 协议 / 层类型实例化两份（**不动共享六通道类型**，见 ANALYSIS-04 §6b） | MW3-00 | ⬜ |
-| MW3-02 | 合成器请求 / `layersink` / 统计结构跟随模板参数 | MW3-01 | ⬜ |
-| MW3-03 | T 重叠计数（**归属规则本身无需改**：T 在下标 6，天然走 `Model` 通用分支） | MW3-01 | ⬜ |
-| MW3-04 | `MultiModelProductionService` 逐实例产七通道栅格 | MW3-02 | ⬜ |
+| MW3-01 | 合成器暴露整版模型掩膜与归属裁决结果（供 T 掩膜合成复用，**不改合成算法**，见 ANALYSIS-04 §6c） | MW3-00 | ⬜ |
+| MW3-02 | 整版缩裹掩膜合成：各实例 T 掩膜按各自偏移并入整版，复用 MW3-01 的归属 | MW3-01 | ⬜ |
+| MW3-03 | **反例验证**跨实例 T×T / T×V 触发既有 `InstanceOverlap` / `MaterialConflict`（**无需新写拒绝逻辑**，已核查，见 ANALYSIS-04 §6c） | MW3-02 | ⬜ |
+| MW3-04 | 整版七通道层装配：把整版六通道层 + 两张整版掩膜交给**现有** `ComposeRgbwsvtLayer` | MW3-02 | ⬜ |
 | MW3-05 | `RunTransferProductionEntry` 改道为 `RunMultiModelProductionService` | MW3-04 | ⬜ |
 | MW3-06 | 放开两道 fail-closed 护栏（**须先出授权文档**） | MW3-05 | ⬜ |
 | MW3-07 | 包写入器 / 报告 / 契约 schema 跟随七通道 | MW3-05 | ⬜ |
