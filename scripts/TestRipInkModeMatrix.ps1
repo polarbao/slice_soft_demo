@@ -38,7 +38,7 @@ foreach ($mode in 0, 1)
         if ($result.schema -ne 'slicesoft.rip.diagnostic.3' -or
             $result.settings.ripMode -ne $mode -or
             $result.settings.transparentMode -ne $color -or
-            $result.module.version -ne '1.2.0' -or
+            $result.module.version -ne '1.3.0' -or
             $result.output.layerCount -ne $expectedCount -or
             $result.output.s2PublicationEligible -ne $false -or
             (Test-Path -LiteralPath (Join-Path $package 'rip')))

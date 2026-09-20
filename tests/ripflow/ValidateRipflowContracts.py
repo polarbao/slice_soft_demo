@@ -59,7 +59,7 @@ def validate_module(value):
     require_exact(value, required)
     if value["schema"] != "slicesoft.rip.module.1" or value["moduleId"] != "slicesoft.external_rip":
         raise ValueError("module identity")
-    if value["version"] != "1.2.0":
+    if value["version"] != "1.3.0":
         raise ValueError("module version")
     if value["status"] != "LOCAL_ENGINEERING_ONLY" or value["architecture"] != "x86_64-windows":
         raise ValueError("module status")

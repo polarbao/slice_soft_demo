@@ -343,6 +343,11 @@ bool TestSettingsAndCommand()
     pass = Expect(commandStatus.ok, "absolute contained command passes")
         && Expect(command.program.is_absolute(), "program is absolute")
         && Expect(command.arguments.size() == 20U, "all batch arguments exist")
+        && Expect(
+            std::find(
+                command.arguments.begin(), command.arguments.end(), "--verbose")
+                == command.arguments.end(),
+            "production command does not enable verbose pixel logging")
         && pass;
     const auto transparentArgument = std::find(
         command.arguments.begin(), command.arguments.end(), "--transparent");

@@ -21,7 +21,7 @@ if (-not (Test-Path -LiteralPath $manifestPath -PathType Leaf))
 $manifest = Get-Content -LiteralPath $manifestPath -Raw | ConvertFrom-Json
 if ($manifest.schema -ne "slicesoft.rip.module.1" -or
     $manifest.moduleId -ne "slicesoft.external_rip" -or
-    $manifest.version -ne "1.2.0" -or
+    $manifest.version -ne "1.3.0" -or
     $manifest.status -ne "LOCAL_ENGINEERING_ONLY" -or
     $manifest.externalValidation -ne "EXTERNAL_VALIDATION_DEFERRED")
 {
@@ -84,6 +84,20 @@ if (-not (Test-Path -LiteralPath $privateTiff -PathType Leaf))
 {
     throw "RIP private tiff.dll must remain inside the module root."
 }
+$provenancePath = Join-Path $moduleRoot "source_provenance.json"
+if (-not (Test-Path -LiteralPath $provenancePath -PathType Leaf))
+{
+    throw "RIP module source provenance was not found: $provenancePath"
+}
+$provenance = Get-Content -LiteralPath $provenancePath -Raw | ConvertFrom-Json
+if ($provenance.schema -ne "slicesoft.rip.source.provenance.2" -or
+    [string]::IsNullOrWhiteSpace([string]$provenance.binaryDirectory) -or
+    [string]::IsNullOrWhiteSpace([string]$provenance.resourceDirectory) -or
+    [System.IO.Path]::IsPathRooted([string]$provenance.binaryDirectory) -or
+    [System.IO.Path]::IsPathRooted([string]$provenance.resourceDirectory))
+{
+    throw "RIP module source provenance is invalid."
+}
 if (-not $SkipExecutableProbe)
 {
     $entrypoint = Join-Path $moduleRoot ([string]$manifest.entrypoint)
@@ -91,7 +105,8 @@ if (-not $SkipExecutableProbe)
     if ($LASTEXITCODE -ne 0 -or
         ($output -join "`n") -notmatch "RipSlicer" -or
         ($output -join "`n") -notmatch '--transparent\s+<0-4>' -or
-        ($output -join "`n") -notmatch '--ripmode\s+<0\|1>')
+        ($output -join "`n") -notmatch '--ripmode\s+<0\|1>' -or
+        ($output -join "`n") -notmatch '--verbose')
     {
         throw "RIP CLI help probe failed with exit code $LASTEXITCODE."
     }
