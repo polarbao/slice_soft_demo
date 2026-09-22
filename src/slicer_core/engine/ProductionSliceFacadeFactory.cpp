@@ -285,7 +285,7 @@ api::ApiResult<api::SliceResult> RunTransferPlateProductionEntry(
     result.layer_count = produced.layercount;
     // grid_px 必须从已发布的清单读回：Worker 的产出证据检查要求它两维都 > 0，
     // 缺了就是 PM-SLICER-CONTRACT-0060，而那条文案指不到「少填了字段」。
-    // 本函数初版漏了这一段，见 docs/monowrap/DECISION-03 §6c。
+    // 本函数初版漏了这一段，见 docs/plan-feature/单材料缩裹整模识别与整版多实例/DECISION-03 §6c。
     try
     {
         std::ifstream manifestInput(

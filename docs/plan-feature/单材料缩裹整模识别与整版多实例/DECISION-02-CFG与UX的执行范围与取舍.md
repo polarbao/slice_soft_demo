@@ -1,6 +1,6 @@
 # DECISION-02 CFG-01 与 UX-01：执行了什么、没执行什么、为什么
 
-> 目录：`docs/monowrap/` ｜ 日期：2026-09-20 ｜ 专项：**MONOWRAP**
+> 目录：`docs/plan-feature/单材料缩裹整模识别与整版多实例/` ｜ 日期：2026-09-20 ｜ 专项：**MONOWRAP**
 > 索引：[README](README.md)
 > 上游：[ANALYSIS-02](ANALYSIS-02-配置与工艺冗余度实测.md)、[ANALYSIS-03](ANALYSIS-03-标签栏与切片流程一致性实测.md)
 > 授权：用户 2026-09-20「可按照你的理解进行后续任务处理」。

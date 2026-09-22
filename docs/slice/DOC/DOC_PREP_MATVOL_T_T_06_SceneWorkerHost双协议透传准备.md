@@ -88,7 +88,7 @@ Host 根据所选工艺的 `output.packageProtocol` 选择 `slice.rgbwsv` 或 `s
 > 该条件当初成立是因为 RGBWSVT 没有多实例合成器，它是那一期能力边界的诚实声明；
 > 现已具备整版能力（整版缩裹掩膜在合成器内顺带合成，装配走现有 `ComposeRgbwsvtLayer`，
 > 包按 `p0.rgbwsvt.1` 写出并过专用回读自检）。放开的授权、五条前置条件与实测证据见
-> `docs/monowrap/DECISION-03-放开单实例护栏的授权.md`。
+> `docs/plan-feature/单材料缩裹整模识别与整版多实例/DECISION-03-放开单实例护栏的授权.md`。
 > **零可见实例仍然拒绝**，08/09/取消三项一字未改。
 | T-06C | Package Query 双协议 Reader、动态 DTO、T layer descriptor/preview/report | 六/七通道 summary/verify/descriptor/preview 均由 manifest 驱动 |
 | T-06D | 参考 Host 能力选择、提交和 Package Review/Preview 动态通道 | 新工艺选新能力；旧工艺仍发旧能力；无静默回退 |

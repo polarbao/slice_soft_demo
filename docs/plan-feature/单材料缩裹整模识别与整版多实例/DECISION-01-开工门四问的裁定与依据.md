@@ -1,6 +1,6 @@
 # DECISION-01 开工门四问：裁定与依据
 
-> 目录：`docs/monowrap/` ｜ 版本：v1.1 ｜ 日期：2026-09-20 ｜ 专项：**MONOWRAP**
+> 目录：`docs/plan-feature/单材料缩裹整模识别与整版多实例/` ｜ 版本：v1.1 ｜ 日期：2026-09-20 ｜ 专项：**MONOWRAP**
 > 状态：**已裁定，据此开工**
 > 索引：[README](README.md) ｜ 上游：[ANALYSIS-01](ANALYSIS-01-现状与改动面.md)
 > 任务卡：[TASKS-01](TASKS-01-任务清单.md)

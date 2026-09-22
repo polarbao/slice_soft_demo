@@ -131,5 +131,5 @@
       "maxBoundaryEdges": 8
     }
   },
-  "_comment": "单材料缩裹（MONOWRAP）。matchSource=whole_model 表示整个模型即缩裹材料，不做漫反射 RGB 匹配，故 materialDiffuseRgbValues 必须为空。供无 mtl 的纯几何资产使用（如 model/obj/alg_suoguo/ 下的缩裹件）。RGB/白墨/光油三通道全关，输出只有 T 有内容。topology 沿用模板的保守容限：maxSelfIntersectionPairs=64、maxBoundaryEdges=8——实测 alg_suoguo/20260908-HuangChenC 的 10 件里 5 件可直接通过，4 件自交 68~172 对超限、1 件非流形。抬容限属门禁放宽须先授权，超限件应先走 slicer_cli --repair-asset 修复。详见 docs/monowrap/。"
+  "_comment": "单材料缩裹（MONOWRAP）。matchSource=whole_model 表示整个模型即缩裹材料，不做漫反射 RGB 匹配，故 materialDiffuseRgbValues 必须为空。供无 mtl 的纯几何资产使用（如 model/obj/alg_suoguo/ 下的缩裹件）。RGB/白墨/光油三通道全关，输出只有 T 有内容。topology 沿用模板的保守容限：maxSelfIntersectionPairs=64、maxBoundaryEdges=8——实测 alg_suoguo/20260908-HuangChenC 的 10 件里 5 件可直接通过，4 件自交 68~172 对超限、1 件非流形。抬容限属门禁放宽须先授权，超限件应先走 slicer_cli --repair-asset 修复。详见 docs/plan-feature/单材料缩裹整模识别与整版多实例/。"
 }

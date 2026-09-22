@@ -399,7 +399,7 @@ WorkerSliceMaterialization WorkerSliceRequestMaterializer::Materialize(
             // 该前提已被 MW3-01/02/04/05/07 消除：整版缩裹掩膜在合成器内顺带
             // 合成、复用其摆放与跨实例裁决，再交给现有 ComposeRgbwsvtLayer 装配，
             // 由包会话按 p0.rgbwsvt.1 写出并通过专用回读自检。
-            // 授权与五条前置条件见 docs/monowrap/DECISION-03。
+            // 授权与五条前置条件见 docs/plan-feature/单材料缩裹整模识别与整版多实例/DECISION-03。
             //
             // **零可见实例仍然拒绝**：整版切片至少要有一件。
             const std::size_t visibleCount = static_cast<std::size_t>(

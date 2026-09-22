@@ -1,6 +1,6 @@
 # TASKS-01 单材料缩裹专项任务清单
 
-> 目录：`docs/monowrap/` ｜ 日期：2026-09-20 ｜ 专项：**MONOWRAP**
+> 目录：`docs/plan-feature/单材料缩裹整模识别与整版多实例/` ｜ 日期：2026-09-20 ｜ 专项：**MONOWRAP**
 > 状态：**TASKS-01 全部完成**（2026-09-20）；后续见 [TASKS-02](TASKS-02-后续任务.md) 与 [TASKS-03](TASKS-03-缩裹整版多实例.md)
 > 索引：[README](README.md)
 > 开发分支：`feature/claude-monowrap-whole-model-transfer`（已合并删除）、

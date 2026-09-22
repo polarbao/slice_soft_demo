@@ -86,9 +86,9 @@ P0FIX     ▶【P0层完成，已与产品线合并】分支 codex/feature-p0fix
              ｜analysis/06_改进路线图与验证方案.md（R-01..R-13 分级与验证 Gate）
 
 MONOWRAP  ▶【开发中】单材料缩裹：无 mtl 的纯几何模型整模走 T 通道
-          入口 docs/monowrap/README.md（专项目录，含上下文速览与裁定摘要）
-          卡 docs/monowrap/TASKS-01-任务清单.md
-          裁定 docs/monowrap/DECISION-01-开工门四问的裁定与依据.md（2026-09-20 用户已裁定）
+          入口 docs/plan-feature/单材料缩裹整模识别与整版多实例/README.md（专项目录，含上下文速览与裁定摘要）
+          卡 docs/plan-feature/单材料缩裹整模识别与整版多实例/TASKS-01-任务清单.md
+          裁定 docs/plan-feature/单材料缩裹整模识别与整版多实例/DECISION-01-开工门四问的裁定与依据.md（2026-09-20 用户已裁定）
           缘起 model/obj/alg_suoguo/20260908-HuangChenC 下 10 个 obj 【零材质引用】，
                而 T 通道只能按漫反射 RGB 匹配，无 mtl 时必然解析为空区域
           ⚠ 真正的阻碍在 MaterialVolumePlan.cpp:144——它对空材质名直接抛错。
