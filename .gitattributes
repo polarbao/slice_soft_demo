@@ -1,3 +1,34 @@
+# 行尾：仓内与检出一律 LF。
+#
+# 没有这一行时，行尾完全取决于各人的 core.autocrlf（本机系统级为 true），
+# 于是仓内同时长出 1295 个 CRLF、1561 个 LF 和 176 个单文件内混合。
+# 详见 docs/plan-feature/文件行尾统一/。
+#
+# 选 lf 而非 crlf 的理由：下方那条冻结样本先例用的就是 eol=lf，
+# 同一个仓里两种 eol 取值是给后来人埋坑。
+* text=auto eol=lf
+
+# 二进制：不做任何行尾转换
 *.pdf binary
-# This frozen fixture is verified by its exact SHA-256 bytes.
+*.png binary
+*.jpg binary
+*.jpeg binary
+*.ico binary
+*.tif binary
+*.tiff binary
+*.dll binary
+*.exe binary
+*.lib binary
+*.pdb binary
+*.zip binary
+*.ttf binary
+
+# 模型资产：本专项尚未裁决是否转换，先钉住现状不动。
+# 它们的字节会进 sourceHash，虽已核查该哈希不签入仓库、字节级基线也不嵌模型
+# 哈希，但那是推理不是实测。待基线实测通过后再决定是否并入上面的默认规则。
+*.obj -text
+*.mtl -text
+*.stl -text
+
+# 按精确 SHA-256 字节校验的冻结样本：单独钉住（既有条目，保持不变）
 samples/configs/3mf/three_mf_texture2d_checker.json text eol=lf
