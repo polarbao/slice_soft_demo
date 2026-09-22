@@ -85,9 +85,11 @@ P0FIX     ▶【P0层完成，已与产品线合并】分支 codex/feature-p0fix
           分析 analysis/README.md｜analysis/04_问题清单与改动空间.md（F-01..F-52）
              ｜analysis/06_改进路线图与验证方案.md（R-01..R-13 分级与验证 Gate）
 
-MONOWRAP  ▶【开发中】单材料缩裹：无 mtl 的纯几何模型整模走 T 通道
+MONOWRAP  ✅【已收口】单材料缩裹：无 mtl 的纯几何模型整模走 T 通道；整版多实例合成一个包
+          ✅ MW3-00..12 全部完成（2026-09-21 用户实机确认「可以进行多模型切片处理」）；字节基线 738 产物逐字节一致
           入口 docs/plan-feature/单材料缩裹整模识别与整版多实例/README.md（专项目录，含上下文速览与裁定摘要）
           卡 docs/plan-feature/单材料缩裹整模识别与整版多实例/TASKS-01-任务清单.md
+          卡 docs/plan-feature/单材料缩裹整模识别与整版多实例/TASKS-03-缩裹整版多实例.md（整版多实例，已全结）
           裁定 docs/plan-feature/单材料缩裹整模识别与整版多实例/DECISION-01-开工门四问的裁定与依据.md（2026-09-20 用户已裁定）
           缘起 model/obj/alg_suoguo/20260908-HuangChenC 下 10 个 obj 【零材质引用】，
                而 T 通道只能按漫反射 RGB 匹配，无 mtl 时必然解析为空区域
@@ -141,7 +143,10 @@ MEMFLOW   ⏸ 分支 codex/memflow-bounded-streaming（尖端 826a170）【暂�
           ▶ 本分支工作树中曾存在的 MEMFLOW 残留已于 2026-08-24 证明为严格过时并剔除
             （41 文件逐一比对：24 逐字节一致、1 严格子集、其余独有行皆为更旧状态头）
           卡 位于分支内 docs/codex_task/current/TASKS_16C_06_MEMFLOW_*.md，本分支尚无该文件
-RIPFLOW   ✅ 00 / A / B / C / D 全组完成（D-01..06），切片侧收口
+RIPFLOW   ✅ 00 / A / B / C / D 全组完成（D-01..10），切片侧收口
+          入口 docs/plan-feature/切片后外置RIP集成/README.md（索引与交接边界；状态真源仍在下方那张卡）
+          ⚠ 工作树里有 9 个未提交改动属于 D-10（RGBWSVT 输入适配，+116 −19），【不要编辑 / git add / checkout 它们】
+            清单与交接规则见 docs/plan-feature/切片后外置RIP集成/CONTEXT_在制品与交接边界.md
           ⛔ E-01/E-02 外部分发与生产验收 BLOCKED_EXTERNAL
           ▶ D-06 新增 outputValidationMode=strict_s2|diagnostic_unvalidated，默认严格；
             诊断模式只放宽墨滴上限门，产出 rip_diagnostic/ 且恒不可 S2 发布
@@ -171,6 +176,18 @@ CI        ⏸ 用户 2026-08-10 裁决【暂缓】，清单保留不开工
           卡 docs/codex_task/current/TASKS_CI_冻结面工程保护任务清单.md
 MEMFLOW   ▶ MF-00..03B4A COMPLETE；MF-03B4B PREPARED；生产仍为 Retained Dense
           卡 docs/codex_task/current/TASKS_16C_06_MEMFLOW_有界流式内存根治专项任务清单.md
+
+EOL       ✅【已收口】2026-09-22 文件行尾统一：仓内与检出一律 LF
+          入口 docs/plan-feature/文件行尾统一/README.md
+          ⚠ 【仓内本就是纯 LF】（blob 普查 LF 3035 / CRLF 0）。盘上的 CRLF 是 core.autocrlf=true 检出时转的
+          ⚠ 初版方案量的是工作树字节，据此排了六波 2856 个文件的工作量，【对应文件在仓内根本不存在】，已取消
+          → 改源码时补丁锚点仍须行尾感知：盘上存量文件未全部收敛，单文件内混合仍会遇到
+
+RIPDUAL   ⬜【S0 未启动】RIP 双模调用：exe 子进程与进程内 DLL 两种承载，定主运行时选
+          入口 docs/plan-feature/RIP双模调用/README.md（原在 docs/rip-dual-mode/，2026-09-22 归位入库）
+          ⚠ 阻断点烧在二进制里：RipSlicer.dll 对 tiff.dll 是 load-time 静态导入，且资源目录默认值基于宿主 exe 目录
+            → 改配置 / 换加载参数 / 加 manifest 都绕不过，【必须供方重编】
+          → 宿主侧只有 H-01/H-02（后端抽象与模式开关）不等人，其余全部卡在重编
 
 ⛔ 外部阻塞（切片侧做不了）：14A_EXTERNAL_ACK 待打印侧书面回签
    → 它阻塞 14D-05..08、14C-06B 与 Stage 14 的 14F-02..05 外部验收
